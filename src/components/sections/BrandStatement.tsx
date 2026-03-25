@@ -1,9 +1,20 @@
 "use client"
 
-import React, { useRef, useState, useEffect } from 'react'
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
+import React, { useRef, useState, useEffect, useMemo } from 'react'
+import { motion, useScroll, useTransform, AnimatePresence, useMotionValueEvent } from 'framer-motion'
 
-const storyChapters = [
+// --- Types ---
+
+interface StoryChapter {
+  tag: string
+  title:  string
+  description: string
+  img: string
+}
+
+// --- Constants ---
+
+const STORY_CHAPTERS: StoryChapter[] = [
   {
     tag: "01. The Vision",
     title: "Artistry in Every Detail",
@@ -24,240 +35,294 @@ const storyChapters = [
   }
 ]
 
-export default function Story() {
-  const [isMobile, setIsMobile] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [imagesLoaded, setImagesLoaded] = useState(false)
-  const [navbarHeight, setNavbarHeight] = useState(0)
-  
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+const MOBILE_MULTIPLIER = 85
+const DESKTOP_MULTIPLIER = 100
+const EXTRA_SCROLL_SCREENS = 0.8 // Extra scroll space for last card to exit
 
-  // Get navbar height
+// --- Utility Hooks ---
+
+function useNavbarHeight() {
+  const [navbarHeight, setNavbarHeight] = useState(0)
+  const [isReady, setIsReady] = useState(false)
+
   useEffect(() => {
     const findNavbar = () => {
-      // Try to find navbar by common selectors
-      const possibleNavbars = [
-        document.querySelector('nav'),
-        document.querySelector('header'),
-        document.querySelector('[role="navigation"]'),
-        document.querySelector('.navbar'),
-        document.querySelector('.nav'),
-        document.querySelector('#navbar'),
-        // Add any specific class your navbar might use
-        document.querySelector('.fixed.top-0'), // Common for fixed navbars
-        document.querySelector('.sticky.top-0'), // Common for sticky navbars
+      const selectors = [
+        'nav', 'header', '[role="navigation"]', '.navbar', '.nav', 
+        '#navbar', '.fixed.top-0', '.sticky.top-0',
       ]
-      
-      const navbar = possibleNavbars.find(el => el !== null)
-      if (navbar) {
-        setNavbarHeight(navbar.getBoundingClientRect().height)
-      } else {
-        // Default fallback height if navbar not found
-        setNavbarHeight(80)
-      }
+      const navbar = selectors.map(s => document.querySelector(s)).find(el => el !== null)
+      const height = navbar ? navbar.getBoundingClientRect().height : 80
+      setNavbarHeight(height)
+      setIsReady(true)
+      document.documentElement.style.setProperty('--navbar-height', `${height}px`)
     }
 
     findNavbar()
+    const observer = new ResizeObserver(findNavbar)
+    const navbar = document.querySelector('nav') || document.querySelector('header')
+    if (navbar) observer.observe(navbar)
     
-    // Resize observer to handle navbar height changes
-    const resizeObserver = new ResizeObserver(() => {
+    const mutationObserver = new MutationObserver(() => {
+      if (!document.querySelector('nav') && !document.querySelector('header')) return
       findNavbar()
     })
-
-    const navbar = document.querySelector('nav') || document.querySelector('header')
-    if (navbar) {
-      resizeObserver.observe(navbar)
-    }
-
-    window.addEventListener('resize', findNavbar)
+    mutationObserver.observe(document.body, { childList: true, subtree: true })
     
+    window.addEventListener('resize', findNavbar)
     return () => {
-      resizeObserver.disconnect()
+      observer.disconnect()
+      mutationObserver.disconnect()
       window.removeEventListener('resize', findNavbar)
     }
   }, [])
 
-  // Preload images
-  useEffect(() => {
-    let loadedCount = 0
-    storyChapters.forEach((chapter) => {
-      const img = new Image()
-      img.src = chapter.img
-      img.onload = () => {
-        loadedCount++
-        if (loadedCount === storyChapters.length) {
-          setImagesLoaded(true)
-        }
-      }
-    })
-  }, [])
+  return { navbarHeight, isReady }
+}
 
-  // Always call useScroll (can't conditionally call hooks)
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false)
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    const update = () => setMatches(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [query])
+  return matches
+}
+
+// --- Components ---
+
+function NavbarSpacer() {
+  return <div className="w-full bg-background" style={{ height: 'var(--navbar-height, 80px)' }} />
+}
+
+function ProgressIndicators({ count, activeIndex }: { count: number; activeIndex: number }) {
+  return (
+    <div className="flex justify-between items-center mb-6 gap-2">
+      {Array.from({ length: count }).map((_, idx) => (
+        <div key={idx} className="flex-1">
+          <div className="h-[2px] bg-foreground/20 rounded-full overflow-hidden">
+            <motion.div 
+              className="h-full bg-foreground"
+              initial={false}
+              animate={{ width: idx <= activeIndex ? '100%' : '0%' }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ScrollHint({ isLast }: { isLast: boolean }) {
+  return (
+    <motion.div 
+      className="flex justify-center mt-6"
+      animate={{ y: [0, 5, 0] }}
+      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-foreground/40 text-xs tracking-widest uppercase">
+          {isLast ? 'Finish' : 'Scroll'}
+        </span>
+        <div className="w-5 h-8 border border-foreground/30 rounded-full flex justify-center">
+          <motion.div 
+            className="w-1 h-2 bg-foreground/60 rounded-full mt-1"
+            animate={{ y: [0, 3, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+          />
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// --- Mobile Version ---
+
+function MobileStory({ navbarHeight }: { navbarHeight: number }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+  
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   })
 
-  const containerScale = useTransform(scrollYProgress, [0, 0.9, 1], [1, 1, 0.95])
-
-  // Mobile scroll handler
-  useEffect(() => {
-    if (!isMobile || !containerRef.current) return
-
-    const handleScroll = () => {
-      const element = containerRef.current
-      if (!element) return
-
-      const rect = element.getBoundingClientRect()
-      const scrollTop = window.scrollY - rect.top
-      const sectionHeight = element.offsetHeight
-      const viewportHeight = window.innerHeight
-      
-      // Calculate progress through the section
-      const scrollProgress = Math.min(1, Math.max(0, scrollTop / (sectionHeight - viewportHeight)))
-      
-      const newIndex = Math.min(
-        storyChapters.length - 1,
-        Math.floor(scrollProgress * storyChapters.length)
-      )
-      setActiveIndex(newIndex)
-    }
-
-    window.addEventListener('scroll', handleScroll)
-    handleScroll() // Call once to set initial index
-    
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [isMobile])
-
-  // Mobile Version - Completely different experience
-  if (isMobile) {
-    return (
-      <>
-        {/* Invisible spacer that matches theme */}
-        <div style={{ height: navbarHeight }} className="w-full bg-background" />
-        <section ref={containerRef} className="relative bg-background">
-          {/* Hero Image at top */}
-          <div className="h-screen sticky top-0 flex items-end justify-center pb-20 overflow-hidden" style={{ top: navbarHeight }}>
-            <div className="absolute inset-0 z-0">
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={activeIndex}
-                  src={storyChapters[activeIndex].img}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: imagesLoaded ? 1 : 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="w-full h-full object-cover"
-                  alt="Story background"
-                  loading="eager"
-                />
-              </AnimatePresence>
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-            </div>
-
-            {/* Progress indicators */}
-            <div className="relative z-10 w-full px-6 mb-8">
-              <div className="flex justify-between items-center mb-6 gap-1">
-                {storyChapters.map((_, idx) => (
-                  <div key={idx} className="flex-1">
-                    <motion.div 
-                      className="h-[2px] bg-foreground/20 rounded-full overflow-hidden"
-                      initial={false}
-                    >
-                      <motion.div 
-                        className="h-full bg-foreground"
-                        animate={{ 
-                          width: idx === activeIndex ? '100%' : 
-                                 idx < activeIndex ? '100%' : '0%' 
-                        }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </motion.div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Active card */}
-              <motion.div
-                key={activeIndex}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: imagesLoaded ? 1 : 0, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4, ease: [0.19, 1, 0.22, 1] }}
-                className="bg-background/95 backdrop-blur-xl p-8 rounded-sm border-l-2 border-foreground shadow-2xl"
-              >
-                <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 block mb-3">
-                  {storyChapters[activeIndex].tag}
-                </span>
-                <h3 className="text-3xl font-serif italic mb-4 leading-tight text-foreground">
-                  {storyChapters[activeIndex].title}
-                </h3>
-                <p className="text-base font-light leading-relaxed text-foreground/80">
-                  {storyChapters[activeIndex].description}
-                </p>
-              </motion.div>
-
-              {/* Scroll indicator */}
-              <motion.div 
-                className="flex justify-center mt-8"
-                animate={{ y: [0, 5, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-foreground/40 text-xs tracking-widest">
-                    {activeIndex === storyChapters.length - 1 ? 'FINISH' : 'CONTINUE'}
-                  </span>
-                  <div className="w-5 h-10 border border-foreground/30 rounded-full flex justify-center">
-                    <motion.div 
-                      className="w-1 h-2 bg-foreground/60 rounded-full mt-2"
-                      animate={{ y: [0, 4, 0] }}
-                      transition={{ repeat: Infinity, duration: 1.5 }}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Spacer for scroll height - ensures we have enough scroll to cycle through all chapters */}
-          <div style={{ height: `${(storyChapters.length) * 100}vh` }} />
-        </section>
-      </>
+  // Map scroll progress to chapter index (only during the main scroll portion, not the extra buffer)
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    // Only count progress during the first (chapters/chapters+buffer) portion
+    const effectiveProgress = Math.min(1, latest / (STORY_CHAPTERS.length / (STORY_CHAPTERS.length + 1)))
+    const newIndex = Math.min(
+      STORY_CHAPTERS.length - 1,
+      Math.floor(effectiveProgress * STORY_CHAPTERS.length)
     )
-  }
+    setActiveIndex(prev => prev !== newIndex ? newIndex : prev)
+  })
 
-  // Desktop Version - Keep original with navbar offset
+  const currentChapter = STORY_CHAPTERS[activeIndex]
+
   return (
     <>
-      {/* Invisible spacer that matches theme */}
-      <div style={{ height: navbarHeight }} className="w-full bg-background" />
-      <section ref={containerRef} className="relative h-[400vh] bg-background">
-        <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden" style={{ top: navbarHeight }}>
+      <NavbarSpacer />
+      <section 
+        ref={containerRef} 
+        className="relative bg-background" 
+        style={{ height: `${(STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS) * MOBILE_MULTIPLIER}vh` }}
+      >
+        <div 
+          className="h-screen sticky flex items-end justify-center pb-20 overflow-hidden z-10" 
+          style={{ top: navbarHeight }}
+        >
+          <div className="absolute inset-0 z-0 bg-neutral-900">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIndex}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                className="w-full h-full"
+              >
+                <img
+                  src={currentChapter.img}
+                  className="w-full h-full object-cover"
+                  alt={currentChapter.title}
+                  loading="eager"
+                />
+              </motion.div>
+            </AnimatePresence>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          </div>
+
+          <div className="relative z-10 w-full px-6 mb-8">
+            <ProgressIndicators count={STORY_CHAPTERS.length} activeIndex={activeIndex} />
+            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIndex}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+                className="bg-background/95 backdrop-blur-xl p-6 rounded-sm border-l-2 border-foreground shadow-2xl"
+              >
+                <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 block mb-2">
+                  {currentChapter.tag}
+                </span>
+                <h3 className="text-2xl font-serif italic mb-3 leading-tight text-foreground">
+                  {currentChapter.title}
+                </h3>
+                <p className="text-sm font-light leading-relaxed text-foreground/80">
+                  {currentChapter.description}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+
+            <ScrollHint isLast={activeIndex === STORY_CHAPTERS.length - 1} />
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
+
+// --- Desktop Version ---
+
+function DesktopStory({ navbarHeight }: { navbarHeight: number }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  })
+
+  // Create image progress that completes during the main scroll portion (not the extra buffer)
+  // This ensures all 3 images cycle through during the first ~78% of scroll, then hold on last image
+  const imageProgress = useTransform(
+    scrollYProgress,
+    [0, STORY_CHAPTERS.length / (STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS), 1],
+    [0, 1, 1]
+  )
+
+  // For tracking which text card is active
+  const [activeIndex, setActiveIndex] = useState(0)
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    const effectiveProgress = Math.min(1, latest / (STORY_CHAPTERS.length / (STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS)))
+    const newIndex = Math.min(
+      STORY_CHAPTERS.length - 1,
+      Math.floor(effectiveProgress * STORY_CHAPTERS.length)
+    )
+    setActiveIndex(prev => prev !== newIndex ? newIndex : prev)
+  })
+
+  const containerScale = useTransform(scrollYProgress, [0, 0.9, 1], [1, 1, 0.95])
+
+  return (
+    <>
+      <NavbarSpacer />
+      <section 
+        ref={containerRef} 
+        className="relative bg-background" 
+        style={{ height: `${(STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS) * DESKTOP_MULTIPLIER}vh` }}
+      >
+        {/* Sticky Image Container */}
+        <div 
+          className="sticky top-0 w-full flex items-center justify-center overflow-hidden z-10" 
+          style={{ 
+            top: 'var(--navbar-height, 80px)', 
+            height: 'calc(100vh - var(--navbar-height, 80px))' 
+          }}
+        >
           <motion.div 
             style={{ scale: containerScale }} 
-            className="relative w-full h-full flex items-center justify-center"
+            className="relative w-full flex items-center justify-center py-16"
           >
-            <div className="relative w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] aspect-[3/4] sm:aspect-[4/3] md:aspect-[16/9] shadow-2xl bg-neutral-900 overflow-hidden rounded-sm">
-              {storyChapters.map((chapter, i) => {
-                const segment = 1 / (storyChapters.length + 1)
-                const start = i * segment
-                const end = (i + 1) * segment
+            <div className="relative w-[90%] md:w-[80%] lg:w-[70%] xl:w-[60%] aspect-[16/9] shadow-2xl bg-neutral-900 overflow-hidden rounded-sm">
+              {STORY_CHAPTERS.map((chapter, i) => {
+                const segmentSize = 1 / STORY_CHAPTERS.length
+                const start = i * segmentSize
+                const end = (i + 1) * segmentSize
+                
+                // Crossfade: each image visible during its segment, fading at edges
+                const fadeRange = 0.08 // 8% overlap for fade
+                
+                let opacityRange: number[]
+                let opacityValues: number[]
+                
+                if (i === 0) {
+                  opacityRange = [0, start, end - fadeRange, end]
+                  opacityValues = [1, 1, 1, 0]
+                } else if (i === STORY_CHAPTERS.length - 1) {
+                  opacityRange = [start, start + fadeRange, end, 1]
+                  opacityValues = [0, 1, 1, 1]
+                } else {
+                  opacityRange = [start, start + fadeRange, end - fadeRange, end]
+                  opacityValues = [0, 1, 1, 0]
+                }
+                
+                const opacity = useTransform(imageProgress, opacityRange, opacityValues)
+                const scale = useTransform(
+                  imageProgress,
+                  opacityRange,
+                  i === 0 ? [1, 1, 1, 1.05] : i === STORY_CHAPTERS.length - 1 ? [1.05, 1, 1, 1] : [1.05, 1, 1, 1.05]
+                )
                 
                 return (
-                  <ChapterImage 
-                    key={`chapter-img-${i}`} 
-                    img={chapter.img} 
-                    progress={scrollYProgress} 
-                    range={[start, end]} 
-                  />
+                  <motion.div 
+                    key={i}
+                    style={{ opacity, scale }}
+                    className="absolute inset-0 w-full h-full"
+                  >
+                    <img
+                      src={chapter.img}
+                      className="w-full h-full object-cover object-center"
+                      alt=""
+                      loading="eager"
+                    />
+                  </motion.div>
                 )
               })}
               <div className="absolute inset-0 bg-black/20 pointer-events-none" />
@@ -265,14 +330,18 @@ export default function Story() {
           </motion.div>
         </div>
 
-        <div className="relative z-20">
-          {storyChapters.map((chapter, i) => (
-            <div key={`chapter-text-${i}`} className="h-screen flex items-center px-4 sm:px-6 md:px-24">
+        {/* Scrolling Text Cards */}
+        <div className="relative z-20 pointer-events-none">
+          {STORY_CHAPTERS.map((chapter, i) => (
+            <div key={i} className="h-screen flex items-center px-4 sm:px-6 md:px-24 pointer-events-auto">
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ margin: "-15% 0px -15% 0px", once: false }}
-                transition={{ duration: 1.2, ease: [0.19, 1, 0.22, 1] }}
+                viewport={{ 
+                  margin: i === STORY_CHAPTERS.length - 1 ? "-40% 0px 0px 0px" : "-10% 0px -10% 0px", 
+                  once: false 
+                }}
+                transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1], delay: 0.1 }}
                 className="w-full sm:max-w-lg md:max-w-xl bg-background/95 dark:bg-background/90 backdrop-blur-md p-6 sm:p-8 md:p-12 border-l-2 border-foreground shadow-2xl text-foreground"
               >
                 <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.3em] sm:tracking-[0.5em] text-foreground/60 dark:text-foreground/50 block mb-3 sm:mb-4">
@@ -287,47 +356,59 @@ export default function Story() {
               </motion.div>
             </div>
           ))}
-          <div className="h-screen pointer-events-none" />
         </div>
       </section>
     </>
   )
 }
 
-function ChapterImage({ img, progress, range }: { img: string; progress: any; range: [number, number] }) {
-  const opacity = useTransform(
-    progress, 
-    [
-      Math.max(0, range[0] - 0.1), 
-      range[0], 
-      range[1], 
-      Math.min(1, range[1] + 0.1)
-    ], 
-    [0, 1, 1, 0]
-  )
-  
-  const scale = useTransform(
-    progress,
-    [
-      Math.max(0, range[0] - 0.1),
-      range[0],
-      range[1],
-      Math.min(1, range[1] + 0.1)
-    ],
-    [1.1, 1, 1, 1.1]
-  )
-  
-  return (
-    <motion.div 
-      style={{ opacity, scale }}
-      className="absolute inset-0 w-full h-full"
-    >
-      <img
-        src={img}
-        className="w-full h-full object-cover object-center grayscale-[20%] hover:grayscale-0 transition-all duration-1000"
-        alt="Story"
-        loading="eager"
-      />
-    </motion.div>
+// --- Main Export ---
+
+export default function Story() {
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const { navbarHeight, isReady } = useNavbarHeight()
+
+  if (!isReady) {
+    return <div className="h-screen bg-background" />
+  }
+
+  // Simple fallback for reduced motion
+  if (prefersReducedMotion) {
+    return (
+      <>
+        <NavbarSpacer />
+        <section className="relative bg-background py-20">
+          <div className="max-w-6xl mx-auto px-6 space-y-32">
+            {STORY_CHAPTERS.map((chapter, i) => (
+              <div key={i} className="grid md:grid-cols-2 gap-12 items-center">
+                <div className={i % 2 === 1 ? 'md:order-2' : ''}>
+                  <div className="aspect-[16/9] bg-neutral-900 rounded-sm overflow-hidden">
+                    <img src={chapter.img} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                </div>
+                <div className={i % 2 === 1 ? 'md:order-1' : ''}>
+                  <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/60 block mb-4">
+                    {chapter.tag}
+                  </span>
+                  <h3 className="text-4xl md:text-5xl font-serif italic mb-6 leading-tight">
+                    {chapter.title}
+                  </h3>
+                  <p className="text-lg font-light leading-relaxed text-foreground/80">
+                    {chapter.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </>
+    )
+  }
+
+  return isMobile ? (
+    <MobileStory navbarHeight={navbarHeight} />
+  ) : (
+    <DesktopStory navbarHeight={navbarHeight} />
   )
 }
