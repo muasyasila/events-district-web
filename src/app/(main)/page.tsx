@@ -1,10 +1,13 @@
 import Hero from "@/components/sections/HeroTemp"
 import BrandStatement from "@/components/sections/BrandStatement"
-import Blog from "@/components/sections/Blog"
+// Replace this line:
+// import Blog from "@/components/sections/Blog"
+// With this:
+import Blog from "@/app/(main)/blog/BlogCarousel"
 import EpicTestimonials from "@/components/sections/testimonials"
 import LeadMagnet from '@/components/sections/LeadMagnet'
 
-import BackToTop from '../components/BackToTop'
+import BackToTop from '@/components/BackToTop'
 import { ServicesCodex } from '@/components/sections/ServicesCodex'
 import { SocialAtelier } from "@/components/sections/SocialAtelier";
 import { ContactAtelier } from "@/components/sections/ContactAtelier";

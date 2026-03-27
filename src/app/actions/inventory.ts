@@ -17,6 +17,8 @@ export interface InventoryItem {
   base_quantity: number
   primary_image_url: string | null
   image_alt_text: string | null
+  is_active: boolean
+  sort_order: number
 }
 
 export interface ScalingFactor {
@@ -34,7 +36,7 @@ export async function getScalingFactors(): Promise<ScalingFactor[]> {
     .order('pax', { ascending: true })
   
   if (error) {
-    console.error('Error fetching scaling factors:', error)
+    console.error('Error fetching scaling factors:', error.message)
     return []
   }
   
@@ -57,7 +59,7 @@ export async function getInventoryItems(
     .order('sort_order', { ascending: true })
   
   if (error) {
-    console.error('Error fetching inventory:', error)
+    console.error('Error fetching inventory:', error.message)
     return []
   }
   
@@ -75,7 +77,7 @@ export async function getAllInventoryForSetup(setup: SetupType): Promise<Record<
     .eq('is_active', true)
   
   if (error) {
-    console.error('Error fetching all inventory:', error)
+    console.error('Error fetching all inventory:', error.message)
     return { essential: [], signature: [], luxury: [] }
   }
   
@@ -99,7 +101,7 @@ export async function getCategoryNames(): Promise<Record<string, string>> {
     .order('sort_order', { ascending: true })
   
   if (error) {
-    console.error('Error fetching categories:', error)
+    console.error('Error fetching categories:', error.message)
     return {}
   }
   

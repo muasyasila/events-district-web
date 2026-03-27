@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus, ChevronDown, ChevronUp, Crown } from 'lucide-react'
 import { InventoryItem, SetupType, TierType } from '@/app/actions/inventory'
@@ -35,6 +35,9 @@ export default function QuoteEngineClient({
   const [setup, setSetup] = useState<SetupType>(initialSetup)
   const [activeTiers, setActiveTiers] = useState<Set<TierType>>(new Set())
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
+  const [hoveredImage, setHoveredImage] = useState<string | null>(null)
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 })
+  const imageRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Get the current multiplier based on pax
   const multiplier = useMemo(() => getMultiplier(pax, scalingFactors), [pax, scalingFactors])
@@ -88,15 +91,57 @@ export default function QuoteEngineClient({
     const groupedItems = currentInventory[tier]
     if (!groupedItems) return 0
     
-    // Flatten all items from all categories
     const allItems = Object.values(groupedItems).flat()
-    
     return calculateTierTotal(allItems, pax, multiplier)
   }
 
   // Get the grouped items for a tier
   const getGroupedItems = (tier: TierType) => {
     return currentInventory[tier] || {}
+  }
+
+  // Helper to get scaling rule description
+  const getScalingDescription = (rule: string): string => {
+    switch(rule) {
+      case 'per_person': return 'Scales with guest count'
+      case 'per_table': return 'Scales with number of tables'
+      case 'per_car': return 'Scales with number of cars'
+      case 'per_maid': return 'Scales with bridal party size'
+      case 'fixed': return 'Fixed quantity per setup'
+      default: return 'Quantity may vary based on setup'
+    }
+  }
+
+  // Handle image hover to calculate position
+  const handleImageHover = (itemId: string) => {
+    const imageElement = imageRefs.current.get(itemId)
+    if (imageElement) {
+      const rect = imageElement.getBoundingClientRect()
+      const windowHeight = window.innerHeight
+      const windowWidth = window.innerWidth
+      const popupWidth = 288
+      const popupHeight = 380
+      
+      let top = rect.bottom + 10
+      let left = rect.right + 10
+      
+      // Check if popup would go off screen to the right
+      if (left + popupWidth > windowWidth) {
+        left = rect.left - popupWidth - 10
+      }
+      
+      // Check if popup would go off screen at the bottom
+      if (top + popupHeight > windowHeight) {
+        top = rect.top - popupHeight - 10
+      }
+      
+      // Ensure popup stays within viewport bounds
+      top = Math.max(10, Math.min(top, windowHeight - popupHeight - 10))
+      left = Math.max(10, Math.min(left, windowWidth - popupWidth - 10))
+      
+      setPopupPosition({ top, left })
+    }
+    setHoveredImage(itemId)
   }
 
   return (
@@ -181,7 +226,6 @@ export default function QuoteEngineClient({
           const tierDisplayName = getTierDisplayName(tier)
           const tierIcon = getTierIcon(tier)
           
-          // If no items for this tier, don't render
           if (Object.keys(groupedItems).length === 0) return null
           
           return (
@@ -237,7 +281,6 @@ export default function QuoteEngineClient({
                   >
                     <div className="px-8 pb-8 space-y-6">
                       {Object.entries(groupedItems).map(([cat, items]) => {
-                        // Calculate category total
                         const categoryTotal = items.reduce((sum, item) => 
                           sum + getItemTotalCost(item, pax, multiplier), 0
                         )
@@ -278,7 +321,7 @@ export default function QuoteEngineClient({
                                   transition={{ duration: 0.2 }}
                                   className="overflow-hidden mt-3 space-y-2"
                                 >
-                                  {items.map((item, idx) => {
+                                  {items.map((item) => {
                                     const scaledQuantity = getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name)
                                     const itemTotal = getItemTotalCost(item, pax, multiplier)
                                     const unitPrice = item.base_cost / item.base_quantity
@@ -288,26 +331,50 @@ export default function QuoteEngineClient({
                                     return (
                                       <div 
                                         key={item.id} 
-                                        className="flex justify-between items-center pl-4 py-2 border-l-2 border-current/20"
+                                        className="flex justify-between items-center pl-4 py-2 border-l-2 border-current/20 relative"
                                       >
                                         <div className="flex items-start gap-3 flex-1">
-                                          <div className="min-w-[60px]">
-                                            <span className="text-[10px] font-mono font-bold">
-                                              {scaledQuantity}×
-                                            </span>
-                                            {showUnitPrice && scaledQuantity !== item.base_quantity && pax !== 100 && (
-                                              <p className="text-[7px] opacity-60">
-                                                base {item.base_quantity}
-                                              </p>
-                                            )}
-                                          </div>
+                                          {/* Image Preview with Hover Popup */}
+                                          {item.primary_image_url ? (
+                                            <div 
+                                              ref={(el) => {
+                                                if (el) imageRefs.current.set(item.id, el)
+                                              }}
+                                              className="relative"
+                                              onMouseEnter={() => handleImageHover(item.id)}
+                                              onMouseLeave={() => setHoveredImage(null)}
+                                            >
+                                              <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border border-current/20 cursor-pointer hover:opacity-90 transition-opacity">
+                                                <img 
+                                                  src={item.primary_image_url} 
+                                                  alt={item.name}
+                                                  className="w-full h-full object-cover"
+                                                />
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border border-current/20 bg-current/5 flex items-center justify-center">
+                                              <span className="text-[8px] opacity-40">No img</span>
+                                            </div>
+                                          )}
+                                          
                                           <div className="flex-1">
-                                            <p className="text-[10px] leading-tight font-medium">
-                                              {item.name}
-                                            </p>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="text-[10px] font-mono font-bold">
+                                                {scaledQuantity}×
+                                              </span>
+                                              <p className="text-[10px] leading-tight font-medium">
+                                                {item.name}
+                                              </p>
+                                            </div>
                                             {showUnitPrice && (
                                               <p className="text-[7px] opacity-60 mt-0.5">
                                                 {scaledUnitPrice.toLocaleString()} each
+                                              </p>
+                                            )}
+                                            {!item.primary_image_url && (
+                                              <p className="text-[7px] opacity-40 mt-0.5">
+                                                No image available
                                               </p>
                                             )}
                                           </div>
@@ -353,6 +420,52 @@ export default function QuoteEngineClient({
           )
         })}
       </div>
+
+      {/* Global Popup - Rendered outside all containers */}
+      {hoveredImage && (() => {
+        const item = Object.values(currentInventory).flatMap(tier => 
+          Object.values(tier).flat()
+        ).find(i => i.id === hoveredImage)
+        
+        if (!item || !item.primary_image_url) return null
+        
+        const scaledQuantity = getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name)
+        const unitPrice = item.base_cost / item.base_quantity
+        const scaledUnitPrice = Math.round(unitPrice * multiplier)
+        
+        return (
+          <div
+            className="fixed z-[10000] w-72 bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-200"
+            style={{
+              top: `${popupPosition.top}px`,
+              left: `${popupPosition.left}px`,
+            }}
+          >
+            <img 
+              src={item.primary_image_url} 
+              alt={item.name}
+              className="w-full h-52 object-cover"
+            />
+            <div className="p-4">
+              <p className="text-sm font-bold text-gray-800">{item.name}</p>
+              <p className="text-[10px] text-gray-500 mt-2">
+                ✓ {getScalingDescription(item.scaling_rule)}
+              </p>
+              <p className="text-[11px] font-mono text-gray-600 mt-3 pt-2 border-t border-gray-100">
+                {scaledUnitPrice.toLocaleString()} KES per unit
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Quantity: {scaledQuantity} units
+              </p>
+              {item.base_quantity > 1 && (
+                <p className="text-[9px] text-gray-400">
+                  Base pack: {item.base_quantity} units
+                </p>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

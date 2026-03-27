@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, Edit2, Save, X, Trash2, ImageIcon } from 'lucide-react'
+import { Plus, Edit2, Save, X, Trash2, Upload } from 'lucide-react'
+import ImageUpload from '@/components/admin/ImageUpload'
 
 type SetupType = 'theater' | 'restaurant'
 type TierType = 'essential' | 'signature' | 'luxury'
@@ -38,11 +39,17 @@ export default function InventoryManagement() {
     base_quantity: 1,
     is_active: true
   })
+  const [newItemImage, setNewItemImage] = useState<File | null>(null)
+  const [newItemImagePreview, setNewItemImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   
   const supabase = createClient()
 
   const fetchItems = async () => {
     setLoading(true)
+    setError(null)
     let query = supabase
       .from('inventory_items')
       .select('*')
@@ -58,6 +65,7 @@ export default function InventoryManagement() {
     
     if (error) {
       console.error('Error fetching items:', error)
+      setError('Failed to fetch items: ' + error.message)
     } else {
       setItems(data || [])
     }
@@ -81,17 +89,22 @@ export default function InventoryManagement() {
   const startEdit = (item: InventoryItem) => {
     setEditingId(item.id)
     setEditForm(item)
+    setError(null)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setEditForm({})
+    setError(null)
   }
 
   const saveEdit = async () => {
     if (!editingId || !editForm) return
     
-    const { error } = await supabase
+    setError(null)
+    setSuccess(null)
+    
+    const { data, error } = await supabase
       .from('inventory_items')
       .update({
         name: editForm.name,
@@ -100,25 +113,35 @@ export default function InventoryManagement() {
         scaling_rule: editForm.scaling_rule,
         base_quantity: editForm.base_quantity,
         is_active: editForm.is_active,
-        sort_order: editForm.sort_order
+        sort_order: editForm.sort_order,
+        updated_at: new Date().toISOString()
       })
       .eq('id', editingId)
+      .select()
     
     if (error) {
-      alert('Error saving: ' + error.message)
+      setError('Save failed: ' + error.message)
     } else {
+      setSuccess('Item updated successfully!')
       setEditingId(null)
+      setEditForm({})
       fetchItems()
+      setTimeout(() => setSuccess(null), 3000)
     }
   }
 
   const addItem = async () => {
     if (!newItem.name || !newItem.category_code || !newItem.base_cost) {
-      alert('Please fill in name, category, and price')
+      setError('Please fill in name, category, and price')
       return
     }
     
-    const { error } = await supabase
+    setError(null)
+    setSuccess(null)
+    setUploadingImage(true)
+    
+    // First, insert the item
+    const { data, error } = await supabase
       .from('inventory_items')
       .insert([{
         name: newItem.name,
@@ -131,34 +154,98 @@ export default function InventoryManagement() {
         is_active: newItem.is_active !== false,
         sort_order: items.length + 1
       }])
+      .select()
     
     if (error) {
-      alert('Error adding item: ' + error.message)
-    } else {
-      setShowAddForm(false)
-      setNewItem({
-        setup_type: 'theater',
-        tier: 'essential',
-        scaling_rule: 'fixed',
-        base_quantity: 1,
-        is_active: true
-      })
-      fetchItems()
+      setError('Add failed: ' + error.message)
+      setUploadingImage(false)
+      return
     }
+    
+    const newItemId = data[0].id
+    
+    // If there's an image, upload it
+    if (newItemImage) {
+      try {
+        const fileExt = newItemImage.name.split('.').pop()
+        const fileName = `${newItemId}-${Date.now()}.${fileExt}`
+        const filePath = `${fileName}`
+  
+        const { error: uploadError } = await supabase.storage
+          .from('inventory-images')
+          .upload(filePath, newItemImage)
+  
+        if (uploadError) throw uploadError
+  
+        const { data: { publicUrl } } = supabase.storage
+          .from('inventory-images')
+          .getPublicUrl(filePath)
+  
+        await supabase
+          .from('inventory_items')
+          .update({ primary_image_url: publicUrl })
+          .eq('id', newItemId)
+      } catch (err: any) {
+        console.error('Image upload error:', err)
+        // Don't fail the whole add if image upload fails
+      }
+    }
+    
+    setUploadingImage(false)
+    setSuccess('Item added successfully!')
+    setShowAddForm(false)
+    setNewItem({
+      setup_type: 'theater',
+      tier: 'essential',
+      scaling_rule: 'fixed',
+      base_quantity: 1,
+      is_active: true
+    })
+    setNewItemImage(null)
+    setNewItemImagePreview(null)
+    fetchItems()
+    setTimeout(() => setSuccess(null), 3000)
   }
 
   const deleteItem = async (id: string, name: string) => {
     if (confirm(`Delete "${name}"? This cannot be undone.`)) {
+      setError(null)
+      setSuccess(null)
+      
       const { error } = await supabase
         .from('inventory_items')
         .delete()
         .eq('id', id)
       
       if (error) {
-        alert('Error deleting: ' + error.message)
+        setError('Delete failed: ' + error.message)
       } else {
+        setSuccess('Item deleted successfully!')
         fetchItems()
+        setTimeout(() => setSuccess(null), 3000)
       }
+    }
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload an image file')
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image must be less than 5MB')
+        return
+      }
+      
+      setNewItemImage(file)
+      setNewItemImagePreview(URL.createObjectURL(file))
+      setError(null)
     }
   }
 
@@ -172,10 +259,21 @@ export default function InventoryManagement() {
 
   return (
     <div>
+      {error && (
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded">
+          {success}
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Inventory Management</h1>
-          <p className="text-sm text-white/40 mt-1">Edit prices, add items, manage your catalog</p>
+          <p className="text-sm text-white/40 mt-1">Edit prices, add items, upload images</p>
         </div>
         <button
           onClick={() => setShowAddForm(true)}
@@ -328,15 +426,57 @@ export default function InventoryManagement() {
                 </div>
               </div>
               
+              {/* Image Upload Section */}
+              <div>
+                <label className="block text-sm font-medium text-white/60 mb-1">Item Image (Optional)</label>
+                <div className="flex items-center gap-4">
+                  {newItemImagePreview ? (
+                    <div className="relative group">
+                      <img
+                        src={newItemImagePreview}
+                        alt="Preview"
+                        className="w-20 h-20 object-cover rounded border border-white/20"
+                      />
+                      <button
+                        onClick={() => {
+                          setNewItemImage(null)
+                          setNewItemImagePreview(null)
+                        }}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="w-20 h-20 border-2 border-dashed border-white/20 rounded cursor-pointer hover:border-white/40 transition flex flex-col items-center justify-center">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        className="hidden"
+                        onChange={handleImageSelect}
+                      />
+                      <Upload size={16} className="text-white/40" />
+                      <span className="text-[8px] text-white/40 mt-1">Upload</span>
+                    </label>
+                  )}
+                  <p className="text-xs text-white/40">JPG, PNG, or WebP (max 5MB)</p>
+                </div>
+              </div>
+              
               <div className="flex gap-2 pt-4">
                 <button
                   onClick={addItem}
-                  className="flex-1 bg-white text-black py-2 rounded font-medium hover:bg-white/90"
+                  disabled={uploadingImage}
+                  className="flex-1 bg-white text-black py-2 rounded font-medium hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add Item
+                  {uploadingImage ? 'Adding Item...' : 'Add Item'}
                 </button>
                 <button
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => {
+                    setShowAddForm(false)
+                    setNewItemImage(null)
+                    setNewItemImagePreview(null)
+                  }}
                   className="px-6 py-2 border border-white/20 rounded hover:bg-white/5 text-white"
                 >
                   Cancel
@@ -358,6 +498,7 @@ export default function InventoryManagement() {
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/10">
                 <tr>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-white/40">Image</th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-white/40">Item</th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-white/40">Category</th>
                   <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-white/40">Price (KES)</th>
@@ -371,6 +512,22 @@ export default function InventoryManagement() {
                   <tr key={item.id} className="hover:bg-white/5">
                     {editingId === item.id ? (
                       <>
+                        <td className="px-4 py-3">
+                          <ImageUpload
+                            itemId={item.id}
+                            currentImageUrl={item.primary_image_url}
+                            onImageUploaded={(url) => {
+                              setItems(items.map(i => 
+                                i.id === item.id ? { ...i, primary_image_url: url } : i
+                              ))
+                            }}
+                            onImageRemoved={() => {
+                              setItems(items.map(i => 
+                                i.id === item.id ? { ...i, primary_image_url: null } : i
+                              ))
+                            }}
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <input
                             type="text"
@@ -432,11 +589,24 @@ export default function InventoryManagement() {
                     ) : (
                       <>
                         <td className="px-4 py-3">
+                          <ImageUpload
+                            itemId={item.id}
+                            currentImageUrl={item.primary_image_url}
+                            onImageUploaded={(url) => {
+                              setItems(items.map(i => 
+                                i.id === item.id ? { ...i, primary_image_url: url } : i
+                              ))
+                            }}
+                            onImageRemoved={() => {
+                              setItems(items.map(i => 
+                                i.id === item.id ? { ...i, primary_image_url: null } : i
+                              ))
+                            }}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-white">{item.name}</span>
-                            {item.primary_image_url && (
-                              <ImageIcon size={12} className="text-white/40" />
-                            )}
                           </div>
                           <div className="text-xs text-white/40 mt-1">
                             {item.setup_type} / {item.tier}

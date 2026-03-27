@@ -3,138 +3,111 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
 
-const blogPosts = [
-  {
-    id: 1,
-    category: "Design Philosophy",
-    title: "The Architecture of Silence",
-    excerpt: "Exploring how negative space becomes the loudest statement in luxury interiors.",
-    content: "In the world of haute design, what you don't see is just as important as what you do. We delve into the paradox of emptiness and how it creates the most profound experiences. The silence between objects speaks volumes. When we strip away the unnecessary, we reveal the essential truth of a space.\n\nThis is the philosophy that guides our most celebrated work—creating moments of pause in a world of constant noise. Every corner, every shadow, every breath of space is intentional. We design not just for the eye, but for the soul.\n\nThe masters of minimalism understood this truth centuries ago. From Japanese wabi-sabi to Scandinavian hygge, the wisdom of less has always been the foundation of true luxury. In our practice, we honor this tradition while pushing it into contemporary relevance.\n\nConsider the lobby of a grand hotel. The temptation is to fill every inch with statement pieces, with art, with evidence of expense. But the spaces that truly take your breath away are those that dare to be quiet. A single sculpture. A shaft of light. The sound of water.\n\nThis is the architecture of silence. It requires confidence. It requires restraint. Most of all, it requires understanding that luxury is not about accumulation—it's about curation.",
-    image: "https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9?auto=format&fit=crop&q=80&w=1200&h=1600",
-    author: "Eleanor Vance",
-    date: "Mar 15, 2024",
-    readTime: "8 min read",
-    views: "2.4k",
-    gradient: "from-amber-900/20 via-transparent to-transparent"
-  },
-  {
-    id: 2,
-    category: "Craftsmanship",
-    title: "Hands That Speak",
-    excerpt: "A journey through the ateliers where master artisans breathe life into raw materials.",
-    content: "Every stroke, every carve tells a story. We spent time with the masters who refuse to let technology diminish the human touch in luxury creation. These artisans have spent decades perfecting their craft, passing knowledge from generation to generation.\n\nTheir hands bear the marks of their dedication—calluses and scars that map their journey. In their workshops, time moves differently. There are no shortcuts to excellence. A single piece of furniture might take six months to complete. A textile might require a year of preparation.\n\nWe visited a workshop in Tuscany where they have been making paper using the same methods since the 13th century. The master, now in his eighties, still wakes at dawn to check the humidity levels. 'The paper tells you when it's ready,' he said. 'You don't tell the paper.'\n\nThis patience, this willingness to submit to the material rather than dominate it, is what separates craft from manufacturing. It's what makes an object not just functional, but meaningful.\n\nIn an age of instant everything, these artisans remind us that some things cannot be rushed. That true luxury is, by definition, scarce. That the human hand, with all its imperfections, creates what machines never can: soul.",
-    image: "https://images.unsplash.com/photo-1581587357988-15c6757b347e?auto=format&fit=crop&q=80&w=1200&h=1600",
-    author: "James Croft",
-    date: "Mar 10, 2024",
-    readTime: "12 min read",
-    views: "1.8k",
-    gradient: "from-indigo-900/20 via-transparent to-transparent"
-  },
-  {
-    id: 3,
-    category: "Material Stories",
-    title: "The Alchemy of Stone",
-    excerpt: "How rare marbles and onyx are transformed into poetic statements of permanence.",
-    content: "Stone whispers ancient secrets. We uncover how modern techniques reveal the soul hidden within millennia-old geological formations. Each slab tells a story millions of years in the making.\n\nThe veining, the color variations, the imperfections—these are not flaws but fingerprints of the earth itself. Our role is to listen to what the stone wants to become. We recently worked with a rare pink onyx from Iran. The quarry had been closed for decades. When we finally sourced it, the stone sat in our studio for months.\n\nWe were waiting to understand it. The way light passed through it at different times of day. The way it changed temperature. Eventually, we knew: it wanted to be a bar. Not just any bar, but a gathering place where the stone itself would glow like a lantern at night.\n\nThis is the alchemy of stone. Not changing its nature, but revealing it. Not imposing our will, but partnering with geological time. The result is something that feels both ancient and utterly contemporary.\n\nStone teaches us about permanence in an impermanent world. It connects us to deep time. When you touch a marble surface, you are touching the memory of mountains.",
-    image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=1200&h=1600",
-    author: "Isabella Chen",
-    date: "Mar 5, 2024",
-    readTime: "10 min read",
-    views: "3.1k",
-    gradient: "from-emerald-900/20 via-transparent to-transparent"
-  },
-  {
-    id: 4,
-    category: "Light & Space",
-    title: "Painting With Shadows",
-    excerpt: "The forgotten art of manipulating light to sculpt emotion within walls.",
-    content: "Light is the ultimate luxury material. We explore how masterful illumination transforms spaces into living, breathing entities. The interplay of light and shadow creates drama, intimacy, and wonder.\n\nA room can transform from solemn to celebratory with the flick of a switch—or the movement of the sun. Understanding this dance is essential to creating spaces that feel alive. We spend weeks studying the path of sunlight through a space before making any decisions about artificial lighting.\n\nThe ancient architects understood this. The Pantheon in Rome, with its single oculus, creates a beam of light that moves like a sundial across the interior. Every moment of the day offers a different experience. This is architecture as timepiece.\n\nIn our work, we think about layers of light. Ambient light for navigation. Task light for function. Accent light for drama. And always, always, the possibility of darkness. Because without darkness, light has no meaning.\n\nThe best spaces are those that change throughout the day. Morning light for coffee. Afternoon light for reading. Evening light for cocktails. Night light for intimacy. This is how we paint with shadows.",
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200&h=1600",
-    author: "Marcus Webb",
-    date: "Feb 28, 2024",
-    readTime: "6 min read",
-    views: "2.9k",
-    gradient: "from-rose-900/20 via-transparent to-transparent"
-  },
-  {
-    id: 5,
-    category: "Sustainable Luxury",
-    title: "The Future of Elegance",
-    excerpt: "How eco-conscious design is redefining what it means to live beautifully.",
-    content: "Luxury and sustainability are no longer mutually exclusive. Discover how the industry's finest are embracing responsible craftsmanship. The most luxurious thing we can create is a future where beauty doesn't come at the earth's expense.\n\nFrom reclaimed materials to zero-waste production methods, the new wave of luxury is defined by its conscience. We recently completed a project using only salvaged materials. The wood came from a demolished barn. The stone from a closed quarry. The textiles from deadstock luxury fashion.\n\nThe result was not a compromise, but a revelation. The wood had a patina that cannot be manufactured. The stone had a history written in its veins. The textiles had a story that added depth to every surface.\n\nThis is the future of elegance. Not newness for its own sake, but meaning. Not consumption, but curation. The most sophisticated clients are no longer asking 'Is it new?' They are asking 'Is it meaningful?'\n\nSustainability is not a trend. It is a return to the way things were always done before the age of disposability. It is the ultimate luxury because it requires what all true luxury requires: time, thought, and care.",
-    image: "https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&q=80&w=1200&h=1600",
-    author: "Nina Patel",
-    date: "Feb 20, 2024",
-    readTime: "9 min read",
-    views: "1.5k",
-    gradient: "from-teal-900/20 via-transparent to-transparent"
-  }
-]
-
-const authors: Record<string, { bio: string; avatar: string; role: string }> = {
-  "Eleanor Vance": {
-    bio: "Design critic and curator with 15 years exploring the intersection of space and emotion. Former editor of Architectural Digest.",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200",
-    role: "Editor at Large"
-  },
-  "James Croft": {
-    bio: "Documentary photographer specializing in artisanal crafts. His work has been featured in Monocle and Kinfolk.",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200",
-    role: "Visual Storyteller"
-  },
-  "Isabella Chen": {
-    bio: "Materials specialist and geologist turned design consultant. She sources rare stones for the world's most exclusive projects.",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200",
-    role: "Material Curator"
-  },
-  "Marcus Webb": {
-    bio: "Lighting designer with a background in theater. He brings dramatic sensibilities to residential and commercial spaces.",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
-    role: "Light Architect"
-  },
-  "Nina Patel": {
-    bio: "Sustainability advocate and luxury brand consultant. She helps heritage houses transition to eco-conscious practices.",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-    role: "Sustainability Director"
-  }
+// Types for blog data from database
+interface BlogPostFromDB {
+  id: string
+  title: string
+  slug: string
+  category: string
+  excerpt: string
+  content: string
+  featured_image_url: string | null
+  author: string
+  read_time: string | null
+  views: number
+  gradient: string
+  status: string
+  published_at: string | null
+  tags: string[]
+  insights?: string[]
+  created_at: string
 }
 
-const categories = ["All", "Design Philosophy", "Craftsmanship", "Material Stories", "Light & Space", "Sustainable Luxury"]
+interface Author {
+  name: string
+  bio: string
+  avatar_url: string
+  role: string
+}
 
 export default function BlogCarousel() {
-  const [selectedPost, setSelectedPost] = useState<typeof blogPosts[0] | null>(null)
-  const [activeIndex, setActiveIndex] = useState(2)
+  const [blogPosts, setBlogPosts] = useState<BlogPostFromDB[]>([])
+  const [authors, setAuthors] = useState<Record<string, Author>>({})
+  const [categories, setCategories] = useState<string[]>(['All'])
+  const [loading, setLoading] = useState(true)
+  
+  const [selectedPost, setSelectedPost] = useState<BlogPostFromDB | null>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [searchQuery, setSearchQuery] = useState("")
-  const [savedPosts, setSavedPosts] = useState<number[]>([])
-  const [claps, setClaps] = useState<Record<number, number>>({})
+  const [savedPosts, setSavedPosts] = useState<string[]>([])
+  const [claps, setClaps] = useState<Record<string, number>>({})
   const [readingProgress, setReadingProgress] = useState(0)
-  const [timeLeft, setTimeLeft] = useState("")
   const [email, setEmail] = useState("")
   const [subscribed, setSubscribed] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
   
-  const totalSlides = blogPosts.length
   const AUTO_PLAY_DURATION = 5000
+  
+  // Fetch blog posts from database
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const posts = await getPublishedPosts()
+        setBlogPosts(posts)
+        
+        // Fetch authors
+        const authorsData = await getAuthors()
+        const authorsMap: Record<string, Author> = {}
+        authorsData.forEach(author => {
+          authorsMap[author.name] = {
+            name: author.name,
+            bio: author.bio,
+            avatar_url: author.avatar_url,
+            role: author.role
+          }
+        })
+        setAuthors(authorsMap)
+        
+        // Fetch categories
+        const categoriesData = await getBlogCategories()
+        const categoryNames = ['All', ...categoriesData.map(c => c.name)]
+        setCategories(categoryNames)
+        
+        // Set initial active index to middle of carousel
+        if (posts.length > 0) {
+          setActiveIndex(Math.floor(posts.length / 2))
+        }
+      } catch (error) {
+        console.error('Error fetching blog data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
   
   // Load saved posts from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('savedPosts')
+    const saved = localStorage.getItem('blogSavedPosts')
     if (saved) setSavedPosts(JSON.parse(saved))
-    const savedClaps = localStorage.getItem('claps')
+    const savedClaps = localStorage.getItem('blogClaps')
     if (savedClaps) setClaps(JSON.parse(savedClaps))
   }, [])
 
   // Save to localStorage
   useEffect(() => {
-    localStorage.setItem('savedPosts', JSON.stringify(savedPosts))
+    localStorage.setItem('blogSavedPosts', JSON.stringify(savedPosts))
   }, [savedPosts])
   
   useEffect(() => {
-    localStorage.setItem('claps', JSON.stringify(claps))
+    localStorage.setItem('blogClaps', JSON.stringify(claps))
   }, [claps])
 
   // Dynamic Reading Time Estimator
@@ -142,8 +115,8 @@ export default function BlogCarousel() {
   
   useEffect(() => {
     if (selectedPost) {
-      const words = selectedPost.content.split(/\s+/).length
-      const minutes = Math.ceil(words / 200) // avg reading speed
+      const words = selectedPost.content.replace(/<[^>]*>/g, '').split(/\s+/).length
+      const minutes = Math.ceil(words / 200)
       setActualReadTime(`${minutes} min read`)
     }
   }, [selectedPost])
@@ -157,7 +130,9 @@ export default function BlogCarousel() {
         window.speechSynthesis.cancel()
         setIsSpeaking(false)
       } else {
-        const utterance = new SpeechSynthesisUtterance(selectedPost.content)
+        // Strip HTML tags for speech
+        const plainText = selectedPost.content.replace(/<[^>]*>/g, '')
+        const utterance = new SpeechSynthesisUtterance(plainText)
         utterance.rate = 0.9
         utterance.onend = () => setIsSpeaking(false)
         window.speechSynthesis.speak(utterance)
@@ -176,7 +151,6 @@ export default function BlogCarousel() {
 
   const getCarouselConfig = () => {
     const width = typeof window !== 'undefined' ? window.innerWidth : 1200
-    const height = typeof window !== 'undefined' ? window.innerHeight : 800
     const isMobile = width < 768
     const isTablet = width < 1024
     
@@ -192,7 +166,6 @@ export default function BlogCarousel() {
       radiusY,
       cardWidth,
       cardHeight,
-      viewportHeight: height,
       isMobile,
       isTablet
     }
@@ -217,15 +190,15 @@ export default function BlogCarousel() {
   })
 
   // Calculate layout based on filtered posts count
-  const getFilteredCardStyle = (index: number, totalFiltered: number) => {
+  const getFilteredCardStyle = (index: number, totalFiltered: number, currentActiveIndex: number) => {
     const { radiusX, radiusY, cardWidth, isMobile } = config
     
-    // If only 1 post, center it
+    if (totalFiltered === 0) return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
+    
     if (totalFiltered === 1) {
       return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
     }
     
-    // If 2 posts, side by side
     if (totalFiltered === 2) {
       const offset = index === 0 ? -1 : 1
       const x = offset * (cardWidth * 0.7)
@@ -240,9 +213,7 @@ export default function BlogCarousel() {
       }
     }
     
-    // If 3+ posts, use normal carousel with middle one active
-    const activeFilteredIndex = filteredPosts.findIndex(p => blogPosts.indexOf(p) === activeIndex)
-    let offset = index - activeFilteredIndex
+    let offset = index - currentActiveIndex
     
     if (offset > totalFiltered / 2) offset -= totalFiltered
     if (offset < -totalFiltered / 2) offset += totalFiltered
@@ -260,13 +231,13 @@ export default function BlogCarousel() {
 
   const handleNext = useCallback(() => {
     if (filteredPosts.length <= 2) return
-    setActiveIndex((prev) => (prev + 1) % totalSlides)
-  }, [totalSlides, filteredPosts.length])
+    setActiveIndex((prev) => (prev + 1) % filteredPosts.length)
+  }, [filteredPosts.length])
 
   const handlePrev = useCallback(() => {
     if (filteredPosts.length <= 2) return
-    setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides)
-  }, [totalSlides, filteredPosts.length])
+    setActiveIndex((prev) => (prev - 1 + filteredPosts.length) % filteredPosts.length)
+  }, [filteredPosts.length])
 
   useEffect(() => {
     if (!isAutoPlaying || searchQuery || selectedCategory !== "All" || filteredPosts.length <= 2) return
@@ -297,7 +268,6 @@ export default function BlogCarousel() {
   useEffect(() => {
     if (!selectedPost) {
       setReadingProgress(0)
-      setTimeLeft("")
       return
     }
 
@@ -306,10 +276,6 @@ export default function BlogCarousel() {
       const docHeight = document.documentElement.scrollHeight - window.innerHeight
       const progress = (scrollTop / docHeight) * 100
       setReadingProgress(Math.min(100, Math.max(0, progress)))
-      
-      const totalMinutes = parseInt(selectedPost.readTime)
-      const remaining = Math.ceil(totalMinutes * (1 - progress / 100))
-      setTimeLeft(`${remaining} min left`)
     }
 
     window.addEventListener('scroll', handleScroll)
@@ -317,7 +283,7 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [selectedPost])
 
-  const toggleSave = (postId: number, e?: React.MouseEvent) => {
+  const toggleSave = (postId: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
     setSavedPosts(prev => 
       prev.includes(postId) 
@@ -326,7 +292,7 @@ export default function BlogCarousel() {
     )
   }
 
-  const handleClap = (postId: number, e?: React.MouseEvent) => {
+  const handleClap = (postId: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
     setClaps(prev => ({
       ...prev,
@@ -334,12 +300,12 @@ export default function BlogCarousel() {
     }))
   }
 
-  const sharePost = async (post: typeof blogPosts[0], e?: React.MouseEvent) => {
+  const sharePost = async (post: BlogPostFromDB, e?: React.MouseEvent) => {
     e?.stopPropagation()
     const shareData = {
       title: post.title,
       text: post.excerpt,
-      url: `${typeof window !== 'undefined' ? window.location.href : ''}#blog-${post.id}`
+      url: `${typeof window !== 'undefined' ? window.location.origin : ''}/blog/${post.slug}`
     }
     
     if (navigator.share) {
@@ -354,7 +320,7 @@ export default function BlogCarousel() {
     }
   }
 
-  const getRelatedPosts = (currentPost: typeof blogPosts[0]) => {
+  const getRelatedPosts = (currentPost: BlogPostFromDB) => {
     return blogPosts
       .filter(p => p.category === currentPost.category && p.id !== currentPost.id)
       .slice(0, 2)
@@ -370,20 +336,88 @@ export default function BlogCarousel() {
   }
 
   // Click any card to bring to center and open
-  const handleCardClick = (post: typeof blogPosts[0], isActive: boolean) => {
+  const handleCardClick = (post: BlogPostFromDB, isActive: boolean, index: number) => {
     if (isActive) {
       setSelectedPost(post)
     } else {
-      const postIndex = blogPosts.indexOf(post)
-      setActiveIndex(postIndex)
-      // Small delay then open
+      setActiveIndex(index)
       setTimeout(() => setSelectedPost(post), 400)
     }
   }
 
-  const currentPost = blogPosts[activeIndex]
+  // Function to get key insights - prioritize stored insights, fallback to auto-generated
+  const getKeyInsights = (post: BlogPostFromDB): string[] => {
+    // If the post has stored insights, use them
+    if (post.insights && post.insights.length > 0) {
+      return post.insights;
+    }
+    
+    // Otherwise auto-generate from content (strip HTML first)
+    const plainText = post.content.replace(/<[^>]*>/g, '');
+    const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 40 && s.trim().length < 200);
+    
+    if (sentences.length >= 3) {
+      return sentences.slice(0, 3).map(s => s.trim());
+    }
+    
+    // Fallback insights based on category
+    const fallbackInsights: Record<string, string[]> = {
+      "Design Philosophy": [
+        "Understanding the philosophy behind minimalist luxury",
+        "How negative space creates more impact than clutter",
+        "The psychology of intentional design choices"
+      ],
+      "Craftsmanship": [
+        "The value of handmade over mass-produced",
+        "Why craftsmanship takes time and patience",
+        "How artisans preserve traditional techniques"
+      ],
+      "Material Stories": [
+        "The history behind rare and precious materials",
+        "How to select materials that tell a story",
+        "Sustainable sourcing in luxury design"
+      ],
+      "Light & Space": [
+        "The dramatic effect of strategic lighting",
+        "How shadows create mood and atmosphere",
+        "Working with natural light for optimal impact"
+      ],
+      "Sustainable Luxury": [
+        "Eco-conscious choices that don't compromise elegance",
+        "The future of sustainable luxury materials",
+        "How to create beauty with environmental responsibility"
+      ]
+    };
+    
+    return fallbackInsights[post.category] || [
+      `Understanding the philosophy behind ${post.category.toLowerCase()}`,
+      "Practical applications for your own spaces",
+      "Expert perspectives from industry leaders"
+    ];
+  };
+
+  const currentPost = filteredPosts[activeIndex]
   const isSaved = currentPost ? savedPosts.includes(currentPost.id) : false
   const currentClaps = currentPost ? claps[currentPost.id] || 0 : 0
+
+  if (loading) {
+    return (
+      <section className="relative h-screen w-full bg-background overflow-hidden flex items-center justify-center">
+        <div className="text-foreground/40">Loading stories...</div>
+      </section>
+    )
+  }
+
+  if (blogPosts.length === 0) {
+    return (
+      <section className="relative h-screen w-full bg-background overflow-hidden flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-foreground/60">No blog posts yet.</p>
+          <p className="text-foreground/40 text-sm mt-2">Check back soon for inspiring stories.</p>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <>
@@ -489,13 +523,15 @@ export default function BlogCarousel() {
             }}
           >
             {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
-              const style = getFilteredCardStyle(index, filteredPosts.length)
+              const style = getFilteredCardStyle(index, filteredPosts.length, activeIndex)
               const postClaps = claps[post.id] || 0
               const isPostSaved = savedPosts.includes(post.id)
+              const author = authors[post.author]
+              
               return (
                 <motion.article
                   key={post.id}
-                  onClick={() => handleCardClick(post, style.isActive)}
+                  onClick={() => handleCardClick(post, style.isActive, index)}
                   className="absolute cursor-pointer group"
                   style={{
                     width: config.cardWidth,
@@ -522,7 +558,7 @@ export default function BlogCarousel() {
                       transition={{ duration: 0.6 }}
                     >
                       <img
-                        src={post.image}
+                        src={post.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9'}
                         alt={post.title}
                         className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-1000"
                       />
@@ -575,7 +611,7 @@ export default function BlogCarousel() {
                         </p>
                         
                         <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                          <span className="text-[9px] tracking-widest uppercase text-white/40">{post.readTime}</span>
+                          <span className="text-[9px] tracking-widest uppercase text-white/40">{post.read_time || '5 min read'}</span>
                           <div className="flex items-center gap-3">
                             {style.isActive && postClaps > 0 && (
                               <span className="text-[9px] text-white/60 flex items-center gap-1">
@@ -601,7 +637,9 @@ export default function BlogCarousel() {
                       className="absolute -bottom-16 left-0 right-0 text-center"
                     >
                       <p className="text-foreground font-serif italic text-sm">{post.author}</p>
-                      <p className="text-foreground/40 text-[10px] uppercase tracking-widest mt-1">{post.date}</p>
+                      <p className="text-foreground/40 text-[10px] uppercase tracking-widest mt-1">
+                        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Just now'}
+                      </p>
                     </motion.div>
                   )}
                 </motion.article>
@@ -628,7 +666,7 @@ export default function BlogCarousel() {
 
               {/* PROGRESS BAR NAVIGATION */}
               <div className="flex gap-4 items-center">
-                {blogPosts.map((_, index) => {
+                {filteredPosts.map((_, index) => {
                   const isActive = index === activeIndex;
                   return (
                     <div 
@@ -688,7 +726,7 @@ export default function BlogCarousel() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 overflow-y-auto bg-background"
             >
-              {/* Fixed Back Button - Top Left with z-[100] to ensure it's above everything */}
+              {/* Fixed Back Button */}
               <motion.button 
                 onClick={() => setSelectedPost(null)}
                 initial={{ opacity: 0, x: -20 }}
@@ -702,7 +740,7 @@ export default function BlogCarousel() {
                 <span className="text-[10px] uppercase tracking-widest font-bold hidden sm:inline">Back to Journal</span>
               </motion.button>
 
-              {/* Listen Mode Button - Top Right */}
+              {/* Listen Mode Button */}
               <motion.button
                 onClick={speak}
                 initial={{ opacity: 0, x: 20 }}
@@ -734,13 +772,13 @@ export default function BlogCarousel() {
               {/* Hero Section */}
               <div className="relative h-[70vh] w-full">
                 <img 
-                  src={selectedPost.image} 
+                  src={selectedPost.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9'} 
                   alt={selectedPost.title}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
                 
-                {/* Share & Save on Hero - Moved down to avoid overlap with new buttons */}
+                {/* Share & Save */}
                 <div className="absolute top-36 right-6 z-50 flex items-center gap-3">
                   <button 
                     onClick={() => toggleSave(selectedPost.id)}
@@ -775,9 +813,9 @@ export default function BlogCarousel() {
                       {selectedPost.title}
                     </h1>
                     <div className="flex items-center gap-6 text-[10px] uppercase tracking-widest text-foreground/40">
-                      <span>{actualReadTime || selectedPost.readTime}</span>
+                      <span>{actualReadTime || selectedPost.read_time || '5 min read'}</span>
                       <span>{selectedPost.views} reads</span>
-                      <span>{selectedPost.date}</span>
+                      <span>{selectedPost.published_at ? new Date(selectedPost.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Just now'}</span>
                     </div>
                   </div>
                 </div>
@@ -797,31 +835,24 @@ export default function BlogCarousel() {
                     </p>
                   </div>
 
-                  {/* Main Content */}
-                  <div className="text-lg text-foreground/70 leading-relaxed font-light space-y-6">
-                    {selectedPost.content.split('\n\n').map((paragraph, idx) => (
-                      <p key={idx} className="first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-6px]">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
+                  {/* Main Content - Render HTML properly */}
+<div className="text-lg text-foreground/70 leading-relaxed font-light">
+  <div 
+    dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+    className="prose prose-invert max-w-none [&_p]:mb-6 [&_h2]:text-2xl [&_h2]:font-serif [&_h2]:italic [&_h2]:mt-8 [&_h2]:mb-4 [&_h3]:text-xl [&_h3]:font-serif [&_h3]:italic [&_h3]:mt-6 [&_h3]:mb-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-2 [&_a]:text-foreground/70 [&_a]:underline [&_a]:hover:text-foreground [&_img]:rounded-lg [&_img]:my-6 [&_img]:mx-auto [&_blockquote]:border-l-2 [&_blockquote]:border-foreground/20 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4"
+  />
+</div>
 
-                  {/* Key Takeaways */}
+                  {/* Key Takeaways - Using stored insights */}
                   <div className="bg-foreground/[0.02] border border-foreground/10 p-8 rounded-sm">
                     <h4 className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-6">Key Insights</h4>
                     <ul className="space-y-4">
-                      <li className="flex items-start gap-4 text-foreground/70 font-light">
-                        <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
-                        <span>Understanding the philosophy behind {selectedPost.category.toLowerCase()}</span>
-                      </li>
-                      <li className="flex items-start gap-4 text-foreground/70 font-light">
-                        <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
-                        <span>Practical applications for your own spaces</span>
-                      </li>
-                      <li className="flex items-start gap-4 text-foreground/70 font-light">
-                        <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
-                        <span>Expert perspectives from industry leaders</span>
-                      </li>
+                      {getKeyInsights(selectedPost).map((insight, idx) => (
+                        <li key={idx} className="flex items-start gap-4 text-foreground/70 font-light">
+                          <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
+                          <span>{insight}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -846,21 +877,23 @@ export default function BlogCarousel() {
                   </div>
 
                   {/* Author Section */}
-                  <div className="flex items-start gap-6 py-8">
-                    <img 
-                      src={authors[selectedPost.author]?.avatar} 
-                      alt={selectedPost.author}
-                      className="w-20 h-20 rounded-full object-cover grayscale"
-                    />
-                    <div className="flex-1">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
-                      <h4 className="text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
-                      <p className="text-sm text-foreground/60 mb-3">{authors[selectedPost.author]?.role}</p>
-                      <p className="text-sm text-foreground/50 font-light leading-relaxed">
-                        {authors[selectedPost.author]?.bio}
-                      </p>
+                  {authors[selectedPost.author] && (
+                    <div className="flex items-start gap-6 py-8">
+                      <img 
+                        src={authors[selectedPost.author].avatar_url || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200'} 
+                        alt={selectedPost.author}
+                        className="w-20 h-20 rounded-full object-cover grayscale"
+                      />
+                      <div className="flex-1">
+                        <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
+                        <h4 className="text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
+                        <p className="text-sm text-foreground/60 mb-3">{authors[selectedPost.author]?.role}</p>
+                        <p className="text-sm text-foreground/50 font-light leading-relaxed">
+                          {authors[selectedPost.author]?.bio}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Related Posts */}
                   {getRelatedPosts(selectedPost).length > 0 && (
@@ -877,7 +910,7 @@ export default function BlogCarousel() {
                             className="group text-left"
                           >
                             <div className="aspect-[4/3] overflow-hidden rounded-sm mb-4">
-                              <img src={related.image} alt={related.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105" />
+                              <img src={related.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9'} alt={related.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105" />
                             </div>
                             <span className="text-[9px] uppercase tracking-widest text-foreground/40">{related.category}</span>
                             <h4 className="font-serif italic text-xl mt-2 group-hover:text-foreground/70 transition-colors">{related.title}</h4>
@@ -931,7 +964,7 @@ export default function BlogCarousel() {
                   >
                     <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
+                    </svg>
                     <span className="text-[10px] uppercase tracking-widest font-bold">Back to All Stories</span>
                   </button>
                 </div>

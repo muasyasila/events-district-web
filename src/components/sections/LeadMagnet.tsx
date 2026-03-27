@@ -5,6 +5,8 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Download, Mail, Sparkles, Gift, Clock, Heart, X, Calendar } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { sendChecklistEmail } from '@/app/actions/email'
 import styles from './LeadMagnet.module.css'
 
 const checklistItems = [
@@ -29,44 +31,85 @@ export default function LeadMagnet() {
   const [step, setStep] = useState<"form" | "success">("form")
   const [isLoading, setIsLoading] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Get tomorrow's date for min date attribute
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   const minDate = tomorrow.toISOString().split('T')[0]
 
+  const supabase = createClient()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Save to localStorage (replace with your API)
-    const leads = JSON.parse(localStorage.getItem('weddingLeads') || '[]')
-    leads.push({
-      name,
-      email,
-      weddingDate,
-      date: new Date().toISOString(),
-      source: 'checklist_download'
-    })
-    localStorage.setItem('weddingLeads', JSON.stringify(leads))
-    
-    setIsLoading(false)
-    setStep("success")
-    
-    // Trigger download
-    setTimeout(() => {
-      downloadChecklist()
-    }, 500)
+    try {
+      // Save to Supabase with all tracking columns
+      const { error: supabaseError } = await supabase
+        .from('leads')
+        .insert([{
+          name: name.trim(),
+          email: email.trim(),
+          event_date: weddingDate || null,
+          event_type: 'wedding',
+          source: 'checklist_download',
+          status: 'new',
+          email_sent_week1: false,
+          email_sent_week2: false,
+          email_sent_month1: false,
+          email_sent_month2: false,
+          email_sent_month3: false,
+          notes: `Downloaded wedding planning checklist${weddingDate ? ` - Wedding Date: ${weddingDate}` : ''}`
+        }])
+      
+      if (supabaseError) {
+        console.error('Error saving lead:', supabaseError)
+        setError('Something went wrong. Please try again.')
+        setIsLoading(false)
+        return
+      }
+      
+      // Send welcome email with checklist
+      const emailResult = await sendChecklistEmail(email.trim(), name.trim())
+      
+      if (!emailResult.success) {
+        console.error('Email error:', emailResult.error)
+        // Don't show error to user - they still get the download
+      }
+      
+      // Also save to localStorage as backup (optional)
+      const leads = JSON.parse(localStorage.getItem('weddingLeads') || '[]')
+      leads.push({
+        name,
+        email,
+        weddingDate,
+        date: new Date().toISOString(),
+        source: 'checklist_download'
+      })
+      localStorage.setItem('weddingLeads', JSON.stringify(leads))
+      
+      setIsLoading(false)
+      setStep("success")
+      
+      // Trigger download
+      setTimeout(() => {
+        downloadChecklist()
+      }, 500)
+      
+    } catch (err) {
+      console.error('Error:', err)
+      setError('Something went wrong. Please try again.')
+      setIsLoading(false)
+    }
   }
 
   const downloadChecklist = () => {
     // Create PDF content (in production, this would be a real PDF)
     const content = `
 THE ULTIMATE WEDDING PLANNING CHECKLIST
-By [Your Company Name]
+By Events District
 
 Congratulations on your engagement! This comprehensive checklist will guide you through every step of planning your perfect day.
 
@@ -98,14 +141,89 @@ ${checklistItems.map(item => `• ${item}`).join('\n')}
 □ Register for gifts
 □ Book transportation
 
-[Continue with full timeline...]
+9 Months Before:
+□ Send save-the-dates
+□ Order wedding dress
+□ Book rehearsal dinner venue
+□ Book wedding planner
+□ Book hair and makeup artist
+
+8 Months Before:
+□ Finalize guest list
+□ Order wedding bands
+□ Book honeymoon
+□ Plan bridal shower
+□ Book rentals (tables, chairs, linens)
+
+7 Months Before:
+□ Send invitations
+□ Schedule cake tasting
+□ Schedule menu tasting
+□ Book florist
+□ Book transportation
+
+6 Months Before:
+□ Plan ceremony details
+□ Book musicians
+□ Choose wedding party attire
+□ Plan welcome bags
+□ Book accommodations for out-of-town guests
+
+5 Months Before:
+□ Schedule hair and makeup trial
+□ Take engagement photos
+□ Write vows
+□ Plan ceremony readings
+□ Confirm vendor contracts
+
+4 Months Before:
+□ Finalize menu
+□ Finalize bar selection
+□ Plan seating chart
+□ Confirm floral arrangements
+□ Order wedding favors
+
+3 Months Before:
+□ Apply for marriage license
+□ Finalize day-of timeline
+□ Confirm all vendors
+□ Schedule final dress fitting
+□ Plan reception entertainment
+
+2 Months Before:
+□ Create seating chart
+□ Finalize music playlist
+□ Write thank you speeches
+□ Confirm RSVPs
+□ Plan reception flow
+
+1 Month Before:
+□ Final guest count
+□ Confirm vendor arrival times
+□ Pack emergency kit
+□ Create place cards
+□ Final meeting with vendors
+
+Week Before:
+□ Final dress fitting
+□ Pick up wedding bands
+□ Confirm honeymoon details
+□ Pack for wedding day
+□ Relax and enjoy
+
+Wedding Day:
+□ Eat a good breakfast
+□ Trust your vendors
+□ Stay present
+□ Dance like nobody's watching
+□ Soak in every moment
 
 ---
 
-This checklist is a gift from [Your Company Name].
-Ready to turn your vision into reality? Book a complimentary consultation at [your website].
+This checklist is a gift from Events District.
+Ready to turn your vision into reality? Book a complimentary consultation at eventsdistrict.co.ke
 
-© 2024 [Your Company Name]. All rights reserved.
+© 2024 Events District. All rights reserved.
     `
     
     const blob = new Blob([content], { type: 'text/plain' })
@@ -207,6 +325,13 @@ Ready to turn your vision into reality? Book a complimentary consultation at [yo
                     <p className="text-sm text-foreground/50 mb-8 font-light">
                       Enter your details below for instant access
                     </p>
+
+                    {/* Error Message */}
+                    {error && (
+                      <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded text-sm">
+                        {error}
+                      </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                       {/* Name Input with Clear Button */}

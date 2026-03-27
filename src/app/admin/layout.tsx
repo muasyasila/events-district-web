@@ -49,23 +49,25 @@ export default function AdminLayout({
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { href: '/admin/inventory', label: 'Inventory', icon: Package },
-    { href: '/admin/blog', label: 'Blog', icon: FileText },
+    { href: '/admin/blog', label: 'Blog Posts', icon: FileText },
+    { href: '/admin/blog/authors', label: 'Authors', icon: Users },
+    { href: '/admin/blog/categories', label: 'Categories', icon: FileText },
     { href: '/admin/leads', label: 'Leads', icon: Users },
   ]
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
-      {/* Mobile menu button */}
+      {/* Mobile menu button - repositioned to top-3 left-3 with smaller icon */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-black border border-white/10 rounded text-white"
+        className="lg:hidden fixed top-3 left-3 z-50 p-2 bg-black border border-white/10 rounded text-white"
       >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
       </button>
 
-      {/* Sidebar */}
+      {/* Sidebar - added overflow-y-auto for scrolling on mobile */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-black border-r border-white/10 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-black border-r border-white/10 transform transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-y-auto ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -96,7 +98,7 @@ export default function AdminLayout({
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-black">
           <div className="px-4 py-2 mb-2">
             <p className="text-xs text-white/40 truncate">{user.email}</p>
           </div>
@@ -110,12 +112,20 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main content - adjusted padding for mobile */}
       <main className="lg:ml-64 min-h-screen bg-[#0A0A0A]">
-        <div className="p-6 md:p-8">
+        <div className="p-4 md:p-6 pt-16 md:pt-6">
           {children}
         </div>
       </main>
+
+      {/* Overlay for mobile when sidebar is open */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   )
 }
