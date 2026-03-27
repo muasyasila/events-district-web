@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Link from 'next/link'
 
 const blogPosts = [
   {
@@ -10,7 +9,7 @@ const blogPosts = [
     category: "Design Philosophy",
     title: "The Architecture of Silence",
     excerpt: "Exploring how negative space becomes the loudest statement in luxury interiors.",
-    content: "In the world of haute design, what you don't see is just as important as what you do. We delve into the paradox of emptiness and how it creates the most profound experiences. The silence between objects speaks volumes. When we strip away the unnecessary, we reveal the essential truth of a space.\n\nThis is the philosophy that guides our most celebrated work—creating moments of pause in a world of constant noise. Every corner, every shadow, every breath of space is intentional. We design not just for the eye, but for the soul.\n\nThe masters of minimalism understood this truth centuries ago. From Japanese wabi-sabi to Scandinavian hygge, the wisdom of less has always been the foundation of true luxury. In our practice, we honor this tradition while pushing it into contemporary relevance.\n\nConsider the lobby of a grand hotel. The temptation is to fill every inch with statement pieces, with art, with evidence of expense. But the spaces that truly take your breath away are those that dare to be quiet. A single sculpture. A shaft of light. The sound of water.\n\nThis is the architecture of silence. It requires confidence. It requires restraint. Most of all, it requires understanding that luxury is not about accumulation—it's about curation.",
+    content: "In the world of haute design, what you don't see is just as important as what you do...",
     image: "https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9?auto=format&fit=crop&q=80&w=1200&h=1600",
     author: "Eleanor Vance",
     date: "Mar 15, 2024",
@@ -23,7 +22,7 @@ const blogPosts = [
     category: "Craftsmanship",
     title: "Hands That Speak",
     excerpt: "A journey through the ateliers where master artisans breathe life into raw materials.",
-    content: "Every stroke, every carve tells a story. We spent time with the masters who refuse to let technology diminish the human touch in luxury creation. These artisans have spent decades perfecting their craft, passing knowledge from generation to generation.\n\nTheir hands bear the marks of their dedication—calluses and scars that map their journey. In their workshops, time moves differently. There are no shortcuts to excellence. A single piece of furniture might take six months to complete. A textile might require a year of preparation.\n\nWe visited a workshop in Tuscany where they have been making paper using the same methods since the 13th century. The master, now in his eighties, still wakes at dawn to check the humidity levels. 'The paper tells you when it's ready,' he said. 'You don't tell the paper.'\n\nThis patience, this willingness to submit to the material rather than dominate it, is what separates craft from manufacturing. It's what makes an object not just functional, but meaningful.\n\nIn an age of instant everything, these artisans remind us that some things cannot be rushed. That true luxury is, by definition, scarce. That the human hand, with all its imperfections, creates what machines never can: soul.",
+    content: "Every stroke, every carve tells a story...",
     image: "https://images.unsplash.com/photo-1581587357988-15c6757b347e?auto=format&fit=crop&q=80&w=1200&h=1600",
     author: "James Croft",
     date: "Mar 10, 2024",
@@ -36,7 +35,7 @@ const blogPosts = [
     category: "Material Stories",
     title: "The Alchemy of Stone",
     excerpt: "How rare marbles and onyx are transformed into poetic statements of permanence.",
-    content: "Stone whispers ancient secrets. We uncover how modern techniques reveal the soul hidden within millennia-old geological formations. Each slab tells a story millions of years in the making.\n\nThe veining, the color variations, the imperfections—these are not flaws but fingerprints of the earth itself. Our role is to listen to what the stone wants to become. We recently worked with a rare pink onyx from Iran. The quarry had been closed for decades. When we finally sourced it, the stone sat in our studio for months.\n\nWe were waiting to understand it. The way light passed through it at different times of day. The way it changed temperature. Eventually, we knew: it wanted to be a bar. Not just any bar, but a gathering place where the stone itself would glow like a lantern at night.\n\nThis is the alchemy of stone. Not changing its nature, but revealing it. Not imposing our will, but partnering with geological time. The result is something that feels both ancient and utterly contemporary.\n\nStone teaches us about permanence in an impermanent world. It connects us to deep time. When you touch a marble surface, you are touching the memory of mountains.",
+    content: "Stone whispers ancient secrets...",
     image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=1200&h=1600",
     author: "Isabella Chen",
     date: "Mar 5, 2024",
@@ -49,7 +48,7 @@ const blogPosts = [
     category: "Light & Space",
     title: "Painting With Shadows",
     excerpt: "The forgotten art of manipulating light to sculpt emotion within walls.",
-    content: "Light is the ultimate luxury material. We explore how masterful illumination transforms spaces into living, breathing entities. The interplay of light and shadow creates drama, intimacy, and wonder.\n\nA room can transform from solemn to celebratory with the flick of a switch—or the movement of the sun. Understanding this dance is essential to creating spaces that feel alive. We spend weeks studying the path of sunlight through a space before making any decisions about artificial lighting.\n\nThe ancient architects understood this. The Pantheon in Rome, with its single oculus, creates a beam of light that moves like a sundial across the interior. Every moment of the day offers a different experience. This is architecture as timepiece.\n\nIn our work, we think about layers of light. Ambient light for navigation. Task light for function. Accent light for drama. And always, always, the possibility of darkness. Because without darkness, light has no meaning.\n\nThe best spaces are those that change throughout the day. Morning light for coffee. Afternoon light for reading. Evening light for cocktails. Night light for intimacy. This is how we paint with shadows.",
+    content: "Light is the ultimate luxury material...",
     image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200&h=1600",
     author: "Marcus Webb",
     date: "Feb 28, 2024",
@@ -62,7 +61,7 @@ const blogPosts = [
     category: "Sustainable Luxury",
     title: "The Future of Elegance",
     excerpt: "How eco-conscious design is redefining what it means to live beautifully.",
-    content: "Luxury and sustainability are no longer mutually exclusive. Discover how the industry's finest are embracing responsible craftsmanship. The most luxurious thing we can create is a future where beauty doesn't come at the earth's expense.\n\nFrom reclaimed materials to zero-waste production methods, the new wave of luxury is defined by its conscience. We recently completed a project using only salvaged materials. The wood came from a demolished barn. The stone from a closed quarry. The textiles from deadstock luxury fashion.\n\nThe result was not a compromise, but a revelation. The wood had a patina that cannot be manufactured. The stone had a history written in its veins. The textiles had a story that added depth to every surface.\n\nThis is the future of elegance. Not newness for its own sake, but meaning. Not consumption, but curation. The most sophisticated clients are no longer asking 'Is it new?' They are asking 'Is it meaningful?'\n\nSustainability is not a trend. It is a return to the way things were always done before the age of disposability. It is the ultimate luxury because it requires what all true luxury requires: time, thought, and care.",
+    content: "Luxury and sustainability are no longer mutually exclusive...",
     image: "https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&q=80&w=1200&h=1600",
     author: "Nina Patel",
     date: "Feb 20, 2024",
@@ -74,27 +73,27 @@ const blogPosts = [
 
 const authors: Record<string, { bio: string; avatar: string; role: string }> = {
   "Eleanor Vance": {
-    bio: "Design critic and curator with 15 years exploring the intersection of space and emotion. Former editor of Architectural Digest.",
+    bio: "Design critic and curator with 15 years exploring the intersection of space and emotion.",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200",
     role: "Editor at Large"
   },
   "James Croft": {
-    bio: "Documentary photographer specializing in artisanal crafts. His work has been featured in Monocle and Kinfolk.",
+    bio: "Documentary photographer specializing in artisanal crafts.",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200",
     role: "Visual Storyteller"
   },
   "Isabella Chen": {
-    bio: "Materials specialist and geologist turned design consultant. She sources rare stones for the world's most exclusive projects.",
+    bio: "Materials specialist and geologist turned design consultant.",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200",
     role: "Material Curator"
   },
   "Marcus Webb": {
-    bio: "Lighting designer with a background in theater. He brings dramatic sensibilities to residential and commercial spaces.",
+    bio: "Lighting designer with a background in theater.",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200",
     role: "Light Architect"
   },
   "Nina Patel": {
-    bio: "Sustainability advocate and luxury brand consultant. She helps heritage houses transition to eco-conscious practices.",
+    bio: "Sustainability advocate and luxury brand consultant.",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
     role: "Sustainability Director"
   }
@@ -111,7 +110,6 @@ export default function BlogCarousel() {
   const [savedPosts, setSavedPosts] = useState<number[]>([])
   const [claps, setClaps] = useState<Record<number, number>>({})
   const [readingProgress, setReadingProgress] = useState(0)
-  const [timeLeft, setTimeLeft] = useState("")
   const [email, setEmail] = useState("")
   const [subscribed, setSubscribed] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
@@ -149,7 +147,7 @@ export default function BlogCarousel() {
     localStorage.setItem('claps', JSON.stringify(claps))
   }, [claps])
 
-  // Text-to-Speech - reads Title + Excerpt + Content
+  // Text-to-Speech
   const speak = useCallback(() => {
     if ('speechSynthesis' in window && selectedPost) {
       if (isSpeaking) {
@@ -175,21 +173,22 @@ export default function BlogCarousel() {
     }
   }, [selectedPost, isSpeaking])
 
-  // Carousel config - MOBILE: Smaller sizes
+  // CRITICAL: Mobile-first config that defaults to mobile sizes
   const getCarouselConfig = () => {
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1200
-    const height = typeof window !== 'undefined' ? window.innerHeight : 800
+    // Default to mobile dimensions to prevent flash of desktop layout
+    const width = typeof window !== 'undefined' ? window.innerWidth : 375 // iPhone width as default
+    const height = typeof window !== 'undefined' ? window.innerHeight : 667
     const isMobile = width < 768
     const isTablet = width < 1024
 
-    // MOBILE: Smaller card dimensions
+    // FORCE mobile card dimensions
     const cardWidth = isMobile ? Math.min(width * 0.75, 280) : 320
-    const cardHeight = isMobile ? Math.min(height * 0.5, 420) : 440
+    const cardHeight = isMobile ? Math.min(height * 0.45, 380) : 440
 
-    // MOBILE: Reduced radius
+    // FORCE smaller radius on mobile
     const maxRadiusX = Math.min(width * 0.3, 400)
-    const radiusX = isMobile ? width * 0.28 : isTablet ? 280 : maxRadiusX
-    const radiusY = isMobile ? 20 : 40
+    const radiusX = isMobile ? width * 0.25 : isTablet ? 280 : maxRadiusX
+    const radiusY = isMobile ? 15 : 40
 
     return {
       radiusX,
@@ -215,12 +214,11 @@ export default function BlogCarousel() {
     const matchesCategory = selectedCategory === "All" || post.category === selectedCategory
     const matchesSearch = searchQuery === "" || 
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
-  // Touch handlers with scroll detection
+  // Touch handlers
   const onTouchStart = (e: React.TouchEvent) => {
     const touch = e.targetTouches[0]
     setTouchStart({ x: touch.clientX, y: touch.clientY })
@@ -265,7 +263,6 @@ export default function BlogCarousel() {
     setIsSwiping(false)
   }
 
-  // Carousel calculations
   const getFilteredCardStyle = (index: number, totalFiltered: number) => {
     const { radiusX, radiusY, cardWidth, isMobile } = config
 
@@ -276,15 +273,7 @@ export default function BlogCarousel() {
     if (totalFiltered === 2) {
       const offset = index === 0 ? -1 : 1
       const x = offset * (cardWidth * 0.6)
-      return { 
-        x, 
-        z: 0, 
-        scale: 0.9, 
-        rotateY: offset * -5, 
-        opacity: 1, 
-        zIndex: 10, 
-        isActive: true 
-      }
+      return { x, z: 0, scale: 0.9, rotateY: offset * -5, opacity: 1, zIndex: 10, isActive: true }
     }
 
     const activeFilteredIndex = filteredPosts.findIndex(p => blogPosts.indexOf(p) === activeIndex)
@@ -314,14 +303,12 @@ export default function BlogCarousel() {
     setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides)
   }, [totalSlides, filteredPosts.length])
 
-  // Auto-play
   useEffect(() => {
     if (!isAutoPlaying || searchQuery || selectedCategory !== "All" || filteredPosts.length <= 2) return
     const timer = setInterval(handleNext, AUTO_PLAY_DURATION)
     return () => clearInterval(timer)
   }, [isAutoPlaying, handleNext, searchQuery, selectedCategory, filteredPosts.length])
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedPost) {
@@ -337,11 +324,9 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleNext, handlePrev, selectedPost, filteredPosts.length])
 
-  // Reading progress
   useEffect(() => {
     if (!selectedPost) {
       setReadingProgress(0)
-      setTimeLeft("")
       return
     }
 
@@ -351,10 +336,6 @@ export default function BlogCarousel() {
       const docHeight = document.documentElement.scrollHeight - window.innerHeight
       const progress = (scrollTop / docHeight) * 100
       setReadingProgress(Math.min(100, Math.max(0, progress)))
-
-      const totalMinutes = parseInt(selectedPost.readTime)
-      const remaining = Math.ceil(totalMinutes * (1 - progress / 100))
-      setTimeLeft(`${remaining} min left`)
     }
 
     window.addEventListener('scroll', handleScroll)
@@ -362,7 +343,6 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [selectedPost])
 
-  // Back to top visibility
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 500)
@@ -371,47 +351,28 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Actions
   const toggleSave = (postId: number, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    setSavedPosts(prev => 
-      prev.includes(postId) 
-        ? prev.filter(id => id !== postId)
-        : [...prev, postId]
-    )
+    setSavedPosts(prev => prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId])
   }
 
   const handleClap = (postId: number, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    setClaps(prev => ({
-      ...prev,
-      [postId]: (prev[postId] || 0) + 1
-    }))
+    setClaps(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
   }
 
   const sharePost = async (post: typeof blogPosts[0], e?: React.MouseEvent) => {
     e?.stopPropagation()
-    const shareData = {
-      title: post.title,
-      text: post.excerpt,
-      url: `${typeof window !== 'undefined' ? window.location.href : ''}#blog-${post.id}`
-    }
-
+    const shareData = { title: post.title, text: post.excerpt, url: window.location.href }
     if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-      } catch (err) {
-        console.log('Share cancelled')
-      }
+      try { await navigator.share(shareData) } catch (err) { console.log('Share cancelled') }
     } else {
-      navigator.clipboard.writeText(shareData.url)
+      navigator.clipboard.writeText(window.location.href)
     }
   }
 
   const getRelatedPosts = (currentPost: typeof blogPosts[0]) => {
-    return blogPosts
-      .filter(p => p.category === currentPost.category && p.id !== currentPost.id)
-      .slice(0, 2)
+    return blogPosts.filter(p => p.category === currentPost.category && p.id !== currentPost.id).slice(0, 2)
   }
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -430,38 +391,22 @@ export default function BlogCarousel() {
     } else {
       const postIndex = blogPosts.indexOf(post)
       setActiveIndex(postIndex)
-      setTimeout(() => {
-        setSelectedPost(post)
-        window.scrollTo(0, 0)
-      }, 400)
+      setTimeout(() => { setSelectedPost(post); window.scrollTo(0, 0) }, 400)
     }
   }
 
-  // FIXED: Scroll to journal section
   const scrollToJournal = () => {
     if (journalRef.current) {
       const offset = 80
       const elementPosition = journalRef.current.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - offset
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      })
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' })
     }
   }
 
-  // FIXED: Back to top
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  const currentPost = blogPosts[activeIndex]
-  const isSaved = currentPost ? savedPosts.includes(currentPost.id) : false
-  const currentClaps = currentPost ? claps[currentPost.id] || 0 : 0
 
   return (
     <>
@@ -479,15 +424,16 @@ export default function BlogCarousel() {
       </AnimatePresence>
 
       {/* 
-        MOBILE-FIRST CSS APPROACH:
-        - Default styles (no prefix) = MOBILE
-        - md: prefix = Tablet and up (768px+)
-        - lg: prefix = Desktop (1024px+)
+        ============================================
+        MOBILE-FIRST STYLES - THESE APPLY TO ALL SCREENS
+        Then md: prefixes override for larger screens
+        ============================================
       */}
       <section 
         id="journal" 
         ref={journalRef}
-        className="relative min-h-[100svh] w-full bg-background overflow-hidden py-12 md:py-20"
+        className="relative w-full bg-background overflow-hidden"
+        style={{ minHeight: '100svh' }} // FORCE svh for mobile
       >
         {/* Background Accents */}
         <div className="absolute inset-0 pointer-events-none">
@@ -496,23 +442,23 @@ export default function BlogCarousel() {
         </div>
 
         {/* 
-          CONTAINER:
-          - Mobile: px-4 (side padding so carousel doesn't touch edges)
-          - md+: px-6 lg:px-8 (your original values)
+          MAIN CONTAINER
+          Mobile: px-4 (16px side padding - CRITICAL for not touching edges)
+          md: px-6, lg: px-8
         */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 flex flex-col items-center">
 
           {/* 
-            HEADER:
-            - Mobile: text-3xl, pt-4 (prevents cut-off), mb-8
-            - md+: text-6xl, mt-4, mb-12 (your original)
+            HEADER SECTION
+            Mobile: pt-20 (80px top padding - FIXES CUT OFF), text-3xl
+            md: pt-4, text-6xl
           */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
-            className="text-center mb-8 md:mb-12 pt-4"
+            className="text-center mb-8 pt-20 md:pt-4 md:mb-12"
           >
             <h2 className="text-3xl md:text-6xl lg:text-7xl font-serif italic text-foreground tracking-tight">
               The <span className="text-foreground/40 font-light">Journal</span>
@@ -521,14 +467,13 @@ export default function BlogCarousel() {
           </motion.div>
 
           {/* 
-            SEARCH BAR:
-            - Mobile: px-4 (side padding), py-3
-            - md+: px-0 (your original)
+            SEARCH BAR
+            Mobile: px-0 (inside already has padding), py-3
           */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 w-full max-w-md px-4 md:px-0"
+            className="mb-6 w-full max-w-md"
           >
             <div className="relative">
               <input
@@ -555,22 +500,19 @@ export default function BlogCarousel() {
           </motion.div>
 
           {/* 
-            CATEGORY FILTER:
-            - Mobile: text-[10px], px-3, py-2, gap-2
-            - md+: text-xs, px-4 (your original)
+            CATEGORY FILTER
+            Mobile: text-[10px], px-3, py-2, gap-2
+            md: text-xs, px-4
           */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 md:mb-12 flex flex-wrap justify-center gap-2 max-w-4xl px-4 md:px-0"
+            className="mb-8 md:mb-12 flex flex-wrap justify-center gap-2 max-w-4xl"
           >
             {categories.map((cat) => (
               <button
                 key={cat}
-                onClick={() => {
-                  setSelectedCategory(cat)
-                  setActiveIndex(0)
-                }}
+                onClick={() => { setSelectedCategory(cat); setActiveIndex(0) }}
                 className={`text-[10px] md:text-xs uppercase tracking-widest px-3 md:px-4 py-2 border transition-all duration-300 ${
                   selectedCategory === cat 
                     ? 'border-foreground bg-foreground text-background' 
@@ -583,9 +525,9 @@ export default function BlogCarousel() {
           </motion.div>
 
           {/* 
-            3D CAROUSEL:
-            - Mobile: touch-pan-y (enables swipe), select-none
-            - Height set dynamically via inline style based on config
+            3D CAROUSEL
+            Mobile: touch-pan-y (enables swipe), select-none
+            Height set via inline style based on config
           */}
           <div 
             ref={containerRef}
@@ -597,8 +539,8 @@ export default function BlogCarousel() {
             onTouchEnd={onTouchEnd}
             style={{ 
               perspective: '1400px',
-              height: config.isMobile ? config.cardHeight + 100 : config.cardHeight + 140,
-              minHeight: config.isMobile ? 500 : 600,
+              height: config.isMobile ? config.cardHeight + 80 : config.cardHeight + 140,
+              minHeight: config.isMobile ? 450 : 600,
             }}
           >
             {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
@@ -630,9 +572,9 @@ export default function BlogCarousel() {
                   }}
                 >
                   {/* 
-                    CARD:
-                    - Mobile: rounded-lg (softer corners), p-5
-                    - md+: rounded-sm, p-6 (your original)
+                    CARD
+                    Mobile: rounded-lg (softer), p-5
+                    md: rounded-sm, p-6
                   */}
                   <div className="relative w-full h-full bg-neutral-900 rounded-lg md:rounded-sm overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
                     <motion.div 
@@ -649,7 +591,7 @@ export default function BlogCarousel() {
                       <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient} from-black/80 via-black/30 to-transparent`} />
                     </motion.div>
 
-                    {/* Save Button - Mobile: top-3 right-3 */}
+                    {/* Save Button - Mobile: top-3 right-3, p-2.5 */}
                     {style.isActive && (
                       <motion.button
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -719,7 +661,7 @@ export default function BlogCarousel() {
                     </div>
                   </div>
 
-                  {/* Author Info - Mobile: -bottom-14 */}
+                  {/* Author Info - Mobile: -bottom-14, text-sm */}
                   {style.isActive && filteredPosts.length > 2 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -740,9 +682,9 @@ export default function BlogCarousel() {
           </div>
 
           {/* 
-            NAVIGATION FOOTER:
-            - Mobile: mt-16, gap-8
-            - md+: mt-24, gap-12 (your original)
+            NAVIGATION FOOTER
+            Mobile: mt-16, gap-8
+            md: mt-24, gap-12
           */}
           <div className="mt-16 md:mt-24 flex flex-col items-center gap-8 md:gap-12">
             <div className="flex items-center gap-8 md:gap-12">
@@ -773,10 +715,7 @@ export default function BlogCarousel() {
                         <motion.div 
                           initial={{ width: "0%" }}
                           animate={{ width: isAutoPlaying ? "100%" : "0%" }}
-                          transition={{ 
-                            duration: isAutoPlaying ? AUTO_PLAY_DURATION / 1000 : 0, 
-                            ease: "linear" 
-                          }}
+                          transition={{ duration: isAutoPlaying ? AUTO_PLAY_DURATION / 1000 : 0, ease: "linear" }}
                           key={activeIndex}
                           className="absolute inset-0 bg-foreground"
                         />
@@ -800,24 +739,28 @@ export default function BlogCarousel() {
               </button>
             </div>
 
-            {/* View All Stories - Mobile: text-[11px] */}
+            {/* 
+              VIEW ALL STORIES BUTTON
+              Mobile: text-[11px], px-6, pb-8 (padding bottom for visibility)
+            */}
             <motion.button 
               onClick={scrollToJournal}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="group flex flex-col items-center gap-3 px-6 py-3"
+              className="group flex flex-col items-center gap-3 px-6 pb-8 md:pb-0"
             >
               <span className="text-[11px] md:text-xs uppercase tracking-[0.4em] text-foreground/40 group-hover:text-foreground transition-all font-medium">
                 View All Stories
               </span>
-              <motion.div 
-                className="h-px bg-foreground/30 w-20 group-hover:w-32 group-hover:bg-foreground/50 transition-all duration-500" 
-              />
+              <motion.div className="h-px bg-foreground/30 w-20 group-hover:w-32 group-hover:bg-foreground/50 transition-all duration-500" />
             </motion.button>
           </div>
         </div>
 
-        {/* Back to Top Button - Mobile: bottom-6 right-6, p-4 */}
+        {/* 
+          BACK TO TOP BUTTON
+          Mobile: bottom-6 right-6, p-4
+        */}
         <AnimatePresence>
           {showBackToTop && (
             <motion.button
@@ -845,12 +788,7 @@ export default function BlogCarousel() {
               transition={{ duration: 0.3 }}
               className="fixed inset-0 z-50 overflow-y-auto bg-background"
             >
-              {/* 
-                MODERN FLOATING BUTTONS:
-                - Mobile: top-4 left-4 right-4 (closer to edges)
-                - Back: Pill with icon badge + text (hidden on mobile)
-                - Audio: Animated equalizer when playing
-              */}
+              {/* Floating Action Buttons */}
               <div className="fixed top-4 left-4 right-4 z-[100] flex justify-between items-start pointer-events-none">
                 {/* Back Button */}
                 <motion.button 
@@ -875,29 +813,15 @@ export default function BlogCarousel() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-full backdrop-blur-xl border transition-all group shadow-lg active:scale-95 ${
-                    isSpeaking 
-                      ? 'bg-foreground text-background border-foreground' 
-                      : 'bg-white/10 text-foreground border-white/20 hover:bg-white/20'
+                    isSpeaking ? 'bg-foreground text-background border-foreground' : 'bg-white/10 text-foreground border-white/20 hover:bg-white/20'
                   }`}
                 >
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isSpeaking ? 'bg-background/20' : 'bg-foreground/10 group-hover:bg-foreground/20'}`}>
                     {isSpeaking ? (
                       <div className="flex gap-0.5 items-end h-3">
-                        <motion.div 
-                          animate={{ height: [4, 12, 4] }}
-                          transition={{ repeat: Infinity, duration: 0.5 }}
-                          className="w-0.5 bg-current rounded-full"
-                        />
-                        <motion.div 
-                          animate={{ height: [8, 4, 8] }}
-                          transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }}
-                          className="w-0.5 bg-current rounded-full"
-                        />
-                        <motion.div 
-                          animate={{ height: [6, 10, 6] }}
-                          transition={{ repeat: Infinity, duration: 0.5, delay: 0.2 }}
-                          className="w-0.5 bg-current rounded-full"
-                        />
+                        <motion.div animate={{ height: [4, 12, 4] }} transition={{ repeat: Infinity, duration: 0.5 }} className="w-0.5 bg-current rounded-full" />
+                        <motion.div animate={{ height: [8, 4, 8] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }} className="w-0.5 bg-current rounded-full" />
+                        <motion.div animate={{ height: [6, 10, 6] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.2 }} className="w-0.5 bg-current rounded-full" />
                       </div>
                     ) : (
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -905,60 +829,32 @@ export default function BlogCarousel() {
                       </svg>
                     )}
                   </div>
-                  <span className="text-xs font-medium hidden sm:inline">
-                    {isSpeaking ? 'Listening...' : 'Listen'}
-                  </span>
+                  <span className="text-xs font-medium hidden sm:inline">{isSpeaking ? 'Listening...' : 'Listen'}</span>
                 </motion.button>
               </div>
 
-              {/* 
-                HERO SECTION:
-                - Mobile: h-[50vh], p-6
-                - md: h-[60vh], p-10
-                - lg: h-[70vh], p-16
-              */}
+              {/* Hero Section */}
               <div className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full">
-                <img 
-                  src={selectedPost.image} 
-                  alt={selectedPost.title}
-                  className="w-full h-full object-cover"
-                />
+                <img src={selectedPost.image} alt={selectedPost.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
 
-                {/* Share & Save - Mobile: top-24 right-4 */}
                 <div className="absolute top-24 right-4 md:right-6 flex items-center gap-2">
-                  <button 
-                    onClick={() => toggleSave(selectedPost.id)}
-                    className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95"
-                  >
-                    <svg 
-                      className={`w-4 h-4 ${savedPosts.includes(selectedPost.id) ? 'text-red-400 fill-current' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
+                  <button onClick={() => toggleSave(selectedPost.id)} className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95">
+                    <svg className={`w-4 h-4 ${savedPosts.includes(selectedPost.id) ? 'text-red-400 fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </button>
-                  <button 
-                    onClick={() => sharePost(selectedPost)}
-                    className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95"
-                  >
+                  <button onClick={() => sharePost(selectedPost)} className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
                   </button>
                 </div>
 
-                {/* Title Overlay - Mobile: text-3xl */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 lg:p-16">
                   <div className="max-w-4xl mx-auto">
-                    <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/60 mb-3 block">
-                      {selectedPost.category}
-                    </span>
-                    <h1 className="text-3xl md:text-6xl lg:text-7xl font-serif italic text-foreground mb-4 leading-tight">
-                      {selectedPost.title}
-                    </h1>
+                    <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/60 mb-3 block">{selectedPost.category}</span>
+                    <h1 className="text-3xl md:text-6xl lg:text-7xl font-serif italic text-foreground mb-4 leading-tight">{selectedPost.title}</h1>
                     <div className="flex flex-wrap items-center gap-4 md:gap-6 text-[10px] md:text-xs uppercase tracking-widest text-foreground/50">
                       <span>{selectedPost.readTime}</span>
                       <span className="w-1 h-1 rounded-full bg-foreground/30" />
@@ -970,43 +866,23 @@ export default function BlogCarousel() {
                 </div>
               </div>
 
-              {/* 
-                ARTICLE CONTENT:
-                - Mobile: px-6, py-12, max-w-3xl
-                - md+: px-8, py-20 (your original)
-              */}
+              {/* Article Content */}
               <div ref={contentRef} className="w-full max-w-3xl mx-auto px-6 md:px-8 py-12 md:py-20">
-                <motion.div
-                  initial={{ y: 30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6 }}
-                  className="space-y-12 md:space-y-16"
-                >
-                  {/* Quote - Mobile: text-xl, pl-6 */}
+                <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="space-y-12 md:space-y-16">
                   <div className="border-l-2 border-foreground/20 pl-6 md:pl-8 py-4">
-                    <p className="text-xl md:text-2xl lg:text-3xl font-serif italic text-foreground/80 leading-relaxed">
-                      "{selectedPost.excerpt}"
-                    </p>
+                    <p className="text-xl md:text-2xl lg:text-3xl font-serif italic text-foreground/80 leading-relaxed">"{selectedPost.excerpt}"</p>
                   </div>
 
-                  {/* Main Content - Mobile: text-base, first-letter:text-4xl */}
                   <div className="text-base md:text-lg text-foreground/70 leading-relaxed font-light space-y-6">
                     {selectedPost.content.split('\n\n').map((paragraph, idx) => (
-                      <p key={idx} className="first-letter:text-4xl md:first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-4px]">
-                        {paragraph}
-                      </p>
+                      <p key={idx} className="first-letter:text-4xl md:first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-4px]">{paragraph}</p>
                     ))}
                   </div>
 
-                  {/* Key Insights - Mobile: p-6, rounded-lg */}
                   <div className="bg-foreground/[0.02] border border-foreground/10 p-6 md:p-8 rounded-lg md:rounded-sm">
                     <h4 className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-6">Key Insights</h4>
                     <ul className="space-y-4">
-                      {[
-                        `Understanding the philosophy behind ${selectedPost.category.toLowerCase()}`,
-                        "Practical applications for your own spaces",
-                        "Expert perspectives from industry leaders"
-                      ].map((insight, idx) => (
+                      {[`Understanding ${selectedPost.category.toLowerCase()}`, "Practical applications", "Expert perspectives"].map((insight, idx) => (
                         <li key={idx} className="flex items-start gap-4 text-foreground/70 font-light text-sm md:text-base">
                           <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full mt-2 shrink-0" />
                           <span>{insight}</span>
@@ -1015,16 +891,9 @@ export default function BlogCarousel() {
                     </ul>
                   </div>
 
-                  {/* Clap Section - Mobile: w-16 h-16 */}
                   <div className="text-center py-12 border-y border-foreground/10">
-                    <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">
-                      Did this resonate with you?
-                    </p>
-                    <motion.button 
-                      onClick={() => handleClap(selectedPost.id)}
-                      whileTap={{ scale: 1.1 }}
-                      className="group inline-flex flex-col items-center gap-4"
-                    >
+                    <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">Did this resonate?</p>
+                    <motion.button onClick={() => handleClap(selectedPost.id)} whileTap={{ scale: 1.1 }} className="group inline-flex flex-col items-center gap-4">
                       <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-foreground/40 group-hover:bg-foreground/5 transition-all active:scale-95">
                         <svg className="w-8 h-8 md:w-10 md:h-10 text-foreground/60 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1035,37 +904,22 @@ export default function BlogCarousel() {
                     </motion.button>
                   </div>
 
-                  {/* Author Section - Mobile: w-16 h-16 */}
                   <div className="flex items-start gap-4 md:gap-6 py-8">
-                    <img 
-                      src={authors[selectedPost.author]?.avatar} 
-                      alt={selectedPost.author}
-                      className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover grayscale"
-                    />
+                    <img src={authors[selectedPost.author]?.avatar} alt={selectedPost.author} className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover grayscale" />
                     <div className="flex-1">
                       <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
                       <h4 className="text-lg md:text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
                       <p className="text-sm text-foreground/60 mb-3">{authors[selectedPost.author]?.role}</p>
-                      <p className="text-sm text-foreground/50 font-light leading-relaxed">
-                        {authors[selectedPost.author]?.bio}
-                      </p>
+                      <p className="text-sm text-foreground/50 font-light leading-relaxed">{authors[selectedPost.author]?.bio}</p>
                     </div>
                   </div>
 
-                  {/* Related Posts - Mobile: gap-6 */}
                   {getRelatedPosts(selectedPost).length > 0 && (
                     <div className="pt-8">
                       <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">Continue Reading</p>
                       <div className="grid sm:grid-cols-2 gap-6 md:gap-8">
                         {getRelatedPosts(selectedPost).map(related => (
-                          <button
-                            key={related.id}
-                            onClick={() => {
-                              setSelectedPost(related)
-                              window.scrollTo(0, 0)
-                            }}
-                            className="group text-left"
-                          >
+                          <button key={related.id} onClick={() => { setSelectedPost(related); window.scrollTo(0, 0) }} className="group text-left">
                             <div className="aspect-[4/3] overflow-hidden rounded-lg md:rounded-sm mb-4">
                               <img src={related.image} alt={related.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105" />
                             </div>
@@ -1079,51 +933,21 @@ export default function BlogCarousel() {
                   )}
                 </motion.div>
 
-                {/* Newsletter - Mobile: p-8, rounded-lg */}
                 <div className="mt-16 md:mt-20 mb-12 p-8 md:p-12 bg-foreground/[0.02] border border-foreground/10 text-center rounded-lg md:rounded-sm">
                   <h3 className="text-2xl md:text-3xl font-serif italic mb-4 text-foreground">Join The Inner Circle</h3>
-                  <p className="text-foreground/60 mb-8 font-light max-w-md mx-auto text-sm md:text-base">
-                    Weekly insights on luxury design, delivered with intention. No spam, only inspiration.
-                  </p>
+                  <p className="text-foreground/60 mb-8 font-light max-w-md mx-auto text-sm md:text-base">Weekly insights on luxury design. No spam, only inspiration.</p>
                   {subscribed ? (
-                    <motion.p 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-foreground font-serif italic text-lg"
-                    >
-                      Welcome to the circle. Check your inbox.
-                    </motion.p>
+                    <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-foreground font-serif italic text-lg">Welcome to the circle. Check your inbox.</motion.p>
                   ) : (
                     <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-                      <input 
-                        type="email" 
-                        placeholder="Your email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="flex-1 bg-transparent border-b border-foreground/20 py-3 text-sm focus:outline-none focus:border-foreground transition-colors placeholder:text-foreground/40 text-foreground text-center sm:text-left"
-                      />
-                      <button 
-                        type="submit"
-                        className="px-8 py-3 border border-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-all active:scale-95"
-                      >
-                        Subscribe
-                      </button>
+                      <input type="email" placeholder="Your email" value={email} onChange={(e) => setEmail(e.target.value)} required className="flex-1 bg-transparent border-b border-foreground/20 py-3 text-sm focus:outline-none focus:border-foreground transition-colors placeholder:text-foreground/40 text-foreground text-center sm:text-left" />
+                      <button type="submit" className="px-8 py-3 border border-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-all active:scale-95">Subscribe</button>
                     </form>
                   )}
                 </div>
 
-                {/* Back to Journal - Mobile: px-6 */}
                 <div className="text-center pb-12">
-                  <motion.button 
-                    onClick={() => {
-                      setSelectedPost(null)
-                      setTimeout(() => scrollToJournal(), 100)
-                    }}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="inline-flex items-center gap-3 text-foreground/40 hover:text-foreground transition-all group px-6 py-3"
-                  >
+                  <motion.button onClick={() => { setSelectedPost(null); setTimeout(() => scrollToJournal(), 100) }} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} className="inline-flex items-center gap-3 text-foreground/40 hover:text-foreground transition-all group px-6 py-3">
                     <svg className="w-4 h-4 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
