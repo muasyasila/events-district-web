@@ -142,6 +142,8 @@ function ScrollHint({ isLast }: { isLast: boolean }) {
 
 // --- Mobile Version ---
 
+// --- Mobile Version ---
+
 function MobileStory({ navbarHeight }: { navbarHeight: number }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -173,7 +175,7 @@ function MobileStory({ navbarHeight }: { navbarHeight: number }) {
         style={{ height: `${(STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS) * MOBILE_MULTIPLIER}vh` }}
       >
         <div 
-          className="h-screen sticky flex items-end justify-center pb-20 overflow-hidden z-10" 
+          className="h-screen sticky flex flex-col justify-center overflow-hidden z-10" 
           style={{ top: navbarHeight }}
         >
           <div className="absolute inset-0 z-0 bg-neutral-900">
@@ -197,7 +199,7 @@ function MobileStory({ navbarHeight }: { navbarHeight: number }) {
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
           </div>
 
-          <div className="relative z-10 w-full px-6 mb-8">
+          <div className="relative z-10 w-full px-6 flex flex-col justify-center h-full">
             <ProgressIndicators count={STORY_CHAPTERS.length} activeIndex={activeIndex} />
             
             <AnimatePresence mode="wait">
@@ -221,7 +223,9 @@ function MobileStory({ navbarHeight }: { navbarHeight: number }) {
               </motion.div>
             </AnimatePresence>
 
-            <ScrollHint isLast={activeIndex === STORY_CHAPTERS.length - 1} />
+            <div className="mt-auto pb-6">
+              <ScrollHint isLast={activeIndex === STORY_CHAPTERS.length - 1} />
+            </div>
           </div>
         </div>
       </section>
