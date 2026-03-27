@@ -120,6 +120,34 @@ export default function BlogCarousel() {
   const totalSlides = blogPosts.length
   const AUTO_PLAY_DURATION = 5000
   
+  // Touch swipe handling for mobile
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  
+  const minSwipeDistance = 50
+  
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+  
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+  
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    if (isLeftSwipe && filteredPosts.length > 2) {
+      handleNext()
+    }
+    if (isRightSwipe && filteredPosts.length > 2) {
+      handlePrev()
+    }
+  }
+  
   // Load saved posts from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('savedPosts')
@@ -148,7 +176,7 @@ export default function BlogCarousel() {
     }
   }, [selectedPost])
 
-  // Text-to-Speech / Listen Mode
+  // Text-to-Speech / Listen Mode - Now reads Title + Excerpt
   const [isSpeaking, setIsSpeaking] = useState(false)
   
   const speak = useCallback(() => {
@@ -157,7 +185,8 @@ export default function BlogCarousel() {
         window.speechSynthesis.cancel()
         setIsSpeaking(false)
       } else {
-        const utterance = new SpeechSynthesisUtterance(selectedPost.content)
+        const textToRead = `Article: ${selectedPost.title}. ${selectedPost.excerpt} ${selectedPost.content}`
+        const utterance = new SpeechSynthesisUtterance(textToRead)
         utterance.rate = 0.9
         utterance.onend = () => setIsSpeaking(false)
         window.speechSynthesis.speak(utterance)
@@ -381,6 +410,14 @@ export default function BlogCarousel() {
     }
   }
 
+  // Smooth scroll to journal section
+  const scrollToJournal = () => {
+    const journalSection = document.getElementById('journal')
+    if (journalSection) {
+      journalSection.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   const currentPost = blogPosts[activeIndex]
   const isSaved = currentPost ? savedPosts.includes(currentPost.id) : false
   const currentClaps = currentPost ? claps[currentPost.id] || 0 : 0
@@ -400,14 +437,14 @@ export default function BlogCarousel() {
         )}
       </AnimatePresence>
 
-      <section id="journal" className="relative h-screen w-full bg-background overflow-hidden flex items-center justify-center">
+      <section id="journal" className="relative min-h-screen w-full bg-background overflow-hidden py-16 md:py-20">
         {/* Cinematic Background Accents */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-[15%] left-[10%] w-64 h-64 bg-foreground/[0.02] rounded-full blur-[120px]" />
           <div className="absolute bottom-[15%] right-[10%] w-80 h-80 bg-foreground/[0.02] rounded-full blur-[120px]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl flex flex-col items-center">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
           
           {/* Header Section */}
           <motion.div
@@ -427,7 +464,7 @@ export default function BlogCarousel() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 w-full max-w-md px-6"
+            className="mb-4 w-full max-w-md"
           >
             <div className="relative">
               <input
@@ -457,7 +494,7 @@ export default function BlogCarousel() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 flex flex-wrap justify-center gap-2 px-6 max-w-4xl"
+            className="mb-6 flex flex-wrap justify-center gap-2 max-w-4xl"
           >
             {categories.map((cat) => (
               <button
@@ -483,9 +520,13 @@ export default function BlogCarousel() {
             className="relative w-full flex items-center justify-center"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             style={{ 
               perspective: '1400px',
-              height: config.cardHeight + 120, 
+              height: config.cardHeight + 120,
+              minHeight: config.cardHeight + 120,
             }}
           >
             {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
@@ -668,12 +709,15 @@ export default function BlogCarousel() {
               </button>
             </div>
 
-            <Link href="/blog" className="group flex flex-col items-center gap-3">
+            <button 
+              onClick={scrollToJournal}
+              className="group flex flex-col items-center gap-3"
+            >
               <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/40 group-hover:text-foreground transition-all font-bold">
-                View All Stories
+                Back to Top
               </span>
               <motion.div className="h-px bg-foreground/20 w-16 group-hover:w-24 transition-all duration-500" />
-            </Link>
+            </button>
           </div>
 
         </div>
@@ -688,45 +732,45 @@ export default function BlogCarousel() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 overflow-y-auto bg-background"
             >
-              {/* Fixed Back Button - Top Left with z-[100] to ensure it's above everything */}
+              {/* Modern Back Button - Glass morphic style */}
               <motion.button 
                 onClick={() => setSelectedPost(null)}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="fixed top-20 left-6 z-[100] flex items-center gap-3 px-5 py-3 bg-background/90 backdrop-blur-md rounded-sm border border-foreground/10 text-foreground hover:bg-background hover:border-foreground/30 transition-all group shadow-lg"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="fixed top-6 left-6 z-[100] flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all group shadow-lg"
               >
                 <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span className="text-[10px] uppercase tracking-widest font-bold hidden sm:inline">Back to Journal</span>
+                <span className="text-xs font-medium hidden sm:inline">Back</span>
               </motion.button>
 
-              {/* Listen Mode Button - Top Right */}
+              {/* Modern Listen Mode Button - Glass morphic style */}
               <motion.button
                 onClick={speak}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className={`fixed top-20 right-6 z-[100] flex items-center gap-3 px-5 py-3 rounded-sm border transition-all group shadow-lg ${
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className={`fixed top-6 right-6 z-[100] flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-xl border transition-all group shadow-lg ${
                   isSpeaking 
-                    ? 'bg-foreground text-background border-foreground hover:bg-foreground/90' 
-                    : 'bg-background/90 backdrop-blur-md border-foreground/10 text-foreground hover:bg-background hover:border-foreground/30'
+                    ? 'bg-foreground/90 text-background border-foreground' 
+                    : 'bg-white/10 text-foreground border-white/20 hover:bg-white/20'
                 }`}
               >
                 {isSpeaking ? (
                   <>
                     <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                     </svg>
-                    <span className="text-[10px] uppercase tracking-widest font-bold hidden sm:inline">Pause</span>
+                    <span className="text-xs font-medium hidden sm:inline">Pause</span>
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                     </svg>
-                    <span className="text-[10px] uppercase tracking-widest font-bold hidden sm:inline">Listen</span>
+                    <span className="text-xs font-medium hidden sm:inline">Listen</span>
                   </>
                 )}
               </motion.button>
@@ -740,14 +784,14 @@ export default function BlogCarousel() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
                 
-                {/* Share & Save on Hero - Moved down to avoid overlap with new buttons */}
-                <div className="absolute top-36 right-6 z-50 flex items-center gap-3">
+                {/* Share & Save on Hero */}
+                <div className="absolute top-24 right-6 z-50 flex items-center gap-2">
                   <button 
                     onClick={() => toggleSave(selectedPost.id)}
-                    className="p-3 bg-background/80 backdrop-blur-md rounded-sm border border-foreground/10 text-foreground hover:bg-background transition-all"
+                    className="p-2.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all"
                   >
                     <svg 
-                      className={`w-5 h-5 ${savedPosts.includes(selectedPost.id) ? 'text-red-400 fill-current' : ''}`} 
+                      className={`w-4 h-4 ${savedPosts.includes(selectedPost.id) ? 'text-red-400 fill-current' : ''}`} 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
@@ -757,9 +801,9 @@ export default function BlogCarousel() {
                   </button>
                   <button 
                     onClick={() => sharePost(selectedPost)}
-                    className="p-3 bg-background/80 backdrop-blur-md rounded-sm border border-foreground/10 text-foreground hover:bg-background transition-all"
+                    className="p-2.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
                   </button>
@@ -923,16 +967,16 @@ export default function BlogCarousel() {
                   )}
                 </div>
 
-                {/* Bottom Back Button */}
+                {/* Bottom Back Button - Scrolls to Journal */}
                 <div className="text-center pb-12">
                   <button 
-                    onClick={() => setSelectedPost(null)}
+                    onClick={scrollToJournal}
                     className="inline-flex items-center gap-3 text-foreground/40 hover:text-foreground transition-all group"
                   >
-                    <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                    <span className="text-[10px] uppercase tracking-widest font-bold">Back to All Stories</span>
+                    <svg className="w-4 h-4 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Back to Journal</span>
                   </button>
                 </div>
               </div>
