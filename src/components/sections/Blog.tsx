@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
 const blogPosts = [
@@ -125,15 +125,15 @@ export default function BlogCarousel() {
   const totalSlides = blogPosts.length
   const AUTO_PLAY_DURATION = 5000
 
-  // Touch handling with proper gesture detection
+  // Touch handling - MOBILE ONLY
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null)
   const [isSwiping, setIsSwiping] = useState(false)
 
   const minSwipeDistance = 50
-  const maxVerticalDistance = 100 // Prevent accidental swipes during scroll
+  const maxVerticalDistance = 100
 
-  // Load saved data from localStorage
+  // Load saved data
   useEffect(() => {
     const saved = localStorage.getItem('savedPosts')
     if (saved) setSavedPosts(JSON.parse(saved))
@@ -149,14 +149,13 @@ export default function BlogCarousel() {
     localStorage.setItem('claps', JSON.stringify(claps))
   }, [claps])
 
-  // Text-to-Speech - reads Title + Excerpt
+  // Text-to-Speech - reads Title + Excerpt + Content
   const speak = useCallback(() => {
     if ('speechSynthesis' in window && selectedPost) {
       if (isSpeaking) {
         window.speechSynthesis.cancel()
         setIsSpeaking(false)
       } else {
-        // Read Title + Excerpt + Content
         const textToRead = `${selectedPost.title}. ${selectedPost.excerpt}. ${selectedPost.content}`
         const utterance = new SpeechSynthesisUtterance(textToRead)
         utterance.rate = 0.9
@@ -169,7 +168,6 @@ export default function BlogCarousel() {
     }
   }, [isSpeaking, selectedPost])
 
-  // Cleanup speech when modal closes
   useEffect(() => {
     if (!selectedPost && isSpeaking) {
       window.speechSynthesis.cancel()
@@ -177,18 +175,18 @@ export default function BlogCarousel() {
     }
   }, [selectedPost, isSpeaking])
 
-  // Carousel configuration with responsive sizing
+  // Carousel config - MOBILE: Reduced sizes for small screens
   const getCarouselConfig = () => {
     const width = typeof window !== 'undefined' ? window.innerWidth : 1200
     const height = typeof window !== 'undefined' ? window.innerHeight : 800
     const isMobile = width < 768
     const isTablet = width < 1024
 
-    // Increased padding for mobile - cards won't touch edges
+    // MOBILE ONLY: Smaller card width with padding consideration
     const cardWidth = isMobile ? Math.min(width * 0.75, 280) : 320
     const cardHeight = isMobile ? Math.min(height * 0.5, 420) : 440
 
-    // Reduced radius to keep cards within viewport with padding
+    // MOBILE ONLY: Reduced radius to keep cards within viewport
     const maxRadiusX = Math.min(width * 0.3, 400)
     const radiusX = isMobile ? width * 0.28 : isTablet ? 280 : maxRadiusX
     const radiusY = isMobile ? 20 : 40
@@ -222,7 +220,7 @@ export default function BlogCarousel() {
     return matchesCategory && matchesSearch
   })
 
-  // Enhanced touch handling with vertical scroll detection
+  // Touch handlers - MOBILE ONLY with scroll detection
   const onTouchStart = (e: React.TouchEvent) => {
     const touch = e.targetTouches[0]
     setTouchStart({ x: touch.clientX, y: touch.clientY })
@@ -235,7 +233,6 @@ export default function BlogCarousel() {
     const touch = e.targetTouches[0]
     setTouchEnd({ x: touch.clientX, y: touch.clientY })
 
-    // Detect if user is swiping horizontally vs scrolling vertically
     const deltaX = Math.abs(touch.clientX - touchStart.x)
     const deltaY = Math.abs(touch.clientY - touchStart.y)
 
@@ -255,13 +252,10 @@ export default function BlogCarousel() {
     const deltaX = touchStart.x - touchEnd.x
     const deltaY = Math.abs(touchStart.y - touchEnd.y)
 
-    // Only process if horizontal movement is significant and vertical is minimal
     if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalDistance) {
       if (deltaX > 0 && filteredPosts.length > 2) {
-        // Swiped left - go next
         handleNext()
       } else if (deltaX < 0 && filteredPosts.length > 2) {
-        // Swiped right - go prev
         handlePrev()
       }
     }
@@ -343,7 +337,7 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleNext, handlePrev, selectedPost, filteredPosts.length])
 
-  // Reading progress in modal
+  // Reading progress
   useEffect(() => {
     if (!selectedPost) {
       setReadingProgress(0)
@@ -411,7 +405,6 @@ export default function BlogCarousel() {
       }
     } else {
       navigator.clipboard.writeText(shareData.url)
-      // Could add toast notification here
     }
   }
 
@@ -444,10 +437,10 @@ export default function BlogCarousel() {
     }
   }
 
-  // FIXED: Scroll to journal section properly
+  // FIXED: Scroll to journal section
   const scrollToJournal = () => {
     if (journalRef.current) {
-      const offset = 80 // Account for any fixed header
+      const offset = 80
       const elementPosition = journalRef.current.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - offset
 
@@ -458,7 +451,7 @@ export default function BlogCarousel() {
     }
   }
 
-  // FIXED: Back to top functionality
+  // FIXED: Back to top
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -485,6 +478,7 @@ export default function BlogCarousel() {
         )}
       </AnimatePresence>
 
+      {/* MOBILE: min-h-[100svh] for proper viewport height, py-12 for breathing room */}
       <section 
         id="journal" 
         ref={journalRef}
@@ -496,9 +490,10 @@ export default function BlogCarousel() {
           <div className="absolute bottom-[10%] right-[5%] w-80 h-80 bg-foreground/[0.02] rounded-full blur-[120px]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        {/* MOBILE: px-4 for side padding, md:px-8 for larger screens */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 flex flex-col items-center">
 
-          {/* Header - FIXED: Better spacing for mobile */}
+          {/* Header - MOBILE: text-3xl, pt-4 to prevent cut-off */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -506,17 +501,17 @@ export default function BlogCarousel() {
             transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
             className="text-center mb-8 md:mb-12 pt-4"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif italic text-foreground tracking-tight">
+            <h2 className="text-3xl md:text-6xl lg:text-7xl font-serif italic text-foreground tracking-tight">
               The <span className="text-foreground/40 font-light">Journal</span>
             </h2>
             <div className="h-px w-16 bg-foreground/20 mx-auto mt-4 md:mt-6" />
           </motion.div>
 
-          {/* Search Bar */}
+          {/* Search Bar - MOBILE: px-4 for padding */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 w-full max-w-md px-4"
+            className="mb-6 w-full max-w-md px-4 md:px-0"
           >
             <div className="relative">
               <input
@@ -542,11 +537,11 @@ export default function BlogCarousel() {
             </div>
           </motion.div>
 
-          {/* Category Filter */}
+          {/* Category Filter - MOBILE: text-[10px], px-3, gap-2 */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 md:mb-12 flex flex-wrap justify-center gap-2 max-w-4xl px-4"
+            className="mb-8 md:mb-12 flex flex-wrap justify-center gap-2 md:gap-2 max-w-4xl px-4 md:px-0"
           >
             {categories.map((cat) => (
               <button
@@ -555,7 +550,7 @@ export default function BlogCarousel() {
                   setSelectedCategory(cat)
                   setActiveIndex(0)
                 }}
-                className={`text-[10px] sm:text-xs uppercase tracking-widest px-3 sm:px-4 py-2 border transition-all duration-300 ${
+                className={`text-[10px] md:text-xs uppercase tracking-widest px-3 md:px-4 py-2 border transition-all duration-300 ${
                   selectedCategory === cat 
                     ? 'border-foreground bg-foreground text-background' 
                     : 'border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground'
@@ -566,7 +561,7 @@ export default function BlogCarousel() {
             ))}
           </motion.div>
 
-          {/* 3D Carousel - FIXED: Better padding and sizing */}
+          {/* 3D Carousel - MOBILE: touch-pan-y for swipe, reduced height */}
           <div 
             ref={containerRef}
             className="relative w-full flex items-center justify-center touch-pan-y"
@@ -609,7 +604,8 @@ export default function BlogCarousel() {
                     ease: [0.19, 1, 0.22, 1],
                   }}
                 >
-                  <div className="relative w-full h-full bg-neutral-900 rounded-lg overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
+                  {/* MOBILE: rounded-lg for softer look, reduced shadow */}
+                  <div className="relative w-full h-full bg-neutral-900 rounded-lg md:rounded-sm overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
                     <motion.div 
                       className="absolute inset-0"
                       whileHover={{ scale: 1.05 }}
@@ -624,7 +620,7 @@ export default function BlogCarousel() {
                       <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient} from-black/80 via-black/30 to-transparent`} />
                     </motion.div>
 
-                    {/* Save Button */}
+                    {/* Save Button - MOBILE: top-3 right-3, p-2.5 */}
                     {style.isActive && (
                       <motion.button
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -643,7 +639,8 @@ export default function BlogCarousel() {
                       </motion.button>
                     )}
 
-                    <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end text-white">
+                    {/* MOBILE: p-5 for smaller padding */}
+                    <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end text-white">
                       <motion.div
                         animate={{ y: style.isActive ? 0 : 10 }}
                         transition={{ duration: 0.6 }}
@@ -663,11 +660,13 @@ export default function BlogCarousel() {
                           )}
                         </div>
 
-                        <h3 className="text-lg sm:text-xl md:text-2xl font-serif italic mb-2 leading-tight [text-wrap:balance]">
+                        {/* MOBILE: text-lg for smaller title */}
+                        <h3 className="text-lg md:text-xl lg:text-2xl font-serif italic mb-2 leading-tight [text-wrap:balance]">
                           {post.title}
                         </h3>
 
-                        <p className="text-xs sm:text-sm text-white/70 line-clamp-2 font-light leading-relaxed mb-4">
+                        {/* MOBILE: text-xs for excerpt */}
+                        <p className="text-xs md:text-sm text-white/70 line-clamp-2 font-light leading-relaxed mb-4">
                           {post.excerpt}
                         </p>
 
@@ -691,12 +690,12 @@ export default function BlogCarousel() {
                     </div>
                   </div>
 
-                  {/* Author info below active card */}
+                  {/* Author info - MOBILE: -bottom-14 */}
                   {style.isActive && filteredPosts.length > 2 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-14 left-0 right-0 text-center"
+                      className="absolute -bottom-14 md:-bottom-16 left-0 right-0 text-center"
                     >
                       <p className="text-foreground font-serif italic text-sm md:text-base">{post.author}</p>
                       <p className="text-foreground/40 text-[10px] uppercase tracking-widest mt-1">{post.date}</p>
@@ -711,7 +710,7 @@ export default function BlogCarousel() {
             )}
           </div>
 
-          {/* Navigation Footer - FIXED: Better spacing */}
+          {/* Navigation Footer - MOBILE: mt-16, gap-8 */}
           <div className="mt-16 md:mt-24 flex flex-col items-center gap-8 md:gap-12">
             <div className="flex items-center gap-8 md:gap-12">
               <button 
@@ -768,14 +767,14 @@ export default function BlogCarousel() {
               </button>
             </div>
 
-            {/* FIXED: View All Stories button with proper functionality */}
+            {/* FIXED: View All Stories - MOBILE: text-[11px], px-6 */}
             <motion.button 
               onClick={scrollToJournal}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
               className="group flex flex-col items-center gap-3 px-6 py-3"
             >
-              <span className="text-[11px] uppercase tracking-[0.4em] text-foreground/40 group-hover:text-foreground transition-all font-medium">
+              <span className="text-[11px] md:text-xs uppercase tracking-[0.4em] text-foreground/40 group-hover:text-foreground transition-all font-medium">
                 View All Stories
               </span>
               <motion.div 
@@ -785,7 +784,7 @@ export default function BlogCarousel() {
           </div>
         </div>
 
-        {/* FIXED: Back to Top Button - Floating pill design */}
+        {/* FIXED: Back to Top Button - MOBILE: bottom-6 right-6, p-4 */}
         <AnimatePresence>
           {showBackToTop && (
             <motion.button
@@ -813,9 +812,9 @@ export default function BlogCarousel() {
               transition={{ duration: 0.3 }}
               className="fixed inset-0 z-50 overflow-y-auto bg-background"
             >
-              {/* MODERN: Floating Action Buttons Container */}
+              {/* MODERN: Floating Action Buttons - MOBILE: top-4 left-4 right-4 */}
               <div className="fixed top-4 left-4 right-4 z-[100] flex justify-between items-start pointer-events-none">
-                {/* Back Button - Modern Pill Design */}
+                {/* Back Button - MODERN: Pill with icon + text */}
                 <motion.button 
                   onClick={() => setSelectedPost(null)}
                   initial={{ opacity: 0, x: -20 }}
@@ -831,7 +830,7 @@ export default function BlogCarousel() {
                   <span className="text-xs font-medium hidden sm:inline">Back</span>
                 </motion.button>
 
-                {/* Audio Button - Modern Animated Design */}
+                {/* Audio Button - MODERN: Animated equalizer when playing */}
                 <motion.button
                   onClick={speak}
                   initial={{ opacity: 0, x: 20 }}
@@ -874,8 +873,8 @@ export default function BlogCarousel() {
                 </motion.button>
               </div>
 
-              {/* Hero Section */}
-              <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] w-full">
+              {/* Hero Section - MOBILE: h-[50vh] */}
+              <div className="relative h-[50vh] md:h-[60vh] lg:h-[70vh] w-full">
                 <img 
                   src={selectedPost.image} 
                   alt={selectedPost.title}
@@ -883,8 +882,8 @@ export default function BlogCarousel() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
 
-                {/* Share & Save */}
-                <div className="absolute top-24 right-4 sm:right-6 flex items-center gap-2">
+                {/* Share & Save - MOBILE: top-24 right-4 */}
+                <div className="absolute top-24 right-4 md:right-6 flex items-center gap-2">
                   <button 
                     onClick={() => toggleSave(selectedPost.id)}
                     className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95"
@@ -908,16 +907,16 @@ export default function BlogCarousel() {
                   </button>
                 </div>
 
-                {/* Title Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-16">
+                {/* Title Overlay - MOBILE: p-6, text-3xl */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 lg:p-16">
                   <div className="max-w-4xl mx-auto">
-                    <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/60 mb-3 block">
+                    <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/60 mb-3 block">
                       {selectedPost.category}
                     </span>
-                    <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif italic text-foreground mb-4 leading-tight">
+                    <h1 className="text-3xl md:text-6xl lg:text-7xl font-serif italic text-foreground mb-4 leading-tight">
                       {selectedPost.title}
                     </h1>
-                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[10px] sm:text-xs uppercase tracking-widest text-foreground/50">
+                    <div className="flex flex-wrap items-center gap-4 md:gap-6 text-[10px] md:text-xs uppercase tracking-widest text-foreground/50">
                       <span>{selectedPost.readTime}</span>
                       <span className="w-1 h-1 rounded-full bg-foreground/30" />
                       <span>{selectedPost.views} reads</span>
@@ -928,40 +927,40 @@ export default function BlogCarousel() {
                 </div>
               </div>
 
-              {/* Article Content */}
-              <div ref={contentRef} className="w-full max-w-3xl mx-auto px-6 sm:px-8 py-12 md:py-20">
+              {/* Article Content - MOBILE: px-6, py-12, max-w-3xl */}
+              <div ref={contentRef} className="w-full max-w-3xl mx-auto px-6 md:px-8 py-12 md:py-20">
                 <motion.div
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.6 }}
                   className="space-y-12 md:space-y-16"
                 >
-                  {/* Quote */}
-                  <div className="border-l-2 border-foreground/20 pl-6 sm:pl-8 py-4">
-                    <p className="text-xl sm:text-2xl md:text-3xl font-serif italic text-foreground/80 leading-relaxed">
+                  {/* Quote - MOBILE: text-xl, pl-6 */}
+                  <div className="border-l-2 border-foreground/20 pl-6 md:pl-8 py-4">
+                    <p className="text-xl md:text-2xl lg:text-3xl font-serif italic text-foreground/80 leading-relaxed">
                       "{selectedPost.excerpt}"
                     </p>
                   </div>
 
-                  {/* Main Content */}
-                  <div className="text-base sm:text-lg text-foreground/70 leading-relaxed font-light space-y-6">
+                  {/* Main Content - MOBILE: text-base, first-letter:text-4xl */}
+                  <div className="text-base md:text-lg text-foreground/70 leading-relaxed font-light space-y-6">
                     {selectedPost.content.split('\n\n').map((paragraph, idx) => (
-                      <p key={idx} className="first-letter:text-4xl sm:first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-4px]">
+                      <p key={idx} className="first-letter:text-4xl md:first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-4px]">
                         {paragraph}
                       </p>
                     ))}
                   </div>
 
-                  {/* Key Insights */}
-                  <div className="bg-foreground/[0.02] border border-foreground/10 p-6 sm:p-8 rounded-lg">
-                    <h4 className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-6">Key Insights</h4>
+                  {/* Key Insights - MOBILE: p-6, rounded-lg */}
+                  <div className="bg-foreground/[0.02] border border-foreground/10 p-6 md:p-8 rounded-lg md:rounded-sm">
+                    <h4 className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-6">Key Insights</h4>
                     <ul className="space-y-4">
                       {[
                         `Understanding the philosophy behind ${selectedPost.category.toLowerCase()}`,
                         "Practical applications for your own spaces",
                         "Expert perspectives from industry leaders"
                       ].map((insight, idx) => (
-                        <li key={idx} className="flex items-start gap-4 text-foreground/70 font-light text-sm sm:text-base">
+                        <li key={idx} className="flex items-start gap-4 text-foreground/70 font-light text-sm md:text-base">
                           <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full mt-2 shrink-0" />
                           <span>{insight}</span>
                         </li>
@@ -969,9 +968,9 @@ export default function BlogCarousel() {
                     </ul>
                   </div>
 
-                  {/* Clap Section */}
+                  {/* Clap Section - MOBILE: w-16 h-16 */}
                   <div className="text-center py-12 border-y border-foreground/10">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">
+                    <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">
                       Did this resonate with you?
                     </p>
                     <motion.button 
@@ -979,26 +978,26 @@ export default function BlogCarousel() {
                       whileTap={{ scale: 1.1 }}
                       className="group inline-flex flex-col items-center gap-4"
                     >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-foreground/40 group-hover:bg-foreground/5 transition-all active:scale-95">
-                        <svg className="w-8 h-8 sm:w-10 sm:h-10 text-foreground/60 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-foreground/40 group-hover:bg-foreground/5 transition-all active:scale-95">
+                        <svg className="w-8 h-8 md:w-10 md:h-10 text-foreground/60 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span className="text-2xl sm:text-3xl font-serif italic text-foreground">{claps[selectedPost.id] || 0}</span>
+                      <span className="text-2xl md:text-3xl font-serif italic text-foreground">{claps[selectedPost.id] || 0}</span>
                       <span className="text-[10px] uppercase tracking-widest text-foreground/40">Appreciations</span>
                     </motion.button>
                   </div>
 
-                  {/* Author Section */}
-                  <div className="flex items-start gap-4 sm:gap-6 py-8">
+                  {/* Author Section - MOBILE: w-16 h-16 */}
+                  <div className="flex items-start gap-4 md:gap-6 py-8">
                     <img 
                       src={authors[selectedPost.author]?.avatar} 
                       alt={selectedPost.author}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover grayscale"
+                      className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover grayscale"
                     />
                     <div className="flex-1">
-                      <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
-                      <h4 className="text-lg sm:text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
+                      <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
+                      <h4 className="text-lg md:text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
                       <p className="text-sm text-foreground/60 mb-3">{authors[selectedPost.author]?.role}</p>
                       <p className="text-sm text-foreground/50 font-light leading-relaxed">
                         {authors[selectedPost.author]?.bio}
@@ -1006,11 +1005,11 @@ export default function BlogCarousel() {
                     </div>
                   </div>
 
-                  {/* Related Posts */}
+                  {/* Related Posts - MOBILE: gap-6 */}
                   {getRelatedPosts(selectedPost).length > 0 && (
                     <div className="pt-8">
-                      <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">Continue Reading</p>
-                      <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
+                      <p className="text-[10px] md:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">Continue Reading</p>
+                      <div className="grid sm:grid-cols-2 gap-6 md:gap-8">
                         {getRelatedPosts(selectedPost).map(related => (
                           <button
                             key={related.id}
@@ -1020,11 +1019,11 @@ export default function BlogCarousel() {
                             }}
                             className="group text-left"
                           >
-                            <div className="aspect-[4/3] overflow-hidden rounded-lg mb-4">
+                            <div className="aspect-[4/3] overflow-hidden rounded-lg md:rounded-sm mb-4">
                               <img src={related.image} alt={related.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105" />
                             </div>
                             <span className="text-[10px] uppercase tracking-widest text-foreground/40">{related.category}</span>
-                            <h4 className="font-serif italic text-lg sm:text-xl mt-2 group-hover:text-foreground/70 transition-colors">{related.title}</h4>
+                            <h4 className="font-serif italic text-lg md:text-xl mt-2 group-hover:text-foreground/70 transition-colors">{related.title}</h4>
                             <p className="text-sm text-foreground/50 mt-2 line-clamp-2 font-light">{related.excerpt}</p>
                           </button>
                         ))}
@@ -1033,10 +1032,10 @@ export default function BlogCarousel() {
                   )}
                 </motion.div>
 
-                {/* Newsletter */}
-                <div className="mt-16 sm:mt-20 mb-12 p-8 sm:p-12 bg-foreground/[0.02] border border-foreground/10 text-center rounded-lg">
-                  <h3 className="text-2xl sm:text-3xl font-serif italic mb-4 text-foreground">Join The Inner Circle</h3>
-                  <p className="text-foreground/60 mb-8 font-light max-w-md mx-auto text-sm sm:text-base">
+                {/* Newsletter - MOBILE: mt-16, p-8, rounded-lg */}
+                <div className="mt-16 md:mt-20 mb-12 p-8 md:p-12 bg-foreground/[0.02] border border-foreground/10 text-center rounded-lg md:rounded-sm">
+                  <h3 className="text-2xl md:text-3xl font-serif italic mb-4 text-foreground">Join The Inner Circle</h3>
+                  <p className="text-foreground/60 mb-8 font-light max-w-md mx-auto text-sm md:text-base">
                     Weekly insights on luxury design, delivered with intention. No spam, only inspiration.
                   </p>
                   {subscribed ? (
@@ -1067,7 +1066,7 @@ export default function BlogCarousel() {
                   )}
                 </div>
 
-                {/* FIXED: Back to Journal Button */}
+                {/* FIXED: Back to Journal - MOBILE: px-6 */}
                 <div className="text-center pb-12">
                   <motion.button 
                     onClick={() => {
@@ -1081,7 +1080,7 @@ export default function BlogCarousel() {
                     <svg className="w-4 h-4 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
-                    <span className="text-[10px] sm:text-xs uppercase tracking-widest font-bold">Back to Journal</span>
+                    <span className="text-[10px] md:text-xs uppercase tracking-widest font-bold">Back to Journal</span>
                   </motion.button>
                 </div>
               </div>
