@@ -173,7 +173,7 @@ function MobileStory({ navbarHeight }: { navbarHeight: number }) {
         style={{ height: `${(STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS) * MOBILE_MULTIPLIER}vh` }}
       >
         <div 
-          className="h-screen sticky flex items-end justify-center pb-20 overflow-hidden z-10" 
+          className="h-screen sticky flex items-end justify-center pb-10 overflow-hidden z-10" 
           style={{ top: navbarHeight }}
         >
           <div className="absolute inset-0 z-0 bg-neutral-900">
