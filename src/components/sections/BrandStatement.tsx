@@ -173,9 +173,9 @@ function MobileStory({ navbarHeight }: { navbarHeight: number }) {
         style={{ height: `${(STORY_CHAPTERS.length + EXTRA_SCROLL_SCREENS) * MOBILE_MULTIPLIER}vh` }}
       >
         <div 
-  className="h-screen sticky flex items-center justify-center overflow-hidden z-10" // Changed items-end to items-center
-  style={{ top: 0 }} // Change navbarHeight to 0 to let it slide behind the nav if transparent
->
+          className="h-screen sticky flex items-end justify-center pb-20 overflow-hidden z-10" 
+          style={{ top: navbarHeight }}
+        >
           <div className="absolute inset-0 z-0 bg-neutral-900">
             <AnimatePresence mode="wait">
               <motion.div
