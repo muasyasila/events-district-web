@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import Link from 'next/link'
 
 const blogPosts = [
@@ -114,41 +114,26 @@ export default function BlogCarousel() {
   const [timeLeft, setTimeLeft] = useState("")
   const [email, setEmail] = useState("")
   const [subscribed, setSubscribed] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [showBackToTop, setShowBackToTop] = useState(false)
+
   const containerRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
-  
+  const journalRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
   const totalSlides = blogPosts.length
   const AUTO_PLAY_DURATION = 5000
-  
-  // Touch swipe handling for mobile
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
-  
+
+  // Touch handling with proper gesture detection
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null)
+  const [isSwiping, setIsSwiping] = useState(false)
+
   const minSwipeDistance = 50
-  
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-  
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-  
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-    if (isLeftSwipe && filteredPosts.length > 2) {
-      handleNext()
-    }
-    if (isRightSwipe && filteredPosts.length > 2) {
-      handlePrev()
-    }
-  }
-  
-  // Load saved posts from localStorage
+  const maxVerticalDistance = 100 // Prevent accidental swipes during scroll
+
+  // Load saved data from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('savedPosts')
     if (saved) setSavedPosts(JSON.parse(saved))
@@ -156,46 +141,35 @@ export default function BlogCarousel() {
     if (savedClaps) setClaps(JSON.parse(savedClaps))
   }, [])
 
-  // Save to localStorage
   useEffect(() => {
     localStorage.setItem('savedPosts', JSON.stringify(savedPosts))
   }, [savedPosts])
-  
+
   useEffect(() => {
     localStorage.setItem('claps', JSON.stringify(claps))
   }, [claps])
 
-  // Dynamic Reading Time Estimator
-  const [actualReadTime, setActualReadTime] = useState<string>("")
-  
-  useEffect(() => {
-    if (selectedPost) {
-      const words = selectedPost.content.split(/\s+/).length
-      const minutes = Math.ceil(words / 200) // avg reading speed
-      setActualReadTime(`${minutes} min read`)
-    }
-  }, [selectedPost])
-
-  // Text-to-Speech / Listen Mode - Now reads Title + Excerpt
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  
+  // Text-to-Speech - reads Title + Excerpt
   const speak = useCallback(() => {
     if ('speechSynthesis' in window && selectedPost) {
       if (isSpeaking) {
         window.speechSynthesis.cancel()
         setIsSpeaking(false)
       } else {
-        const textToRead = `Article: ${selectedPost.title}. ${selectedPost.excerpt} ${selectedPost.content}`
+        // Read Title + Excerpt + Content
+        const textToRead = `${selectedPost.title}. ${selectedPost.excerpt}. ${selectedPost.content}`
         const utterance = new SpeechSynthesisUtterance(textToRead)
         utterance.rate = 0.9
+        utterance.pitch = 1
         utterance.onend = () => setIsSpeaking(false)
+        utterance.onerror = () => setIsSpeaking(false)
         window.speechSynthesis.speak(utterance)
         setIsSpeaking(true)
       }
     }
   }, [isSpeaking, selectedPost])
 
-  // Cleanup speech synthesis when modal closes
+  // Cleanup speech when modal closes
   useEffect(() => {
     if (!selectedPost && isSpeaking) {
       window.speechSynthesis.cancel()
@@ -203,19 +177,22 @@ export default function BlogCarousel() {
     }
   }, [selectedPost, isSpeaking])
 
+  // Carousel configuration with responsive sizing
   const getCarouselConfig = () => {
     const width = typeof window !== 'undefined' ? window.innerWidth : 1200
     const height = typeof window !== 'undefined' ? window.innerHeight : 800
     const isMobile = width < 768
     const isTablet = width < 1024
-    
-    const cardWidth = isMobile ? 240 : 300
-    const cardHeight = isMobile ? 320 : 400
-    
-    const maxRadiusX = Math.min(width * 0.35, 450)
-    const radiusX = isMobile ? width * 0.35 : isTablet ? 300 : maxRadiusX
-    const radiusY = isMobile ? 15 : 30
-    
+
+    // Increased padding for mobile - cards won't touch edges
+    const cardWidth = isMobile ? Math.min(width * 0.75, 280) : 320
+    const cardHeight = isMobile ? Math.min(height * 0.5, 420) : 440
+
+    // Reduced radius to keep cards within viewport with padding
+    const maxRadiusX = Math.min(width * 0.3, 400)
+    const radiusX = isMobile ? width * 0.28 : isTablet ? 280 : maxRadiusX
+    const radiusY = isMobile ? 20 : 40
+
     return {
       radiusX,
       radiusY,
@@ -235,7 +212,7 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Filter and search posts
+  // Filter posts
   const filteredPosts = blogPosts.filter(post => {
     const matchesCategory = selectedCategory === "All" || post.category === selectedCategory
     const matchesSearch = searchQuery === "" || 
@@ -245,19 +222,66 @@ export default function BlogCarousel() {
     return matchesCategory && matchesSearch
   })
 
-  // Calculate layout based on filtered posts count
+  // Enhanced touch handling with vertical scroll detection
+  const onTouchStart = (e: React.TouchEvent) => {
+    const touch = e.targetTouches[0]
+    setTouchStart({ x: touch.clientX, y: touch.clientY })
+    setTouchEnd(null)
+    setIsSwiping(false)
+  }
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return
+    const touch = e.targetTouches[0]
+    setTouchEnd({ x: touch.clientX, y: touch.clientY })
+
+    // Detect if user is swiping horizontally vs scrolling vertically
+    const deltaX = Math.abs(touch.clientX - touchStart.x)
+    const deltaY = Math.abs(touch.clientY - touchStart.y)
+
+    if (deltaX > deltaY && deltaX > 10) {
+      setIsSwiping(true)
+    }
+  }
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || !isSwiping) {
+      setTouchStart(null)
+      setTouchEnd(null)
+      setIsSwiping(false)
+      return
+    }
+
+    const deltaX = touchStart.x - touchEnd.x
+    const deltaY = Math.abs(touchStart.y - touchEnd.y)
+
+    // Only process if horizontal movement is significant and vertical is minimal
+    if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalDistance) {
+      if (deltaX > 0 && filteredPosts.length > 2) {
+        // Swiped left - go next
+        handleNext()
+      } else if (deltaX < 0 && filteredPosts.length > 2) {
+        // Swiped right - go prev
+        handlePrev()
+      }
+    }
+
+    setTouchStart(null)
+    setTouchEnd(null)
+    setIsSwiping(false)
+  }
+
+  // Carousel calculations
   const getFilteredCardStyle = (index: number, totalFiltered: number) => {
     const { radiusX, radiusY, cardWidth, isMobile } = config
-    
-    // If only 1 post, center it
+
     if (totalFiltered === 1) {
       return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
     }
-    
-    // If 2 posts, side by side
+
     if (totalFiltered === 2) {
       const offset = index === 0 ? -1 : 1
-      const x = offset * (cardWidth * 0.7)
+      const x = offset * (cardWidth * 0.6)
       return { 
         x, 
         z: 0, 
@@ -268,22 +292,21 @@ export default function BlogCarousel() {
         isActive: true 
       }
     }
-    
-    // If 3+ posts, use normal carousel with middle one active
+
     const activeFilteredIndex = filteredPosts.findIndex(p => blogPosts.indexOf(p) === activeIndex)
     let offset = index - activeFilteredIndex
-    
+
     if (offset > totalFiltered / 2) offset -= totalFiltered
     if (offset < -totalFiltered / 2) offset += totalFiltered
-    
-    const angle = offset * (Math.PI / 6) 
+
+    const angle = offset * (Math.PI / 5)
     const x = Math.sin(angle) * radiusX
     const z = Math.cos(angle) * radiusY - radiusY
     const scale = 0.75 + (0.25 * ((z + radiusY) / radiusY))
-    const rotateY = -offset * 15
-    const opacity = 0.3 + (0.7 * ((z + radiusY) / radiusY))
+    const rotateY = -offset * 12
+    const opacity = offset === 0 ? 1 : Math.max(0.3, 0.7 * ((z + radiusY) / radiusY))
     const zIndex = Math.round((z + radiusY) * 10)
-    
+
     return { x, z, scale, rotateY, opacity, zIndex, isActive: offset === 0 }
   }
 
@@ -297,14 +320,12 @@ export default function BlogCarousel() {
     setActiveIndex((prev) => (prev - 1 + totalSlides) % totalSlides)
   }, [totalSlides, filteredPosts.length])
 
+  // Auto-play
   useEffect(() => {
     if (!isAutoPlaying || searchQuery || selectedCategory !== "All" || filteredPosts.length <= 2) return
     const timer = setInterval(handleNext, AUTO_PLAY_DURATION)
     return () => clearInterval(timer)
   }, [isAutoPlaying, handleNext, searchQuery, selectedCategory, filteredPosts.length])
-
-  const handleMouseEnter = () => setIsAutoPlaying(false)
-  const handleMouseLeave = () => setIsAutoPlaying(true)
 
   // Keyboard navigation
   useEffect(() => {
@@ -322,7 +343,7 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleNext, handlePrev, selectedPost, filteredPosts.length])
 
-  // Reading progress and time left for modal
+  // Reading progress in modal
   useEffect(() => {
     if (!selectedPost) {
       setReadingProgress(0)
@@ -331,11 +352,12 @@ export default function BlogCarousel() {
     }
 
     const handleScroll = () => {
+      if (!contentRef.current) return
       const scrollTop = window.scrollY
       const docHeight = document.documentElement.scrollHeight - window.innerHeight
       const progress = (scrollTop / docHeight) * 100
       setReadingProgress(Math.min(100, Math.max(0, progress)))
-      
+
       const totalMinutes = parseInt(selectedPost.readTime)
       const remaining = Math.ceil(totalMinutes * (1 - progress / 100))
       setTimeLeft(`${remaining} min left`)
@@ -346,6 +368,16 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [selectedPost])
 
+  // Back to top visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 500)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Actions
   const toggleSave = (postId: number, e?: React.MouseEvent) => {
     e?.stopPropagation()
     setSavedPosts(prev => 
@@ -370,7 +402,7 @@ export default function BlogCarousel() {
       text: post.excerpt,
       url: `${typeof window !== 'undefined' ? window.location.href : ''}#blog-${post.id}`
     }
-    
+
     if (navigator.share) {
       try {
         await navigator.share(shareData)
@@ -379,7 +411,7 @@ export default function BlogCarousel() {
       }
     } else {
       navigator.clipboard.writeText(shareData.url)
-      alert('Link copied to clipboard')
+      // Could add toast notification here
     }
   }
 
@@ -398,24 +430,40 @@ export default function BlogCarousel() {
     }
   }
 
-  // Click any card to bring to center and open
   const handleCardClick = (post: typeof blogPosts[0], isActive: boolean) => {
     if (isActive) {
       setSelectedPost(post)
+      window.scrollTo(0, 0)
     } else {
       const postIndex = blogPosts.indexOf(post)
       setActiveIndex(postIndex)
-      // Small delay then open
-      setTimeout(() => setSelectedPost(post), 400)
+      setTimeout(() => {
+        setSelectedPost(post)
+        window.scrollTo(0, 0)
+      }, 400)
     }
   }
 
-  // Smooth scroll to journal section
+  // FIXED: Scroll to journal section properly
   const scrollToJournal = () => {
-    const journalSection = document.getElementById('journal')
-    if (journalSection) {
-      journalSection.scrollIntoView({ behavior: 'smooth' })
+    if (journalRef.current) {
+      const offset = 80 // Account for any fixed header
+      const elementPosition = journalRef.current.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - offset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
     }
+  }
+
+  // FIXED: Back to top functionality
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
   }
 
   const currentPost = blogPosts[activeIndex]
@@ -424,47 +472,51 @@ export default function BlogCarousel() {
 
   return (
     <>
-      {/* Reading Progress Bar for Modal */}
+      {/* Reading Progress Bar */}
       <AnimatePresence>
         {selectedPost && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed top-0 left-0 h-[2px] bg-foreground z-[60]"
+            className="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-amber-500 to-orange-600 z-[60]"
             style={{ width: `${readingProgress}%` }}
           />
         )}
       </AnimatePresence>
 
-      <section id="journal" className="relative min-h-screen w-full bg-background overflow-hidden py-16 md:py-20">
-        {/* Cinematic Background Accents */}
+      <section 
+        id="journal" 
+        ref={journalRef}
+        className="relative min-h-[100svh] w-full bg-background overflow-hidden py-12 md:py-20"
+      >
+        {/* Background Accents */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[15%] left-[10%] w-64 h-64 bg-foreground/[0.02] rounded-full blur-[120px]" />
-          <div className="absolute bottom-[15%] right-[10%] w-80 h-80 bg-foreground/[0.02] rounded-full blur-[120px]" />
+          <div className="absolute top-[10%] left-[5%] w-64 h-64 bg-foreground/[0.02] rounded-full blur-[120px]" />
+          <div className="absolute bottom-[10%] right-[5%] w-80 h-80 bg-foreground/[0.02] rounded-full blur-[120px]" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-          
-          {/* Header Section */}
+
+          {/* Header - FIXED: Better spacing for mobile */}
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 1, ease: [0.19, 1, 0.22, 1] }}
-            className="text-center mb-6 md:mb-8"
+            transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
+            className="text-center mb-8 md:mb-12 pt-4"
           >
-            <h2 className="text-4xl md:text-7xl font-serif italic text-foreground tracking-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif italic text-foreground tracking-tight">
               The <span className="text-foreground/40 font-light">Journal</span>
             </h2>
-            <div className="h-px w-12 bg-foreground/20 mx-auto mt-4" />
+            <div className="h-px w-16 bg-foreground/20 mx-auto mt-4 md:mt-6" />
           </motion.div>
 
           {/* Search Bar */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 w-full max-w-md"
+            className="mb-6 w-full max-w-md px-4"
           >
             <div className="relative">
               <input
@@ -472,17 +524,17 @@ export default function BlogCarousel() {
                 placeholder="Search stories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-b border-foreground/20 py-2 pl-8 pr-4 text-sm focus:outline-none focus:border-foreground transition-colors placeholder:text-foreground/40 text-foreground"
+                className="w-full bg-transparent border-b border-foreground/20 py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-foreground transition-colors placeholder:text-foreground/40 text-foreground"
               />
-              <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -490,11 +542,11 @@ export default function BlogCarousel() {
             </div>
           </motion.div>
 
-          {/* Category Filter Tabs */}
+          {/* Category Filter */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 flex flex-wrap justify-center gap-2 max-w-4xl"
+            className="mb-8 md:mb-12 flex flex-wrap justify-center gap-2 max-w-4xl px-4"
           >
             {categories.map((cat) => (
               <button
@@ -503,7 +555,7 @@ export default function BlogCarousel() {
                   setSelectedCategory(cat)
                   setActiveIndex(0)
                 }}
-                className={`text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-all duration-300 ${
+                className={`text-[10px] sm:text-xs uppercase tracking-widest px-3 sm:px-4 py-2 border transition-all duration-300 ${
                   selectedCategory === cat 
                     ? 'border-foreground bg-foreground text-background' 
                     : 'border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground'
@@ -514,30 +566,31 @@ export default function BlogCarousel() {
             ))}
           </motion.div>
 
-          {/* 3D Carousel Viewport */}
+          {/* 3D Carousel - FIXED: Better padding and sizing */}
           <div 
             ref={containerRef}
-            className="relative w-full flex items-center justify-center"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            className="relative w-full flex items-center justify-center touch-pan-y"
+            onMouseEnter={() => setIsAutoPlaying(false)}
+            onMouseLeave={() => setIsAutoPlaying(true)}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
             style={{ 
               perspective: '1400px',
-              height: config.cardHeight + 120,
-              minHeight: config.cardHeight + 120,
+              height: config.isMobile ? config.cardHeight + 100 : config.cardHeight + 140,
+              minHeight: config.isMobile ? 500 : 600,
             }}
           >
             {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
               const style = getFilteredCardStyle(index, filteredPosts.length)
               const postClaps = claps[post.id] || 0
               const isPostSaved = savedPosts.includes(post.id)
+
               return (
                 <motion.article
                   key={post.id}
                   onClick={() => handleCardClick(post, style.isActive)}
-                  className="absolute cursor-pointer group"
+                  className="absolute cursor-pointer group select-none"
                   style={{
                     width: config.cardWidth,
                     height: config.cardHeight,
@@ -552,11 +605,11 @@ export default function BlogCarousel() {
                     opacity: style.opacity,
                   }}
                   transition={{
-                    duration: 1.2,
+                    duration: 0.8,
                     ease: [0.19, 1, 0.22, 1],
                   }}
                 >
-                  <div className="relative w-full h-full bg-neutral-900 rounded-sm overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)]">
+                  <div className="relative w-full h-full bg-neutral-900 rounded-lg overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
                     <motion.div 
                       className="absolute inset-0"
                       whileHover={{ scale: 1.05 }}
@@ -565,39 +618,42 @@ export default function BlogCarousel() {
                       <img
                         src={post.image}
                         alt={post.title}
-                        className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-1000"
+                        className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700"
+                        draggable={false}
                       />
-                      <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient} from-black/80 via-black/20 to-transparent`} />
+                      <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient} from-black/80 via-black/30 to-transparent`} />
                     </motion.div>
 
                     {/* Save Button */}
                     {style.isActive && (
-                      <button
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         onClick={(e) => toggleSave(post.id, e)}
-                        className="absolute top-4 right-4 z-20 p-2 bg-black/30 backdrop-blur-sm rounded-full hover:bg-black/50 transition-colors"
+                        className="absolute top-3 right-3 z-20 p-2.5 bg-black/40 backdrop-blur-md rounded-full hover:bg-black/60 transition-all active:scale-95"
                       >
                         <svg 
-                          className={`w-4 h-4 transition-colors ${isPostSaved ? 'text-red-400 fill-current' : 'text-white/70'}`} 
+                          className={`w-4 h-4 transition-colors ${isPostSaved ? 'text-red-400 fill-current' : 'text-white/80'}`} 
                           fill="none" 
                           stroke="currentColor" 
                           viewBox="0 0 24 24"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
-                      </button>
+                      </motion.button>
                     )}
 
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end text-white pb-10">
+                    <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end text-white">
                       <motion.div
-                        animate={{ y: style.isActive ? 0 : 20 }}
-                        transition={{ duration: 0.8 }}
+                        animate={{ y: style.isActive ? 0 : 10 }}
+                        transition={{ duration: 0.6 }}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[9px] tracking-[0.3em] uppercase text-white/50 font-medium">
+                          <span className="text-[10px] tracking-[0.2em] uppercase text-white/60 font-medium">
                             {post.category}
                           </span>
                           {style.isActive && (
-                            <span className="text-[9px] text-white/40 flex items-center gap-1">
+                            <span className="text-[10px] text-white/50 flex items-center gap-1">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -606,28 +662,28 @@ export default function BlogCarousel() {
                             </span>
                           )}
                         </div>
-                        
-                        <h3 className="text-lg md:text-2xl font-serif italic mb-3 leading-tight [text-wrap:balance]">
+
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-serif italic mb-2 leading-tight [text-wrap:balance]">
                           {post.title}
                         </h3>
-                        
-                        <p className="text-[11px] text-white/70 line-clamp-2 font-light leading-relaxed mb-4">
+
+                        <p className="text-xs sm:text-sm text-white/70 line-clamp-2 font-light leading-relaxed mb-4">
                           {post.excerpt}
                         </p>
-                        
-                        <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                          <span className="text-[9px] tracking-widest uppercase text-white/40">{post.readTime}</span>
+
+                        <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                          <span className="text-[10px] tracking-widest uppercase text-white/40">{post.readTime}</span>
                           <div className="flex items-center gap-3">
                             {style.isActive && postClaps > 0 && (
-                              <span className="text-[9px] text-white/60 flex items-center gap-1">
+                              <span className="text-[10px] text-white/60 flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 {postClaps}
                               </span>
                             )}
-                            <span className="text-[9px] tracking-widest uppercase text-white/40 group-hover:text-white transition-colors flex items-center gap-2">
-                              {style.isActive ? 'Read Story' : 'View'} <span className="text-sm">→</span>
+                            <span className="text-[10px] tracking-widest uppercase text-white/50 group-hover:text-white transition-colors flex items-center gap-1.5">
+                              {style.isActive ? 'Read' : 'View'} <span className="text-sm">→</span>
                             </span>
                           </div>
                         </div>
@@ -635,49 +691,52 @@ export default function BlogCarousel() {
                     </div>
                   </div>
 
+                  {/* Author info below active card */}
                   {style.isActive && filteredPosts.length > 2 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-16 left-0 right-0 text-center"
+                      className="absolute -bottom-14 left-0 right-0 text-center"
                     >
-                      <p className="text-foreground font-serif italic text-sm">{post.author}</p>
+                      <p className="text-foreground font-serif italic text-sm md:text-base">{post.author}</p>
                       <p className="text-foreground/40 text-[10px] uppercase tracking-widest mt-1">{post.date}</p>
                     </motion.div>
                   )}
                 </motion.article>
               )
             }) : (
-              <div className="text-center text-foreground/40 text-sm font-light">
+              <div className="text-center text-foreground/40 text-sm font-light py-20">
                 No stories found matching your criteria
               </div>
             )}
           </div>
 
-          {/* Integrated Navigation Footer */}
-          <div className="mt-20 flex flex-col items-center gap-10">
-            <div className="flex items-center gap-12">
+          {/* Navigation Footer - FIXED: Better spacing */}
+          <div className="mt-16 md:mt-24 flex flex-col items-center gap-8 md:gap-12">
+            <div className="flex items-center gap-8 md:gap-12">
               <button 
                 onClick={handlePrev} 
                 disabled={filteredPosts.length <= 2}
-                className={`group p-2 ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                className={`group p-3 rounded-full border border-foreground/20 hover:border-foreground/40 transition-all ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
               >
-                <svg className="w-5 h-5 text-foreground/30 group-hover:text-foreground transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 19l-7-7 7-7" />
+                <svg className="w-5 h-5 text-foreground/50 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
-              {/* PROGRESS BAR NAVIGATION */}
-              <div className="flex gap-4 items-center">
+              {/* Progress Indicators */}
+              <div className="flex gap-2 md:gap-3 items-center">
                 {blogPosts.map((_, index) => {
                   const isActive = index === activeIndex;
                   return (
-                    <div 
+                    <button
                       key={index}
                       onClick={() => filteredPosts.length > 2 && setActiveIndex(index)}
-                      className={`relative h-[2px] overflow-hidden bg-foreground/10 transition-all duration-500 ${filteredPosts.length > 2 ? 'cursor-pointer' : ''}`}
-                      style={{ width: isActive ? '60px' : '6px' }}
+                      disabled={filteredPosts.length <= 2}
+                      className={`relative h-1.5 rounded-full overflow-hidden transition-all duration-500 ${filteredPosts.length > 2 ? 'cursor-pointer hover:bg-foreground/20' : ''}`}
+                      style={{ width: isActive ? '48px' : '6px' }}
                     >
+                      <div className="absolute inset-0 bg-foreground/20" />
                       {isActive && filteredPosts.length > 2 && (
                         <motion.div 
                           initial={{ width: "0%" }}
@@ -693,7 +752,7 @@ export default function BlogCarousel() {
                       {isActive && filteredPosts.length <= 2 && (
                         <div className="absolute inset-0 bg-foreground" />
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -701,28 +760,49 @@ export default function BlogCarousel() {
               <button 
                 onClick={handleNext} 
                 disabled={filteredPosts.length <= 2}
-                className={`group p-2 ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                className={`group p-3 rounded-full border border-foreground/20 hover:border-foreground/40 transition-all ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : 'active:scale-95'}`}
               >
-                <svg className="w-5 h-5 text-foreground/30 group-hover:text-foreground transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5l7 7-7 7" />
+                <svg className="w-5 h-5 text-foreground/50 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
 
-            <button 
+            {/* FIXED: View All Stories button with proper functionality */}
+            <motion.button 
               onClick={scrollToJournal}
-              className="group flex flex-col items-center gap-3"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="group flex flex-col items-center gap-3 px-6 py-3"
             >
-              <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/40 group-hover:text-foreground transition-all font-bold">
-                Back to Top
+              <span className="text-[11px] uppercase tracking-[0.4em] text-foreground/40 group-hover:text-foreground transition-all font-medium">
+                View All Stories
               </span>
-              <motion.div className="h-px bg-foreground/20 w-16 group-hover:w-24 transition-all duration-500" />
-            </button>
+              <motion.div 
+                className="h-px bg-foreground/30 w-20 group-hover:w-32 group-hover:bg-foreground/50 transition-all duration-500" 
+              />
+            </motion.button>
           </div>
-
         </div>
 
-        {/* Modal Overlay - FULL SECTION */}
+        {/* FIXED: Back to Top Button - Floating pill design */}
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.button
+              initial={{ opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.8 }}
+              onClick={scrollToTop}
+              className="fixed bottom-6 right-6 z-40 p-4 bg-foreground text-background rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+              </svg>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Article Modal */}
         <AnimatePresence>
           {selectedPost && (
             <motion.div
@@ -730,65 +810,84 @@ export default function BlogCarousel() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
               className="fixed inset-0 z-50 overflow-y-auto bg-background"
             >
-              {/* Modern Back Button - Glass morphic style */}
-              <motion.button 
-                onClick={() => setSelectedPost(null)}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="fixed top-6 left-6 z-[100] flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all group shadow-lg"
-              >
-                <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="text-xs font-medium hidden sm:inline">Back</span>
-              </motion.button>
+              {/* MODERN: Floating Action Buttons Container */}
+              <div className="fixed top-4 left-4 right-4 z-[100] flex justify-between items-start pointer-events-none">
+                {/* Back Button - Modern Pill Design */}
+                <motion.button 
+                  onClick={() => setSelectedPost(null)}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all group shadow-lg active:scale-95"
+                >
+                  <div className="w-5 h-5 rounded-full bg-foreground/10 flex items-center justify-center group-hover:bg-foreground/20 transition-colors">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium hidden sm:inline">Back</span>
+                </motion.button>
 
-              {/* Modern Listen Mode Button - Glass morphic style */}
-              <motion.button
-                onClick={speak}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className={`fixed top-6 right-6 z-[100] flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-xl border transition-all group shadow-lg ${
-                  isSpeaking 
-                    ? 'bg-foreground/90 text-background border-foreground' 
-                    : 'bg-white/10 text-foreground border-white/20 hover:bg-white/20'
-                }`}
-              >
-                {isSpeaking ? (
-                  <>
-                    <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    </svg>
-                    <span className="text-xs font-medium hidden sm:inline">Pause</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    </svg>
-                    <span className="text-xs font-medium hidden sm:inline">Listen</span>
-                  </>
-                )}
-              </motion.button>
+                {/* Audio Button - Modern Animated Design */}
+                <motion.button
+                  onClick={speak}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-full backdrop-blur-xl border transition-all group shadow-lg active:scale-95 ${
+                    isSpeaking 
+                      ? 'bg-foreground text-background border-foreground' 
+                      : 'bg-white/10 text-foreground border-white/20 hover:bg-white/20'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isSpeaking ? 'bg-background/20' : 'bg-foreground/10 group-hover:bg-foreground/20'}`}>
+                    {isSpeaking ? (
+                      <div className="flex gap-0.5 items-end h-3">
+                        <motion.div 
+                          animate={{ height: [4, 12, 4] }}
+                          transition={{ repeat: Infinity, duration: 0.5 }}
+                          className="w-0.5 bg-current rounded-full"
+                        />
+                        <motion.div 
+                          animate={{ height: [8, 4, 8] }}
+                          transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }}
+                          className="w-0.5 bg-current rounded-full"
+                        />
+                        <motion.div 
+                          animate={{ height: [6, 10, 6] }}
+                          transition={{ repeat: Infinity, duration: 0.5, delay: 0.2 }}
+                          className="w-0.5 bg-current rounded-full"
+                        />
+                      </div>
+                    ) : (
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium hidden sm:inline">
+                    {isSpeaking ? 'Listening...' : 'Listen'}
+                  </span>
+                </motion.button>
+              </div>
 
               {/* Hero Section */}
-              <div className="relative h-[70vh] w-full">
+              <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] w-full">
                 <img 
                   src={selectedPost.image} 
                   alt={selectedPost.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
-                
-                {/* Share & Save on Hero */}
-                <div className="absolute top-24 right-6 z-50 flex items-center gap-2">
+                <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
+
+                {/* Share & Save */}
+                <div className="absolute top-24 right-4 sm:right-6 flex items-center gap-2">
                   <button 
                     onClick={() => toggleSave(selectedPost.id)}
-                    className="p-2.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all"
+                    className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95"
                   >
                     <svg 
                       className={`w-4 h-4 ${savedPosts.includes(selectedPost.id) ? 'text-red-400 fill-current' : ''}`} 
@@ -801,7 +900,7 @@ export default function BlogCarousel() {
                   </button>
                   <button 
                     onClick={() => sharePost(selectedPost)}
-                    className="p-2.5 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all"
+                    className="p-3 bg-white/10 backdrop-blur-xl rounded-full border border-white/20 text-foreground hover:bg-white/20 transition-all active:scale-95"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -810,17 +909,19 @@ export default function BlogCarousel() {
                 </div>
 
                 {/* Title Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16">
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-16">
                   <div className="max-w-4xl mx-auto">
-                    <span className="text-[10px] uppercase tracking-[0.4em] text-foreground/60 mb-4 block">
+                    <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/60 mb-3 block">
                       {selectedPost.category}
                     </span>
-                    <h1 className="text-4xl md:text-7xl font-serif italic text-foreground mb-4">
+                    <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif italic text-foreground mb-4 leading-tight">
                       {selectedPost.title}
                     </h1>
-                    <div className="flex items-center gap-6 text-[10px] uppercase tracking-widest text-foreground/40">
-                      <span>{actualReadTime || selectedPost.readTime}</span>
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[10px] sm:text-xs uppercase tracking-widest text-foreground/50">
+                      <span>{selectedPost.readTime}</span>
+                      <span className="w-1 h-1 rounded-full bg-foreground/30" />
                       <span>{selectedPost.views} reads</span>
+                      <span className="w-1 h-1 rounded-full bg-foreground/30" />
                       <span>{selectedPost.date}</span>
                     </div>
                   </div>
@@ -828,77 +929,76 @@ export default function BlogCarousel() {
               </div>
 
               {/* Article Content */}
-              <div className="w-full max-w-4xl mx-auto px-6 py-16">
+              <div ref={contentRef} className="w-full max-w-3xl mx-auto px-6 sm:px-8 py-12 md:py-20">
                 <motion.div
-                  initial={{ y: 40, opacity: 0 }}
+                  initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="space-y-16"
+                  transition={{ duration: 0.6 }}
+                  className="space-y-12 md:space-y-16"
                 >
-                  {/* Quote Section */}
-                  <div className="border-l-2 border-foreground/20 pl-8 py-4">
-                    <p className="text-2xl md:text-3xl font-serif italic text-foreground/80 leading-relaxed">
+                  {/* Quote */}
+                  <div className="border-l-2 border-foreground/20 pl-6 sm:pl-8 py-4">
+                    <p className="text-xl sm:text-2xl md:text-3xl font-serif italic text-foreground/80 leading-relaxed">
                       "{selectedPost.excerpt}"
                     </p>
                   </div>
 
                   {/* Main Content */}
-                  <div className="text-lg text-foreground/70 leading-relaxed font-light space-y-6">
+                  <div className="text-base sm:text-lg text-foreground/70 leading-relaxed font-light space-y-6">
                     {selectedPost.content.split('\n\n').map((paragraph, idx) => (
-                      <p key={idx} className="first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-6px]">
+                      <p key={idx} className="first-letter:text-4xl sm:first-letter:text-5xl first-letter:font-serif first-letter:italic first-letter:float-left first-letter:mr-3 first-letter:mt-[-4px]">
                         {paragraph}
                       </p>
                     ))}
                   </div>
 
-                  {/* Key Takeaways */}
-                  <div className="bg-foreground/[0.02] border border-foreground/10 p-8 rounded-sm">
-                    <h4 className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-6">Key Insights</h4>
+                  {/* Key Insights */}
+                  <div className="bg-foreground/[0.02] border border-foreground/10 p-6 sm:p-8 rounded-lg">
+                    <h4 className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-6">Key Insights</h4>
                     <ul className="space-y-4">
-                      <li className="flex items-start gap-4 text-foreground/70 font-light">
-                        <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
-                        <span>Understanding the philosophy behind {selectedPost.category.toLowerCase()}</span>
-                      </li>
-                      <li className="flex items-start gap-4 text-foreground/70 font-light">
-                        <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
-                        <span>Practical applications for your own spaces</span>
-                      </li>
-                      <li className="flex items-start gap-4 text-foreground/70 font-light">
-                        <span className="w-1 h-1 bg-foreground/40 rounded-full mt-2.5 shrink-0" />
-                        <span>Expert perspectives from industry leaders</span>
-                      </li>
+                      {[
+                        `Understanding the philosophy behind ${selectedPost.category.toLowerCase()}`,
+                        "Practical applications for your own spaces",
+                        "Expert perspectives from industry leaders"
+                      ].map((insight, idx) => (
+                        <li key={idx} className="flex items-start gap-4 text-foreground/70 font-light text-sm sm:text-base">
+                          <span className="w-1.5 h-1.5 bg-foreground/40 rounded-full mt-2 shrink-0" />
+                          <span>{insight}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
                   {/* Clap Section */}
                   <div className="text-center py-12 border-y border-foreground/10">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-6">
+                    <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">
                       Did this resonate with you?
                     </p>
                     <motion.button 
                       onClick={() => handleClap(selectedPost.id)}
                       whileTap={{ scale: 1.1 }}
-                      className="group inline-flex flex-col items-center gap-3"
+                      className="group inline-flex flex-col items-center gap-4"
                     >
-                      <div className="w-20 h-20 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-foreground/40 group-hover:bg-foreground/5 transition-all">
-                        <svg className="w-10 h-10 text-foreground/60 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-foreground/40 group-hover:bg-foreground/5 transition-all active:scale-95">
+                        <svg className="w-8 h-8 sm:w-10 sm:h-10 text-foreground/60 group-hover:text-foreground transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <span className="text-3xl font-serif italic text-foreground">{claps[selectedPost.id] || 0}</span>
+                      <span className="text-2xl sm:text-3xl font-serif italic text-foreground">{claps[selectedPost.id] || 0}</span>
                       <span className="text-[10px] uppercase tracking-widest text-foreground/40">Appreciations</span>
                     </motion.button>
                   </div>
 
                   {/* Author Section */}
-                  <div className="flex items-start gap-6 py-8">
+                  <div className="flex items-start gap-4 sm:gap-6 py-8">
                     <img 
                       src={authors[selectedPost.author]?.avatar} 
                       alt={selectedPost.author}
-                      className="w-20 h-20 rounded-full object-cover grayscale"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover grayscale"
                     />
                     <div className="flex-1">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
-                      <h4 className="text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
+                      <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
+                      <h4 className="text-lg sm:text-xl font-serif italic text-foreground mb-1">{selectedPost.author}</h4>
                       <p className="text-sm text-foreground/60 mb-3">{authors[selectedPost.author]?.role}</p>
                       <p className="text-sm text-foreground/50 font-light leading-relaxed">
                         {authors[selectedPost.author]?.bio}
@@ -909,8 +1009,8 @@ export default function BlogCarousel() {
                   {/* Related Posts */}
                   {getRelatedPosts(selectedPost).length > 0 && (
                     <div className="pt-8">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-8">Continue Reading</p>
-                      <div className="grid md:grid-cols-2 gap-8">
+                      <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/40 mb-8">Continue Reading</p>
+                      <div className="grid sm:grid-cols-2 gap-6 sm:gap-8">
                         {getRelatedPosts(selectedPost).map(related => (
                           <button
                             key={related.id}
@@ -920,11 +1020,11 @@ export default function BlogCarousel() {
                             }}
                             className="group text-left"
                           >
-                            <div className="aspect-[4/3] overflow-hidden rounded-sm mb-4">
+                            <div className="aspect-[4/3] overflow-hidden rounded-lg mb-4">
                               <img src={related.image} alt={related.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105" />
                             </div>
-                            <span className="text-[9px] uppercase tracking-widest text-foreground/40">{related.category}</span>
-                            <h4 className="font-serif italic text-xl mt-2 group-hover:text-foreground/70 transition-colors">{related.title}</h4>
+                            <span className="text-[10px] uppercase tracking-widest text-foreground/40">{related.category}</span>
+                            <h4 className="font-serif italic text-lg sm:text-xl mt-2 group-hover:text-foreground/70 transition-colors">{related.title}</h4>
                             <p className="text-sm text-foreground/50 mt-2 line-clamp-2 font-light">{related.excerpt}</p>
                           </button>
                         ))}
@@ -933,10 +1033,10 @@ export default function BlogCarousel() {
                   )}
                 </motion.div>
 
-                {/* Newsletter Signup */}
-                <div className="mt-20 mb-12 p-12 bg-foreground/[0.02] border border-foreground/10 text-center">
-                  <h3 className="text-3xl font-serif italic mb-4 text-foreground">Join The Inner Circle</h3>
-                  <p className="text-foreground/60 mb-8 font-light max-w-md mx-auto">
+                {/* Newsletter */}
+                <div className="mt-16 sm:mt-20 mb-12 p-8 sm:p-12 bg-foreground/[0.02] border border-foreground/10 text-center rounded-lg">
+                  <h3 className="text-2xl sm:text-3xl font-serif italic mb-4 text-foreground">Join The Inner Circle</h3>
+                  <p className="text-foreground/60 mb-8 font-light max-w-md mx-auto text-sm sm:text-base">
                     Weekly insights on luxury design, delivered with intention. No spam, only inspiration.
                   </p>
                   {subscribed ? (
@@ -959,7 +1059,7 @@ export default function BlogCarousel() {
                       />
                       <button 
                         type="submit"
-                        className="px-8 py-3 border border-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-all"
+                        className="px-8 py-3 border border-foreground text-[10px] uppercase tracking-widest font-bold hover:bg-foreground hover:text-background transition-all active:scale-95"
                       >
                         Subscribe
                       </button>
@@ -967,17 +1067,22 @@ export default function BlogCarousel() {
                   )}
                 </div>
 
-                {/* Bottom Back Button - Scrolls to Journal */}
+                {/* FIXED: Back to Journal Button */}
                 <div className="text-center pb-12">
-                  <button 
-                    onClick={scrollToJournal}
-                    className="inline-flex items-center gap-3 text-foreground/40 hover:text-foreground transition-all group"
+                  <motion.button 
+                    onClick={() => {
+                      setSelectedPost(null)
+                      setTimeout(() => scrollToJournal(), 100)
+                    }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="inline-flex items-center gap-3 text-foreground/40 hover:text-foreground transition-all group px-6 py-3"
                   >
                     <svg className="w-4 h-4 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                     </svg>
-                    <span className="text-[10px] uppercase tracking-widest font-bold">Back to Journal</span>
-                  </button>
+                    <span className="text-[10px] sm:text-xs uppercase tracking-widest font-bold">Back to Journal</span>
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
