@@ -1,25 +1,41 @@
+"use client"
+
+import Hero from "@/components/sections/HeroTemp"
+import BrandStatement from "@/components/sections/BrandStatement"
+// Replace this line:
+// import Blog from "@/components/sections/Blog"
+// With this:
+import Blog from "@/app/(main)/blog/BlogCarousel"
+import EpicTestimonials from "@/components/sections/testimonials"
+import LeadMagnet from '@/components/sections/LeadMagnet'
+
+import BackToTop from '@/components/BackToTop'
+import { ServicesCodex } from '@/components/sections/ServicesCodex'
+import { SocialAtelier } from "@/components/sections/SocialAtelier";
+import { ContactAtelier } from "@/components/sections/ContactAtelier";
+import { PartnershipAtelier } from "@/components/sections/PartnershipAtelier"
+import { LuxuryFooter } from "@/components/sections/LuxuryFooter";
 
 export default function Home() {
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#0A0A0A', 
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'Georgia, serif',
-      flexDirection: 'column',
-      textAlign: 'center',
-      padding: '20px'
-    }}>
-      <h1 style={{ fontSize: '48px', fontStyle: 'italic' }}>Events District</h1>
-      <p style={{ marginTop: '20px', fontSize: '18px' }}>Welcome to our new site! 🎉</p>
-      <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>We're setting things up. Check back soon!</p>
-      <div style={{ marginTop: '30px', display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <a href="/admin/login" style={{ color: '#888', textDecoration: 'none', border: '1px solid #888', padding: '8px 16px', borderRadius: '4px' }}>Admin Login</a>
-        <a href="/quote" style={{ color: '#888', textDecoration: 'none', border: '1px solid #888', padding: '8px 16px', borderRadius: '4px' }}>Quote Engine</a>
-      </div>
+    <div className="flex flex-col w-full bg-background">
+      <Hero />
+      
+      <BrandStatement />
+      <ServicesCodex />
+      <LeadMagnet />
+      <Blog />
+      <EpicTestimonials />
+      
+      {/* This is the cool, kinetic social section */}
+
+      <SocialAtelier />
+      
+      {/* This is the sleek, luxury contact section */}
+      <ContactAtelier />
+      <PartnershipAtelier />
+      <LuxuryFooter />
+      <BackToTop />
     </div>
   )
 }
