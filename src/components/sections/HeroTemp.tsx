@@ -45,7 +45,7 @@ export default function Hero() {
     <>
       {/* SMALL DEVICES (below md) */}
       <section className="relative min-h-screen w-full flex flex-col justify-start overflow-hidden bg-background md:hidden">
-        <div className="container mx-auto px-6 grid grid-cols-12 gap-4 md:gap-8 items-start relative z-10 pt-20 md:pt-8 lg:pt-12">
+        <div className="container mx-auto px-6 grid grid-cols-12 gap-4 md:gap-8 items-start relative z-10 pt-10 md:pt-8 lg:pt-12">
           
           {/* Left Floating Image - Hidden on small devices */}
           <motion.div 
@@ -82,9 +82,16 @@ export default function Hero() {
                   <h1 className="text-5xl sm:text-6xl md:text-[9rem] font-light tracking-[0.1em] text-foreground uppercase leading-none">
                     {slideData[selectedIndex].title}
                   </h1>
-                  <p className="italic font-serif text-3xl sm:text-4xl md:text-7xl text-foreground/70 mt-2 md:mt-4 leading-tight">
+                  <motion.p 
+                    key={`subtitle-${selectedIndex}`}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 1.2, opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+                    className="italic font-serif text-3xl sm:text-4xl md:text-7xl text-foreground/70 mt-2 md:mt-4 leading-tight"
+                  >
                     {slideData[selectedIndex].subtitle}
-                  </p>
+                  </motion.p>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -180,9 +187,16 @@ export default function Hero() {
                   <h1 className="text-6xl md:text-[9rem] font-light tracking-[0.1em] text-foreground uppercase leading-none">
                     {slideData[selectedIndex].title}
                   </h1>
-                  <p className="italic font-serif text-4xl md:text-7xl text-foreground/70 mt-4 leading-tight">
+                  <motion.p 
+                    key={`subtitle-${selectedIndex}`}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 1.2, opacity: 0 }}
+                    transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
+                    className="italic font-serif text-4xl md:text-7xl text-foreground/70 mt-4 leading-tight"
+                  >
                     {slideData[selectedIndex].subtitle}
-                  </p>
+                  </motion.p>
                 </motion.div>
               </AnimatePresence>
             </div>
