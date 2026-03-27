@@ -1,14 +1,10 @@
-"use client"
+﻿"use client"
 
 import Hero from "@/components/sections/HeroTemp"
 import BrandStatement from "@/components/sections/BrandStatement"
-// Replace this line:
-// import Blog from "@/components/sections/Blog"
-// With this:
 import Blog from "@/app/(main)/blog/BlogCarousel"
 import EpicTestimonials from "@/components/sections/testimonials"
 import LeadMagnet from '@/components/sections/LeadMagnet'
-
 import BackToTop from '@/components/BackToTop'
 import { ServicesCodex } from '@/components/sections/ServicesCodex'
 import { SocialAtelier } from "@/components/sections/SocialAtelier";
@@ -20,18 +16,12 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full bg-background">
       <Hero />
-      
       <BrandStatement />
       <ServicesCodex />
       <LeadMagnet />
       <Blog />
       <EpicTestimonials />
-      
-      {/* This is the cool, kinetic social section */}
-
       <SocialAtelier />
-      
-      {/* This is the sleek, luxury contact section */}
       <ContactAtelier />
       <PartnershipAtelier />
       <LuxuryFooter />
