@@ -9,17 +9,17 @@ const slideData = [
   {
     title: "MODERN",
     subtitle: "Aesthetics",
-    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80"
+    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80 "
   },
   {
     title: "BESPOKE",
     subtitle: "Curation",
-    img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80"
+    img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80 "
   },
   {
     title: "LUXURY",
     subtitle: "Events",
-    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80"
+    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80 "
   }
 ]
 
@@ -42,9 +42,9 @@ export default function Hero() {
   }, [emblaApi, onSelect])
 
   return (
-    <section className="relative h-screen w-full flex items-center justify-center overflow-hidden bg-background">
+    <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-background pt-[var(--navbar-height,80px)]">
       
-      <div className="container mx-auto px-6 grid grid-cols-12 gap-4 md:gap-8 items-center relative z-10">
+      <div className="container mx-auto px-6 grid grid-cols-12 gap-4 md:gap-8 items-center relative z-10 h-full">
         
         {/* Left Floating Image - Faster Crossfade */}
         <motion.div 
@@ -66,9 +66,9 @@ export default function Hero() {
         </motion.div>
 
         {/* Center Main Content */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col items-center">
+        <div className="col-span-12 lg:col-span-6 flex flex-col items-center justify-center h-full py-4 md:py-0">
           {/* Fixed Wording Visibility */}
-          <div className="min-h-[180px] md:min-h-[260px] flex flex-col justify-center items-center relative z-20 mb-4 px-4">
+          <div className="min-h-[120px] md:min-h-[260px] flex flex-col justify-center items-center relative z-20 mb-2 md:mb-4 px-4">
   <AnimatePresence mode="wait">
     <motion.div
       key={selectedIndex}
@@ -78,10 +78,10 @@ export default function Hero() {
       transition={{ duration: 0.6, ease: [0.19, 1, 0.22, 1] }}
       className="text-center flex flex-col items-center"
     >
-      <h1 className="text-6xl md:text-[9rem] font-light tracking-[0.1em] text-foreground uppercase leading-none">
+      <h1 className="text-5xl sm:text-6xl md:text-[9rem] font-light tracking-[0.1em] text-foreground uppercase leading-none">
         {slideData[selectedIndex].title}
       </h1>
-      <p className="italic font-serif text-4xl md:text-7xl text-foreground/70 mt-4 leading-tight">
+      <p className="italic font-serif text-3xl sm:text-4xl md:text-7xl text-foreground/70 mt-2 md:mt-4 leading-tight">
         {slideData[selectedIndex].subtitle}
       </p>
     </motion.div>
@@ -90,7 +90,7 @@ export default function Hero() {
 
           {/* Main Slider */}
           <div 
-            className="w-full h-[350px] md:h-[480px] bg-neutral-900 overflow-hidden cursor-grab border border-foreground/5 shadow-2xl"
+            className="w-full h-[45vh] sm:h-[50vh] md:h-[480px] bg-neutral-900 overflow-hidden cursor-grab border border-foreground/5 shadow-2xl"
             ref={emblaRef}
           >
             <div className="flex h-full">
@@ -103,7 +103,7 @@ export default function Hero() {
           </div>
 
           {/* Progress Indicators */}
-          <div className="mt-10 flex gap-4">
+          <div className="mt-6 md:mt-10 flex gap-4">
             {slideData.map((_, i) => (
               <motion.div 
                 key={i} 
