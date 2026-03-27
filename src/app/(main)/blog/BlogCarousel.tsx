@@ -57,8 +57,8 @@ export default function BlogCarousel() {
   
   const AUTO_PLAY_DURATION = 5000
   const minSwipeDistance = 50
-  // Adjust this based on your navbar height (typically 64-80px)
-  const NAVBAR_HEIGHT = 80
+  // Dynamic navbar height state
+  const [navbarHeight, setNavbarHeight] = useState(80) // Default fallback
 
   // Fetch blog posts from database
   useEffect(() => {
@@ -98,6 +98,31 @@ export default function BlogCarousel() {
     }
     
     fetchData()
+  }, [])
+  
+  // Dynamic navbar height detection
+  useEffect(() => {
+    const updateNavbarHeight = () => {
+      // Try to find navbar by common selectors
+      const navbar = document.querySelector('header, nav, [class*="navbar"], [class*="Navbar"]')
+      if (navbar) {
+        setNavbarHeight(navbar.getBoundingClientRect().height)
+      } else {
+        // Fallback to 80px if no navbar found
+        setNavbarHeight(80)
+      }
+    }
+    
+    // Initial update
+    updateNavbarHeight()
+    
+    // Update on resize
+    window.addEventListener('resize', updateNavbarHeight)
+    
+    // Also update after a short delay to ensure DOM is fully loaded
+    setTimeout(updateNavbarHeight, 100)
+    
+    return () => window.removeEventListener('resize', updateNavbarHeight)
   }, [])
   
   // Load saved posts from localStorage
@@ -201,9 +226,9 @@ export default function BlogCarousel() {
     const isTablet = width >= 768 && width < 1024
     const isDesktop = width >= 1024
     
-    // Card sizes - EXACTLY as in your original code
-    const cardWidth = isMobile ? 240 : 300
-    const cardHeight = isMobile ? 320 : 400
+    // Card sizes - SMALLER for mobile devices
+    const cardWidth = isMobile ? 200 : 300
+    const cardHeight = isMobile ? 280 : 400
     
     // Dynamic radius based on screen size for optimal visible cards
     // Mobile: 3 visible cards, Tablet: 5 visible cards, Desktop: 7 visible cards
@@ -492,7 +517,7 @@ export default function BlogCarousel() {
 
   if (loading) {
     return (
-      <section ref={sectionRef} id="journal" className="relative w-full bg-background overflow-hidden flex items-center justify-center" style={{ height: `calc(100svh - ${NAVBAR_HEIGHT}px)` }}>
+      <section ref={sectionRef} id="journal" className="relative w-full bg-background overflow-hidden flex items-center justify-center" style={{ height: `calc(100svh - ${navbarHeight}px)` }}>
         <div className="text-foreground/40 animate-pulse">Loading stories...</div>
       </section>
     )
@@ -500,7 +525,7 @@ export default function BlogCarousel() {
 
   if (blogPosts.length === 0) {
     return (
-      <section ref={sectionRef} id="journal" className="relative w-full bg-background overflow-hidden flex items-center justify-center" style={{ height: `calc(100svh - ${NAVBAR_HEIGHT}px)` }}>
+      <section ref={sectionRef} id="journal" className="relative w-full bg-background overflow-hidden flex items-center justify-center" style={{ height: `calc(100svh - ${navbarHeight}px)` }}>
         <div className="text-center">
           <p className="text-foreground/60">No blog posts yet.</p>
           <p className="text-foreground/40 text-sm mt-2">Check back soon for inspiring stories.</p>
@@ -529,8 +554,8 @@ export default function BlogCarousel() {
         id="journal" 
         className="relative w-full bg-background overflow-hidden flex flex-col items-center justify-center"
         style={{ 
-          minHeight: `calc(100svh - ${NAVBAR_HEIGHT}px)`,
-          height: `calc(100svh - ${NAVBAR_HEIGHT}px)`
+          minHeight: `calc(100svh - ${navbarHeight}px)`,
+          height: `calc(100svh - ${navbarHeight}px)`
         }}
       >
         {/* Cinematic Background Accents */}
@@ -585,11 +610,11 @@ export default function BlogCarousel() {
             </div>
           </motion.div>
 
-          {/* Category Filter Tabs */}
+          {/* Category Filter Tabs - SMALLER on mobile to fit 2 lines */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex flex-wrap justify-center gap-2 px-4 max-w-4xl overflow-x-auto scrollbar-hide flex-shrink-0"
+            className="mb-4 flex flex-wrap justify-center gap-1.5 md:gap-2 px-4 max-w-4xl overflow-x-auto scrollbar-hide flex-shrink-0"
           >
             {categories.map((cat) => (
               <button
@@ -598,7 +623,7 @@ export default function BlogCarousel() {
                   setSelectedCategory(cat)
                   setActiveIndex(0)
                 }}
-                className={`text-[10px] uppercase tracking-widest px-3 py-1.5 border transition-all duration-300 whitespace-nowrap ${
+                className={`text-[8px] md:text-[10px] uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 border transition-all duration-300 whitespace-nowrap ${
                   selectedCategory === cat 
                     ? 'border-foreground bg-foreground text-background' 
                     : 'border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground'
@@ -688,17 +713,17 @@ export default function BlogCarousel() {
                     )}
 
                     {/* ORIGINAL TEXT STYLING */}
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end text-white pb-10">
+                    <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-end text-white pb-8 md:pb-10">
                       <motion.div
                         animate={{ y: style.isActive ? 0 : 20 }}
                         transition={{ duration: 0.8 }}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[9px] tracking-[0.3em] uppercase text-white/50 font-medium">
+                          <span className="text-[8px] md:text-[9px] tracking-[0.3em] uppercase text-white/50 font-medium">
                             {post.category}
                           </span>
                           {style.isActive && (
-                            <span className="text-[9px] text-white/40 flex items-center gap-1">
+                            <span className="text-[8px] md:text-[9px] text-white/40 flex items-center gap-1">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -708,26 +733,26 @@ export default function BlogCarousel() {
                           )}
                         </div>
                         
-                        <h3 className="text-lg md:text-2xl font-serif italic mb-3 leading-tight [text-wrap:balance]">
+                        <h3 className="text-base md:text-2xl font-serif italic mb-2 md:mb-3 leading-tight [text-wrap:balance] line-clamp-2">
                           {post.title}
                         </h3>
                         
-                        <p className="text-[11px] text-white/70 line-clamp-2 font-light leading-relaxed mb-4">
+                        <p className="text-[9px] md:text-[11px] text-white/70 line-clamp-2 font-light leading-relaxed mb-3 md:mb-4">
                           {post.excerpt}
                         </p>
                         
-                        <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                          <span className="text-[9px] tracking-widest uppercase text-white/40">{post.read_time || '5 min read'}</span>
+                        <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-white/10">
+                          <span className="text-[7px] md:text-[9px] tracking-widest uppercase text-white/40">{post.read_time || '5 min read'}</span>
                           <div className="flex items-center gap-3">
                             {style.isActive && postClaps > 0 && (
-                              <span className="text-[9px] text-white/60 flex items-center gap-1">
+                              <span className="text-[7px] md:text-[9px] text-white/60 flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 {postClaps}
                               </span>
                             )}
-                            <span className="text-[9px] tracking-widest uppercase text-white/40 group-hover:text-white transition-colors flex items-center gap-2">
+                            <span className="text-[7px] md:text-[9px] tracking-widest uppercase text-white/40 group-hover:text-white transition-colors flex items-center gap-2">
                               {style.isActive ? 'Read Story' : 'View'} <span className="text-sm">→</span>
                             </span>
                           </div>
@@ -736,15 +761,15 @@ export default function BlogCarousel() {
                     </div>
                   </div>
 
-                  {/* ORIGINAL AUTHOR INFO POSITION */}
+                  {/* AUTHOR INFO - Repositioned for mobile to not interfere with progress bar */}
                   {style.isActive && filteredPosts.length > 2 && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="absolute -bottom-16 left-0 right-0 text-center"
+                      className="absolute -bottom-12 md:-bottom-16 left-0 right-0 text-center"
                     >
-                      <p className="text-foreground font-serif italic text-sm">{post.author}</p>
-                      <p className="text-foreground/40 text-[10px] uppercase tracking-widest mt-1">
+                      <p className="text-foreground font-serif italic text-xs md:text-sm">{post.author}</p>
+                      <p className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-widest mt-0.5 md:mt-1">
                         {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Just now'}
                       </p>
                     </motion.div>
@@ -758,16 +783,9 @@ export default function BlogCarousel() {
             )}
           </div>
 
-          {/* Swipe hint for mobile */}
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[10px] text-foreground/30 uppercase tracking-widest mt-2 md:hidden flex-shrink-0"
-          >
-            Swipe to navigate
-          </motion.p>
+          {/* REMOVED Swipe hint for mobile - no longer showing */}
 
-          {/* Integrated Navigation Footer - Compact */}
+          {/* Integrated Navigation Footer - Compact with fixed progress bar timing */}
           <div className="mt-4 md:mt-6 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
             <div className="flex items-center gap-6 md:gap-10">
               <button 
@@ -780,8 +798,8 @@ export default function BlogCarousel() {
                 </svg>
               </button>
 
-              {/* PROGRESS BAR NAVIGATION - Limited to visible count */}
-              <div className="flex gap-4 items-center">
+              {/* PROGRESS BAR NAVIGATION - Fixed timing to show progress only on active and then move to next */}
+              <div className="flex gap-3 md:gap-4 items-center">
                 {(() => {
                   const visibleCount = getVisibleCount()
                   const halfVisible = Math.floor(visibleCount / 2)
@@ -803,7 +821,7 @@ export default function BlogCarousel() {
                         key={index}
                         onClick={() => filteredPosts.length > 2 && setActiveIndex(index)}
                         className={`relative h-[2px] overflow-hidden bg-foreground/10 transition-all duration-500 ${filteredPosts.length > 2 ? 'cursor-pointer' : ''}`}
-                        style={{ width: isActive ? '60px' : '6px' }}
+                        style={{ width: isActive ? '40px md:60px' : '4px md:6px' }}
                       >
                         {isActive && filteredPosts.length > 2 && (
                           <motion.div 
@@ -811,7 +829,13 @@ export default function BlogCarousel() {
                             animate={{ width: isAutoPlaying ? "100%" : "0%" }}
                             transition={{ 
                               duration: isAutoPlaying ? AUTO_PLAY_DURATION / 1000 : 0, 
-                              ease: "linear" 
+                              ease: "linear",
+                              onComplete: () => {
+                                // When animation completes, move to next slide
+                                if (isAutoPlaying && filteredPosts.length > 2) {
+                                  handleNext()
+                                }
+                              }
                             }}
                             key={activeIndex}
                             className="absolute inset-0 bg-foreground"
@@ -863,7 +887,7 @@ export default function BlogCarousel() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
                 className="fixed left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-2 py-2 bg-background/80 backdrop-blur-xl rounded-full border border-foreground/10 shadow-2xl"
-                style={{ top: `${NAVBAR_HEIGHT + 16}px` }} // 16px gap below navbar
+                style={{ top: `${navbarHeight + 16}px` }} // 16px gap below navbar
               >
                 {/* Back Button */}
                 <button 
