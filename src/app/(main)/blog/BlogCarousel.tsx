@@ -178,33 +178,33 @@ export default function BlogCarousel() {
     const isTablet = width >= 768 && width < 1024
     const isDesktop = width >= 1024
     
-    // Card sizes - SMALLER for mobile devices
-    const cardWidth = isMobile ? 200 : 300
-    const cardHeight = isMobile ? 280 : 400
+    // Card sizes - based on original code but adjusted for mobile margins
+    const cardWidth = isMobile ? 240 : 300
+    const cardHeight = isMobile ? 320 : 400
     
     // Dynamic radius based on screen size for optimal visible cards
-    // Mobile: 3 visible cards, Tablet: 5 visible cards, Desktop: 7 visible cards
+    // Mobile: max 3 cards, Tablet: max 5 cards, Desktop: max 7 cards
     let radiusX, radiusY, angleSpacing
     
     if (isDesktop) {
       // Desktop - 7 visible cards
-      radiusX = Math.min(width * 0.4, 520)
-      radiusY = 40
+      radiusX = Math.min(width * 0.35, 450)
+      radiusY = 30
       angleSpacing = Math.PI / 5.2 // About 34.6-degree spacing
     } else if (isTablet) {
       // Tablet - 5 visible cards
-      radiusX = Math.min(width * 0.38, 380)
-      radiusY = 35
+      radiusX = Math.min(width * 0.35, 380)
+      radiusY = 30
       angleSpacing = Math.PI / 6.5 // About 27.7-degree spacing
     } else {
-      // Mobile - 3 visible cards
-      radiusX = width * 0.45
+      // Mobile - 3 visible cards - add left/right margin
+      radiusX = width * 0.4 // Slightly smaller radius to keep cards from edges
       radiusY = 20
       angleSpacing = Math.PI / 8 // About 22.5-degree spacing
     }
     
     // Add padding to prevent cards from touching screen edges
-    const horizontalPadding = isMobile ? 20 : isTablet ? 40 : 60
+    const horizontalPadding = isMobile ? 16 : isTablet ? 40 : 60
     
     return {
       radiusX,
@@ -237,7 +237,7 @@ export default function BlogCarousel() {
     return matchesCategory && matchesSearch
   })
 
-  // Calculate layout based on filtered posts count
+  // Calculate layout based on filtered posts count with max visible cards
   const getFilteredCardStyle = (index: number, totalFiltered: number, currentActiveIndex: number) => {
     const { radiusX, radiusY, cardWidth, angleSpacing, isMobile } = config
     
@@ -266,6 +266,17 @@ export default function BlogCarousel() {
     // Handle wrapping for infinite carousel feel
     if (offset > totalFiltered / 2) offset -= totalFiltered
     if (offset < -totalFiltered / 2) offset += totalFiltered
+    
+    // Limit visible cards based on screen size
+    let maxVisible = 3 // mobile default
+    if (config.isDesktop) maxVisible = 7
+    else if (config.isTablet) maxVisible = 5
+    else maxVisible = 3
+    
+    // Hide cards that are beyond the visible range
+    if (Math.abs(offset) > Math.floor(maxVisible / 2)) {
+      return { x: 0, z: -100, scale: 0, rotateY: 0, opacity: 0, zIndex: -1, isActive: false }
+    }
     
     const angle = offset * angleSpacing
     const x = Math.sin(angle) * radiusX
@@ -353,7 +364,7 @@ export default function BlogCarousel() {
   const isSaved = currentPost ? savedPosts.includes(currentPost.id) : false
   const currentClaps = currentPost ? claps[currentPost.id] || 0 : 0
 
-  // Calculate visible count for progress bars
+  // Calculate visible count for progress bars (same as max visible cards)
   const getVisibleCount = () => {
     if (config.isDesktop) return 7
     if (config.isTablet) return 5
@@ -398,7 +409,7 @@ export default function BlogCarousel() {
 
       <div className="relative z-10 w-full max-w-7xl flex flex-col items-center px-4 sm:px-6 lg:px-8 h-full justify-center">
         
-        {/* Header Section - Reduced top padding */}
+        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -442,7 +453,7 @@ export default function BlogCarousel() {
           </div>
         </motion.div>
 
-        {/* Category Filter Tabs - SMALLER on mobile to fit 2 lines */}
+        {/* Category Filter Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -483,6 +494,8 @@ export default function BlogCarousel() {
         >
           {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
             const style = getFilteredCardStyle(index, filteredPosts.length, activeIndex)
+            // Skip rendering hidden cards
+            if (style.opacity === 0) return null
             const postClaps = claps[post.id] || 0
             const isPostSaved = savedPosts.includes(post.id)
             const author = authors[post.author]
@@ -506,12 +519,12 @@ export default function BlogCarousel() {
                   opacity: style.opacity,
                 }}
                 transition={{
-                  duration: 0.8,
+                  duration: 1.2,
                   ease: [0.19, 1, 0.22, 1],
                 }}
               >
-                {/* CARD STYLE with thin black outline */}
-                <div className="relative w-full h-full bg-neutral-900 rounded-sm overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-black/20">
+                {/* CARD STYLE - matching original card design */}
+                <div className="relative w-full h-full bg-neutral-900 rounded-sm overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)]">
                   <motion.div 
                     className="absolute inset-0"
                     whileHover={{ scale: 1.05 }}
@@ -523,8 +536,8 @@ export default function BlogCarousel() {
                       className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-1000"
                       draggable={false}
                     />
-                    {/* ORIGINAL GRADIENT STYLE */}
-                    <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient} from-black/80 via-black/20 to-transparent`} />
+                    {/* Original gradient style from the old code */}
+                    <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient || 'from-black/80 via-black/20 to-transparent'}`} />
                   </motion.div>
 
                   {/* Save Button */}
@@ -544,7 +557,7 @@ export default function BlogCarousel() {
                     </button>
                   )}
 
-                  {/* ORIGINAL TEXT STYLING */}
+                  {/* Card Content - matches original styling */}
                   <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-end text-white pb-8 md:pb-10">
                     <motion.div
                       animate={{ y: style.isActive ? 0 : 20 }}
@@ -593,7 +606,7 @@ export default function BlogCarousel() {
                   </div>
                 </div>
 
-                {/* AUTHOR INFO - Repositioned for mobile to not interfere with progress bar */}
+                {/* Author Info */}
                 {style.isActive && filteredPosts.length > 2 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -615,7 +628,7 @@ export default function BlogCarousel() {
           )}
         </div>
 
-        {/* Integrated Navigation Footer - with progress bar restored */}
+        {/* Integrated Navigation Footer - with progress bar matching original design */}
         <div className="mt-6 md:mt-8 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
           <div className="flex items-center gap-6 md:gap-10">
             <button 
@@ -628,7 +641,7 @@ export default function BlogCarousel() {
               </svg>
             </button>
 
-            {/* PROGRESS BAR NAVIGATION - RESTORED */}
+            {/* PROGRESS BAR NAVIGATION - matches original style */}
             <div className="flex gap-3 md:gap-4 items-center">
               {(() => {
                 const visibleCount = getVisibleCount()
@@ -651,7 +664,7 @@ export default function BlogCarousel() {
                       key={index}
                       onClick={() => filteredPosts.length > 2 && setActiveIndex(index)}
                       className={`relative h-[2px] overflow-hidden bg-foreground/10 transition-all duration-500 ${filteredPosts.length > 2 ? 'cursor-pointer' : ''}`}
-                      style={{ width: isActive ? '40px md:60px' : '4px md:6px' }}
+                      style={{ width: isActive ? '40px' : '6px' }}
                     >
                       {isActive && filteredPosts.length > 2 && (
                         <motion.div 
