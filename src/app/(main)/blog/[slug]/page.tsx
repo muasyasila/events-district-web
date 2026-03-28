@@ -232,10 +232,9 @@ function TableOfContents({ content }: { content: string }) {
   )
 }
 
-// Enhanced Share Buttons
-function ShareButtons({ title, url }: { title: string; url: string }) {
+// Mobile Share Buttons (compact for mobile)
+function MobileShareButtons({ title, url }: { title: string; url: string }) {
   const [copied, setCopied] = useState(false)
-  const [showMore, setShowMore] = useState(false)
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${url}` : url
 
@@ -250,84 +249,37 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
       twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
       linkedin: `https://www.linkedin.com/shareArticle?mini=true&title=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`,
-      pinterest: `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(title)}`,
-      reddit: `https://reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(title)}`,
-      whatsapp: `https://wa.me/?text=${encodeURIComponent(title + ' ' + shareUrl)}`,
-      telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`,
       email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(shareUrl)}`
     }
     window.open(urls[platform], '_blank', 'noopener,noreferrer')
-    setShowMore(false)
   }
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-3">
-        <span className="text-[10px] uppercase tracking-wider text-foreground/40">Share</span>
-        <button
-          onClick={() => handleShare('twitter')}
-          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-        >
-          <Twitter size={14} />
-        </button>
-        <button
-          onClick={() => handleShare('facebook')}
-          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-        >
-          <Facebook size={14} />
-        </button>
-        <button
-          onClick={() => handleShare('linkedin')}
-          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-        >
-          <Linkedin size={14} />
-        </button>
-        <button
-          onClick={() => setShowMore(!showMore)}
-          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-        >
-          <Share2 size={14} />
-        </button>
-        <button
-          onClick={handleCopy}
-          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors relative"
-        >
-          {copied ? <Check size={14} className="text-green-400" /> : <Link2 size={14} />}
-        </button>
-      </div>
-
-      {/* More Share Options Popup */}
-      <AnimatePresence>
-        {showMore && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full right-0 mt-2 p-3 bg-black/90 backdrop-blur-xl rounded-lg border border-white/10 shadow-2xl z-50 w-48"
-          >
-            <div className="grid grid-cols-3 gap-2">
-              <button onClick={() => handleShare('pinterest')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
-                <span className="text-xs block">Pinterest</span>
-              </button>
-              <button onClick={() => handleShare('reddit')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
-                <span className="text-xs block">Reddit</span>
-              </button>
-              <button onClick={() => handleShare('whatsapp')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
-                <span className="text-xs block">WhatsApp</span>
-              </button>
-              <button onClick={() => handleShare('telegram')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
-                <span className="text-xs block">Telegram</span>
-              </button>
-              <button onClick={() => handleShare('email')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
-                <span className="text-xs block">Email</span>
-              </button>
-              <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
-                <span className="text-xs block">Copy</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => handleShare('twitter')}
+        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+      >
+        <Twitter size={14} />
+      </button>
+      <button
+        onClick={() => handleShare('facebook')}
+        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+      >
+        <Facebook size={14} />
+      </button>
+      <button
+        onClick={() => handleShare('linkedin')}
+        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+      >
+        <Linkedin size={14} />
+      </button>
+      <button
+        onClick={handleCopy}
+        className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors relative"
+      >
+        {copied ? <Check size={12} className="text-green-400" /> : <Link2 size={12} />}
+      </button>
     </div>
   )
 }
@@ -401,7 +353,6 @@ function ReactionButtons({ postId }: { postId: string }) {
       setReactions(data.counts || { like: 0, love: 0, insightful: 0 })
       setUserReaction(data.userReaction || null)
     } else {
-      // Random initial counts for demo
       setReactions({ like: Math.floor(Math.random() * 50) + 10, love: Math.floor(Math.random() * 30) + 5, insightful: Math.floor(Math.random() * 20) + 3 })
     }
   }, [postId])
@@ -488,10 +439,8 @@ function EstimatedReadingTime({ content }: { content: string }) {
   )
 }
 
-// Author Spotlight
+// Author Spotlight (clean version without follow button)
 function AuthorSpotlight({ author, postDate }: { author: Author; postDate: string }) {
-  const [isFollowing, setIsFollowing] = useState(false)
-
   return (
     <div className="bg-gradient-to-r from-foreground/[0.03] to-transparent border border-foreground/10 rounded-lg p-6 my-8">
       <div className="flex items-start gap-5">
@@ -501,30 +450,14 @@ function AuthorSpotlight({ author, postDate }: { author: Author; postDate: strin
           className="w-16 h-16 rounded-full object-cover"
         />
         <div className="flex-1">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
-              <h4 className="text-xl font-serif italic text-foreground">{author.name}</h4>
-              <p className="text-sm text-foreground/60">{author.role}</p>
-            </div>
-            <button
-              onClick={() => setIsFollowing(!isFollowing)}
-              className={`px-4 py-1.5 rounded-full text-xs transition-all ${
-                isFollowing 
-                  ? 'bg-foreground/10 text-foreground/60' 
-                  : 'bg-foreground text-background hover:bg-foreground/90'
-              }`}
-            >
-              {isFollowing ? 'Following' : 'Follow'}
-            </button>
-          </div>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/40 mb-1">Written by</p>
+          <h4 className="text-xl font-serif italic text-foreground">{author.name}</h4>
+          <p className="text-sm text-foreground/60">{author.role}</p>
           <p className="text-sm text-foreground/50 font-light leading-relaxed mt-3">{author.bio}</p>
           <div className="flex items-center gap-4 mt-3 text-xs text-foreground/40">
             <span>Published: {postDate}</span>
             <span>•</span>
             <span>12 articles</span>
-            <span>•</span>
-            <span>2.3k followers</span>
           </div>
         </div>
       </div>
@@ -532,7 +465,7 @@ function AuthorSpotlight({ author, postDate }: { author: Author; postDate: strin
   )
 }
 
-// Newsletter Signup with Animation
+// Newsletter Signup without star
 function NewsletterSignup() {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
@@ -552,7 +485,6 @@ function NewsletterSignup() {
       <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl" />
       
-      <Sparkles size={24} className="text-amber-400 mx-auto mb-4" />
       <h3 className="text-2xl font-serif italic mb-3 text-foreground">Join The Inner Circle</h3>
       <p className="text-foreground/60 mb-6 font-light max-w-md mx-auto text-sm">
         Get exclusive insights, early access to new collections, and design inspiration delivered weekly.
@@ -686,6 +618,16 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
   const [loading, setLoading] = useState(true)
   const [formattedDate, setFormattedDate] = useState('')
   const [showToast, setShowToast] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -804,7 +746,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
       {/* Reading Progress Bar */}
       <ReadingProgressBar />
 
-      {/* Floating Share Bar */}
+      {/* Floating Share Bar - Desktop Only */}
       <FloatingShareBar title={post.title} url={`/blog/${post.slug}`} />
 
       {/* Table of Contents */}
@@ -822,20 +764,23 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
         <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
-              <Link 
-                href="/"
-                className="inline-flex items-center gap-2 text-sm text-foreground/60 hover:text-foreground transition-colors group"
-              >
-                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                <span>Back to Home</span>
-              </Link>
+              {/* Left side - empty now (no back button) */}
+              <div />
               
               <div className="flex items-center gap-3">
-                <button onClick={handlePrint} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
-                  <Printer size={14} />
-                </button>
+                {/* Print button - hidden on mobile */}
+                {!isMobile && (
+                  <button onClick={handlePrint} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                    <Printer size={14} />
+                  </button>
+                )}
                 <BookmarkButton postId={post.id} />
-                <ShareButtons title={post.title} url={`/blog/${post.slug}`} />
+                {/* Share buttons - desktop vs mobile */}
+                {isMobile ? (
+                  <MobileShareButtons title={post.title} url={`/blog/${post.slug}`} />
+                ) : (
+                  <ShareButtons title={post.title} url={`/blog/${post.slug}`} />
+                )}
               </div>
             </div>
             
@@ -988,5 +933,104 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
         )}
       </AnimatePresence>
     </main>
+  )
+}
+
+// ShareButtons component (desktop version)
+function ShareButtons({ title, url }: { title: string; url: string }) {
+  const [copied, setCopied] = useState(false)
+  const [showMore, setShowMore] = useState(false)
+
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${url}` : url
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleShare = (platform: string) => {
+    const urls: Record<string, string> = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+      linkedin: `https://www.linkedin.com/shareArticle?mini=true&title=${encodeURIComponent(title)}&url=${encodeURIComponent(shareUrl)}`,
+      pinterest: `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent(title)}`,
+      reddit: `https://reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(title)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(title + ' ' + shareUrl)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`,
+      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(shareUrl)}`
+    }
+    window.open(urls[platform], '_blank', 'noopener,noreferrer')
+    setShowMore(false)
+  }
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleShare('twitter')}
+          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <Twitter size={14} />
+        </button>
+        <button
+          onClick={() => handleShare('facebook')}
+          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <Facebook size={14} />
+        </button>
+        <button
+          onClick={() => handleShare('linkedin')}
+          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <Linkedin size={14} />
+        </button>
+        <button
+          onClick={() => setShowMore(!showMore)}
+          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <Share2 size={14} />
+        </button>
+        <button
+          onClick={handleCopy}
+          className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors relative"
+        >
+          {copied ? <Check size={14} className="text-green-400" /> : <Link2 size={14} />}
+        </button>
+      </div>
+
+      {/* More Share Options Popup */}
+      <AnimatePresence>
+        {showMore && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="absolute top-full right-0 mt-2 p-3 bg-black/90 backdrop-blur-xl rounded-lg border border-white/10 shadow-2xl z-50 w-48"
+          >
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={() => handleShare('pinterest')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
+                <span className="text-xs block">Pinterest</span>
+              </button>
+              <button onClick={() => handleShare('reddit')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
+                <span className="text-xs block">Reddit</span>
+              </button>
+              <button onClick={() => handleShare('whatsapp')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
+                <span className="text-xs block">WhatsApp</span>
+              </button>
+              <button onClick={() => handleShare('telegram')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
+                <span className="text-xs block">Telegram</span>
+              </button>
+              <button onClick={() => handleShare('email')} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
+                <span className="text-xs block">Email</span>
+              </button>
+              <button onClick={handleCopy} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-center">
+                <span className="text-xs block">Copy</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
