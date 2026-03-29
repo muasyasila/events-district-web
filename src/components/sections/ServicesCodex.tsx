@@ -4,7 +4,16 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
-import { ArrowRight, Plus, Minus, Calendar, MessageCircle, X, Send } from 'lucide-react'
+import { ArrowRight, Plus, Minus, Calendar, MessageCircle, X, Send, Calculator, Sparkles } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
+
+// Define types for dynamic pricing
+interface PricingData {
+  essential: number
+  signature: number
+  luxury: number
+}
 
 const categories = [
   {
@@ -17,53 +26,53 @@ const categories = [
         fullDesc: 'From intimate ceremonies to grand receptions, we create immersive wedding environments. Our team handles everything from floral installations to lighting design, ensuring your special day reflects your unique love story.',
         price: 2500,
         image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop',
-        done: 47,
         trending: true,
+        hasPackages: true,
         related: ['Rehearsal Dinners', 'Bridal Showers', 'Cakes & Confectionery']
       },
       { 
         name: 'Engagement Parties', 
         shortDesc: 'Romantic setups, proposal backdrops',
-        fullDesc: 'Create the perfect moment with our bespoke engagement setups. From intimate dinner styling to dramatic proposal backdrops, we ensure your question gets the "yes" it deserves.',
-        price: 800,
+        fullDesc: 'Create the perfect moment with our bespoke engagement setups. From intimate dinner styling to dramatic proposal backdrops, we ensure your question gets the "yes" it deserves. Every celebration is unique—tell us your vision and we\'ll craft something unforgettable.',
         image: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=400&h=300&fit=crop',
-        done: 32,
+        trending: false,
+        hasPackages: false,
         related: ['Picnic Dates', 'Wedding Decor', 'Dining Experiences']
       },
       { 
         name: 'Bridal Showers', 
         shortDesc: 'Feminine, elegant decor with custom backdrops',
-        fullDesc: 'Celebrate the bride-to-be with our elegant shower designs. Custom backdrops, sweet tables, and feminine touches that make for perfect photo opportunities.',
-        price: 600,
+        fullDesc: 'Celebrate the bride-to-be with our elegant shower designs. Custom backdrops, sweet tables, and feminine touches that make for perfect photo opportunities. We\'d love to hear about the bride\'s style—reach out and let\'s design something beautiful together.',
         image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400&h=300&fit=crop',
-        done: 28,
+        trending: false,
+        hasPackages: false,
         related: ['Baby Showers', 'Anniversary Celebrations', 'Cakes & Confectionery']
       },
       { 
         name: 'Rehearsal Dinners', 
         shortDesc: 'Sophisticated table settings, ambient lighting',
-        fullDesc: 'Set the tone for your wedding weekend with sophisticated rehearsal dinner styling. Intimate lighting, personalized table settings, and warm ambiance.',
-        price: 1200,
+        fullDesc: 'Set the tone for your wedding weekend with sophisticated rehearsal dinner styling. Intimate lighting, personalized table settings, and warm ambiance. Let\'s discuss your wedding vibe—send us a message to explore possibilities.',
         image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-        done: 19,
+        trending: false,
+        hasPackages: false,
         related: ['Wedding Decor', 'Catering Presentation', 'Bar & Lounge']
       },
       { 
         name: 'Anniversary Celebrations', 
         shortDesc: 'Milestone anniversaries, vow renewals',
-        fullDesc: 'Celebrate lasting love with nostalgic decor that honors your journey. From silver anniversaries to golden milestones, we create memories worth reliving.',
-        price: 1500,
+        fullDesc: 'Celebrate lasting love with nostalgic decor that honors your journey. From silver anniversaries to golden milestones, we create memories worth reliving. Share your love story with us—we\'ll help you celebrate it beautifully.',
         image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=400&h=300&fit=crop',
-        done: 22,
+        trending: false,
+        hasPackages: false,
         related: ['Wedding Decor', 'Picnic Dates', 'Dining Experiences']
       },
       { 
         name: 'Traditional Ceremonies', 
         shortDesc: 'Intimate ceremonies, recommitment celebrations',
-        fullDesc: 'Reaffirm your love with intimate ceremonies designed for recommitment. Elegant styling that honors your years together while creating new memories.',
-        price: 1800,
+        fullDesc: 'Reaffirm your love with intimate ceremonies designed for recommitment. Elegant styling that honors your years together while creating new memories. Curious about how we can honor your traditions? Let\'s start a conversation.',
         image: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400&h=300&fit=crop',
-        done: 15,
+        trending: false,
+        hasPackages: false,
         related: ['Wedding Decor', 'Anniversary Celebrations', 'Engagement Parties']
       }
     ]
@@ -75,56 +84,55 @@ const categories = [
       { 
         name: 'Birthday Decor', 
         shortDesc: 'Milestone birthdays, themed parties',
-        fullDesc: 'From first birthdays to centenarian celebrations, we design age-appropriate themes that wow guests. Balloon installations, photo backdrops, and custom signage.',
-        price: 500,
+        fullDesc: 'From first birthdays to centenarian celebrations, we design age-appropriate themes that wow guests. Balloon installations, photo backdrops, and custom signage. Tell us about the guest of honor—we love creating personalized celebrations!',
         image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&h=300&fit=crop',
-        done: 89,
         trending: true,
+        hasPackages: false,
         related: ['Surprise Parties', 'Cakes & Confectionery', 'Bar & Lounge']
       },
       { 
         name: 'Graduation Parties', 
         shortDesc: 'Personal celebrations, achievement backdrops',
-        fullDesc: 'Celebrate academic achievements with style. Custom backdrops for photos, themed decor for school colors, and setups that honor the graduate.',
-        price: 700,
+        fullDesc: 'Celebrate academic achievements with style. Custom backdrops for photos, themed decor for school colors, and setups that honor the graduate. Every achievement is unique—share yours with us and we\'ll design the perfect celebration.',
         image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=300&fit=crop',
-        done: 23,
+        trending: false,
+        hasPackages: false,
         related: ['Graduation Ceremonies', 'Birthday Decor', 'Catering Presentation']
       },
       { 
         name: 'Baby Showers', 
         shortDesc: 'Gender reveal setups, whimsical themes',
-        fullDesc: 'Welcome new life with our whimsical baby shower designs. Gender reveal setups, dessert tables, and themes that range from classic to contemporary.',
-        price: 550,
+        fullDesc: 'Welcome new life with our whimsical baby shower designs. Gender reveal setups, dessert tables, and themes that range from classic to contemporary. Excited to celebrate? So are we! Get in touch and let\'s make it magical.',
         image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=300&fit=crop',
-        done: 41,
+        trending: false,
+        hasPackages: false,
         related: ['Bridal Showers', 'Cakes & Confectionery', 'Picnic Dates']
       },
       { 
         name: 'Picnic Dates', 
         shortDesc: 'Luxury picnic setups with cushions, florals',
-        fullDesc: 'Romantic outdoor experiences complete with low tables, luxury cushions, grazing platters, and fresh florals. Perfect for proposals or anniversaries.',
-        price: 400,
+        fullDesc: 'Romantic outdoor experiences complete with low tables, luxury cushions, grazing platters, and fresh florals. Perfect for proposals or anniversaries. Dreaming of a perfect picnic? Tell us your ideal setting—we\'ll bring it to life.',
         image: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=300&fit=crop',
-        done: 35,
+        trending: false,
+        hasPackages: false,
         related: ['Engagement Parties', 'Anniversary Celebrations', 'Catering Presentation']
       },
       { 
         name: 'Surprise Parties', 
         shortDesc: 'Full reveal setups, dramatic entrances',
-        fullDesc: 'The art of the surprise. We coordinate reveal moments, dramatic entrances, and custom signage that makes the guest of honor feel truly special.',
-        price: 900,
+        fullDesc: 'The art of the surprise. We coordinate reveal moments, dramatic entrances, and custom signage that makes the guest of honor feel truly special. Planning a surprise? We love secrets—share yours with us and we\'ll help you pull it off.',
         image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&h=300&fit=crop',
-        done: 27,
+        trending: false,
+        hasPackages: false,
         related: ['Birthday Decor', 'Corporate Events', 'Bar & Lounge']
       },
       { 
         name: 'Memorial Services', 
         shortDesc: 'Celebrations of life, tribute events',
-        fullDesc: 'Honor loved ones with dignity and grace. We create serene environments for celebrations of life, with thoughtful touches that reflect their legacy.',
-        price: 1100,
+        fullDesc: 'Honor loved ones with dignity and grace. We create serene environments for celebrations of life, with thoughtful touches that reflect their legacy. During difficult times, we\'re here to help—reach out and let us handle the details with care.',
         image: 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?w=400&h=300&fit=crop',
-        done: 12,
+        trending: false,
+        hasPackages: false,
         related: ['Wedding Decor', 'Anniversary Celebrations', 'Dining Experiences']
       }
     ]
@@ -136,56 +144,55 @@ const categories = [
       { 
         name: 'Corporate Events', 
         shortDesc: 'Branded environments, stage design',
-        fullDesc: 'Professional events that reflect your brand identity. Networking lounges, branded stages, and environments designed for business and pleasure.',
-        price: 3000,
+        fullDesc: 'Professional events that reflect your brand identity. Networking lounges, branded stages, and environments designed for business and pleasure. Tell us about your company culture—we\'ll translate it into an unforgettable event experience.',
         image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=400&h=300&fit=crop',
-        done: 56,
+        trending: false,
+        hasPackages: false,
         related: ['Conferences', 'Product Launches', 'Gala Dinners']
       },
       { 
         name: 'Product Launches', 
         shortDesc: 'Immersive brand activations',
-        fullDesc: 'Make your product unforgettable with immersive activations. Interactive displays, press-ready backdrops, and experiences that generate buzz.',
-        price: 5000,
+        fullDesc: 'Make your product unforgettable with immersive activations. Interactive displays, press-ready backdrops, and experiences that generate buzz. Launching something exciting? We want to hear about it—let\'s create buzz together.',
         image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=300&fit=crop',
-        done: 34,
         trending: true,
+        hasPackages: false,
         related: ['Trade Shows', 'Corporate Events', 'Conferences']
       },
       { 
         name: 'Gala Dinners', 
         shortDesc: 'Luxurious table settings, red carpet',
-        fullDesc: 'Black-tie affairs executed with precision. Red carpet experiences, luxurious table settings, and dramatic lighting for unforgettable evenings.',
-        price: 8000,
+        fullDesc: 'Black-tie affairs executed with precision. Red carpet experiences, luxurious table settings, and dramatic lighting for unforgettable evenings. Envisioning an elegant evening? Let\'s discuss how to make it extraordinary.',
         image: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=400&h=300&fit=crop',
-        done: 22,
+        trending: false,
+        hasPackages: false,
         related: ['Award Ceremonies', 'Charity Galas', 'Corporate Events']
       },
       { 
         name: 'Award Ceremonies', 
         shortDesc: 'Stage grandeur, trophy displays',
-        fullDesc: 'Celebrate excellence with grandeur. Trophy displays, VIP lounges, and stage designs that honor achievement in style.',
-        price: 6500,
+        fullDesc: 'Celebrate excellence with grandeur. Trophy displays, VIP lounges, and stage designs that honor achievement in style. Recognizing excellence deserves excellence—tell us about your honorees and we\'ll design accordingly.',
         image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=400&h=300&fit=crop',
-        done: 18,
+        trending: false,
+        hasPackages: false,
         related: ['Gala Dinners', 'Conferences', 'Corporate Events']
       },
       { 
         name: 'Conferences', 
         shortDesc: 'Speaker stages, registration branding',
-        fullDesc: 'Professional conferences that inspire. Speaker stages, branded registration areas, and breakout rooms designed for learning and connection.',
-        price: 4000,
+        fullDesc: 'Professional conferences that inspire. Speaker stages, branded registration areas, and breakout rooms designed for learning and connection. Planning a conference? We\'d love to understand your objectives—reach out to start planning.',
         image: 'https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=400&h=300&fit=crop',
-        done: 29,
+        trending: false,
+        hasPackages: false,
         related: ['Corporate Events', 'Trade Shows', 'Product Launches']
       },
       { 
         name: 'Trade Shows', 
         shortDesc: 'Booth design, branded activations',
-        fullDesc: 'Stand out on the exhibition floor with custom booth designs and branded activations that draw crowds and drive engagement.',
-        price: 3500,
+        fullDesc: 'Stand out on the exhibition floor with custom booth designs and branded activations that draw crowds and drive engagement. Want to be the booth everyone visits? Tell us your goals and we\'ll design to impress.',
         image: 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?w=400&h=300&fit=crop',
-        done: 31,
+        trending: false,
+        hasPackages: false,
         related: ['Product Launches', 'Conferences', 'Corporate Events']
       }
     ]
@@ -197,55 +204,55 @@ const categories = [
       { 
         name: 'Graduation Ceremonies', 
         shortDesc: 'Full school/university decor',
-        fullDesc: 'Large-scale commencement ceremonies for entire institutions. Stage design, photo opportunities, directional signage, and branded backdrops for thousands of guests.',
-        price: 15000,
+        fullDesc: 'Large-scale commencement ceremonies for entire institutions. Stage design, photo opportunities, directional signage, and branded backdrops for thousands of guests. Planning a commencement? Let\'s discuss your vision for this milestone.',
         image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=300&fit=crop',
-        done: 12,
+        trending: false,
+        hasPackages: false,
         related: ['University Events', 'Community Festivals', 'Conferences']
       },
       { 
         name: 'University Events', 
         shortDesc: "Freshers' balls, alumni galas",
-        fullDesc: 'Campus celebrations that become traditions. Freshers balls, alumni reunions, and faculty recognition nights designed for academic communities.',
-        price: 5000,
+        fullDesc: 'Campus celebrations that become traditions. Freshers balls, alumni reunions, and faculty recognition nights designed for academic communities. Creating campus traditions? We\'d love to be part of it—tell us about your institution.',
         image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
-        done: 8,
+        trending: false,
+        hasPackages: false,
         related: ['Graduation Ceremonies', 'Gala Dinners', 'Corporate Events']
       },
       { 
         name: 'Charity Galas', 
         shortDesc: 'Elegant decor, mission-driven',
-        fullDesc: 'Fundraising events that inspire generosity. Elegant decor aligned with your mission, creating atmospheres where donors feel connected to your cause.',
-        price: 7000,
+        fullDesc: 'Fundraising events that inspire generosity. Elegant decor aligned with your mission, creating atmospheres where donors feel connected to your cause. Doing good deserves great design—share your mission with us.',
         image: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=400&h=300&fit=crop',
-        done: 14,
+        trending: false,
+        hasPackages: false,
         related: ['Gala Dinners', 'Community Festivals', 'Award Ceremonies']
       },
       { 
         name: 'Community Festivals', 
         shortDesc: 'Large-scale installations',
-        fullDesc: 'Bring communities together with large-scale installations, multiple stages, and experiential zones that celebrate culture and connection.',
-        price: 20000,
+        fullDesc: 'Bring communities together with large-scale installations, multiple stages, and experiential zones that celebrate culture and connection. Celebrating community? We\'re passionate about bringing people together—let\'s talk.',
         image: 'https://images.unsplash.com/photo-1533174072545-7a4ce6eadca9?w=400&h=300&fit=crop',
-        done: 6,
+        trending: false,
+        hasPackages: false,
         related: ['Graduation Ceremonies', 'Charity Galas', 'Trade Shows']
       },
       { 
         name: 'Political Events', 
         shortDesc: 'Rallies, inaugurations, diplomatic functions',
-        fullDesc: 'Professional staging for political and diplomatic occasions. Podium design, backdrop branding, and secure environment styling.',
-        price: 12000,
+        fullDesc: 'Professional staging for political and diplomatic occasions. Podium design, backdrop branding, and secure environment styling. Planning an important event? We understand the stakes—reach out for a confidential consultation.',
         image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400&h=300&fit=crop',
-        done: 9,
+        trending: false,
+        hasPackages: false,
         related: ['Corporate Events', 'Conferences', 'Community Festivals']
       },
       { 
         name: 'Religious Ceremonies', 
         shortDesc: 'Weddings, baptisms, cultural celebrations',
-        fullDesc: 'Respectful and beautiful decor for religious and cultural ceremonies. We honor traditions while bringing visual excellence to sacred spaces.',
-        price: 3500,
+        fullDesc: 'Respectful and beautiful decor for religious and cultural ceremonies. We honor traditions while bringing visual excellence to sacred spaces. Honoring your faith and traditions? We approach every ceremony with reverence—let\'s connect.',
         image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop',
-        done: 17,
+        trending: false,
+        hasPackages: false,
         related: ['Wedding Decor', 'Community Festivals', 'Anniversary Celebrations']
       }
     ]
@@ -257,56 +264,55 @@ const categories = [
       { 
         name: 'Catering Presentation', 
         shortDesc: 'Food stations, buffet styling',
-        fullDesc: 'Elevate your culinary offerings with artful presentation. Food stations, buffet styling, and chef table setups that make dining an experience.',
-        price: 1500,
+        fullDesc: 'Elevate your culinary offerings with artful presentation. Food stations, buffet styling, and chef table setups that make dining an experience. Food is art, and so is its presentation—tell us about your culinary vision.',
         image: 'https://images.unsplash.com/photo-1555244162-803794f237d3?w=400&h=300&fit=crop',
-        done: 67,
+        trending: false,
+        hasPackages: false,
         related: ['Dining Experiences', 'Bar & Lounge', 'Wedding Decor']
       },
       { 
         name: 'Bar & Lounge', 
         shortDesc: 'Signature drink stations, champagne walls',
-        fullDesc: 'Sophisticated drinking experiences. Champagne walls, signature cocktail stations, and lounge vignettes that encourage conversation.',
-        price: 2000,
+        fullDesc: 'Sophisticated drinking experiences. Champagne walls, signature cocktail stations, and lounge vignettes that encourage conversation. Dreaming of the perfect bar setup? We love creating Instagram-worthy drink experiences—let\'s chat.',
         image: 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&h=300&fit=crop',
-        done: 43,
         trending: true,
+        hasPackages: false,
         related: ['Catering Presentation', 'Dining Experiences', 'Corporate Events']
       },
       { 
         name: 'Cakes & Confectionery', 
         shortDesc: 'Custom cake displays, dessert tables',
-        fullDesc: 'Showcase sweet creations with custom displays. Tiered cake stands, dessert tablescapes, and pastry installations that look as good as they taste.',
-        price: 800,
+        fullDesc: 'Showcase sweet creations with custom displays. Tiered cake stands, dessert tablescapes, and pastry installations that look as good as they taste. Have a sweet vision? We\'d love to help you display it beautifully.',
         image: 'https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=400&h=300&fit=crop',
-        done: 52,
+        trending: false,
+        hasPackages: false,
         related: ['Baby Showers', 'Bridal Showers', 'Wedding Decor']
       },
       { 
         name: 'Dining Experiences', 
         shortDesc: 'Tablescaping, thematic dining rooms',
-        fullDesc: 'Immersive dining environments. Thematic tablescaping, room transformations, and sensory details that turn meals into memories.',
-        price: 2500,
+        fullDesc: 'Immersive dining environments. Thematic tablescaping, room transformations, and sensory details that turn meals into memories. Want to create an unforgettable dining experience? Tell us your theme—we\'ll transform your space.',
         image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-        done: 38,
+        trending: false,
+        hasPackages: false,
         related: ['Catering Presentation', 'Gala Dinners', 'Anniversary Celebrations']
       },
       { 
         name: 'Food Festivals', 
         shortDesc: 'Outdoor culinary events, tasting stations',
-        fullDesc: 'Large-scale culinary celebrations. Multiple vendor styling, tasting stations, and outdoor dining environments that bring food communities together.',
-        price: 4500,
+        fullDesc: 'Large-scale culinary celebrations. Multiple vendor styling, tasting stations, and outdoor dining environments that bring food communities together. Planning a food festival? We love culinary celebrations—share your appetite with us.',
         image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop',
-        done: 11,
+        trending: false,
+        hasPackages: false,
         related: ['Community Festivals', 'Catering Presentation', 'Trade Shows']
       },
       { 
         name: 'Private Chef Experiences', 
         shortDesc: 'Intimate dining, chef table styling',
-        fullDesc: 'Exclusive dining experiences in private settings. Chef table styling, intimate lighting, and personalized touches for memorable meals.',
-        price: 1800,
+        fullDesc: 'Exclusive dining experiences in private settings. Chef table styling, intimate lighting, and personalized touches for memorable meals. Intimate dining deserves intimate attention—tell us about your perfect evening.',
         image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop',
-        done: 24,
+        trending: false,
+        hasPackages: false,
         related: ['Dining Experiences', 'Catering Presentation', 'Anniversary Celebrations']
       }
     ]
@@ -320,6 +326,69 @@ const timeSlots = [
 ]
 
 const AUTO_ROTATE_INTERVAL = 6000
+
+// Helper function to calculate tier total for 100 pax
+async function fetchWeddingPricing(): Promise<PricingData> {
+  const supabase = createClient()
+  
+  // Fetch all items for theater setup (since weddings typically use theater setup)
+  const tiers = ['essential', 'signature', 'luxury'] as const
+  const setup = 'theater'
+  
+  let totals = {
+    essential: 0,
+    signature: 0,
+    luxury: 0
+  }
+  
+  for (const tier of tiers) {
+    const { data: items, error } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .eq('setup_type', setup)
+      .eq('tier', tier)
+      .eq('is_active', true)
+    
+    if (error || !items) continue
+    
+    // Calculate total for 100 pax (multiplier = 1.0)
+    const multiplier = 1.0
+    
+    for (const item of items) {
+      // Calculate scaled quantity based on rule
+      let quantity = item.base_quantity
+      
+      switch (item.scaling_rule) {
+        case 'per_person':
+          quantity = Math.ceil((100 / 100) * item.base_quantity)
+          break
+        case 'per_table':
+          const tablesNeeded = Math.ceil(100 / 8)
+          quantity = tablesNeeded
+          break
+        case 'per_car':
+          const carMultiplier = Math.ceil(100 / 100)
+          quantity = Math.min(item.base_quantity * carMultiplier, 50)
+          break
+        case 'per_maid':
+          const maidMultiplier = Math.ceil(100 / 100)
+          quantity = Math.min(item.base_quantity * maidMultiplier, 12)
+          break
+        default:
+          quantity = item.base_quantity
+      }
+      
+      // Calculate unit price
+      const unitPrice = item.base_cost / item.base_quantity
+      const scaledUnitPrice = unitPrice * multiplier
+      const itemTotal = Math.round(scaledUnitPrice * quantity)
+      
+      totals[tier] += itemTotal
+    }
+  }
+  
+  return totals
+}
 
 export function ServicesCodex() {
   const sectionRef = useRef<HTMLElement>(null)
@@ -338,6 +407,24 @@ export function ServicesCodex() {
     message: '', 
     question: '' 
   })
+  
+  // State for dynamic pricing
+  const [weddingPricing, setWeddingPricing] = useState<PricingData>({
+    essential: 0,
+    signature: 0,
+    luxury: 0
+  })
+  const [pricingLoading, setPricingLoading] = useState(true)
+
+  // Fetch wedding pricing on component mount
+  useEffect(() => {
+    const loadPricing = async () => {
+      const pricing = await fetchWeddingPricing()
+      setWeddingPricing(pricing)
+      setPricingLoading(false)
+    }
+    loadPricing()
+  }, [])
 
   const currentCategory = categories[activeCategory]
 
@@ -501,20 +588,32 @@ export function ServicesCodex() {
           })}
         </div>
 
-        {/* Stats Row */}
-        <div className="flex gap-8 mb-6 pb-6 border-b border-foreground/10">
-          <div>
-            <p className="text-2xl font-bold text-foreground">100+</p>
-            <p className="text-[10px] uppercase tracking-wider text-foreground/50 mt-1">Events Styled</p>
+        {/* Stats Row with Quote Page Link */}
+        <div className="flex gap-8 mb-6 pb-6 border-b border-foreground/10 flex-wrap items-center justify-between">
+          <div className="flex gap-8">
+            <div>
+              <p className="text-2xl font-bold text-foreground">100+</p>
+              <p className="text-[10px] uppercase tracking-wider text-foreground/50 mt-1">Events Styled</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">50+</p>
+              <p className="text-[10px] uppercase tracking-wider text-foreground/50 mt-1">Service Types</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">∞</p>
+              <p className="text-[10px] uppercase tracking-wider text-foreground/50 mt-1">Possibilities</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground">50+</p>
-            <p className="text-[10px] uppercase tracking-wider text-foreground/50 mt-1">Service Types</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground">∞</p>
-            <p className="text-[10px] uppercase tracking-wider text-foreground/50 mt-1">Possibilities</p>
-          </div>
+          
+          {/* General Quote Page Link - Visible in header */}
+          <Link 
+            href="/quote"
+            className="group flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-foreground/50 hover:text-foreground transition-colors"
+          >
+            <Calculator className="w-3 h-3" />
+            <span>Calculate Your Event Cost</span>
+            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
         </div>
 
         {/* Services Accordion */}
@@ -532,6 +631,8 @@ export function ServicesCodex() {
                 const isExpanded = expandedService === service.name
                 const isConsultation = activeFormType === 'consultation' && isExpanded
                 const isChat = activeFormType === 'chat' && isExpanded
+                const hasPackages = service.hasPackages === true
+                const isWeddingDecor = service.name === 'Wedding Decor'
                 
                 return (
                   <motion.div
@@ -561,9 +662,8 @@ export function ServicesCodex() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-foreground/50 mt-1 font-light flex items-center gap-2">
+                          <p className="text-xs text-foreground/50 mt-1 font-light">
                             {service.shortDesc}
-                            <span className="text-foreground/30">• {service.done} done</span>
                           </p>
                         </div>
                       </div>
@@ -593,10 +693,28 @@ export function ServicesCodex() {
                                   className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                                <div className="absolute bottom-4 left-6">
-                                  <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
-                                  <p className="text-2xl font-serif italic text-foreground">${service.price.toLocaleString()}</p>
-                                </div>
+                                
+                                {/* Show dynamic price for Wedding Decor */}
+                                {hasPackages && isWeddingDecor && !pricingLoading && (
+                                  <div className="absolute bottom-4 left-6">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
+                                    <p className="text-2xl font-serif italic text-foreground">
+                                      KES {weddingPricing.essential.toLocaleString()}
+                                    </p>
+                                  </div>
+                                )}
+                                {/* Fallback for loading or other services */}
+                                {hasPackages && !isWeddingDecor && service.price !== undefined && (
+                                  <div className="absolute bottom-4 left-6">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
+                                    <p className="text-2xl font-serif italic text-foreground">${service.price.toLocaleString()}</p>
+                                  </div>
+                                )}
+                                {hasPackages && isWeddingDecor && pricingLoading && (
+                                  <div className="absolute bottom-4 left-6">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Loading prices...</p>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="p-6">
@@ -604,22 +722,62 @@ export function ServicesCodex() {
                                   {service.fullDesc}
                                 </p>
 
-                                {/* Package Comparison */}
-                                <div className="mb-6">
-                                  <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Package Options</p>
-                                  <div className="grid grid-cols-3 gap-3">
-                                    {['Essential', 'Signature', 'Bespoke'].map((tier, i) => {
-                                      const multiplier = i + 1
-                                      const tierPrice = service.price * multiplier
-                                      return (
-                                        <div key={tier} className={`p-3 border rounded-sm text-center transition-colors ${i === 1 ? 'border-foreground/30 bg-foreground/[0.03]' : 'border-foreground/10'}`}>
-                                          <p className="text-[9px] uppercase tracking-wider text-foreground/50 mb-1">{tier}</p>
-                                          <p className="text-sm font-medium text-foreground">${tierPrice.toLocaleString()}</p>
+                                {/* Package Comparison - Dynamic for Wedding Decor */}
+                                {hasPackages && isWeddingDecor && !pricingLoading && (
+                                  <div className="mb-6">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Package Options</p>
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                      {[
+                                        { name: 'Essential', price: weddingPricing.essential },
+                                        { name: 'Signature', price: weddingPricing.signature },
+                                        { name: 'Luxury', price: weddingPricing.luxury }
+                                      ].map((tier, i) => (
+                                        <div key={tier.name} className={`p-3 border rounded-sm text-center transition-colors ${i === 1 ? 'border-foreground/30 bg-foreground/[0.03]' : 'border-foreground/10'}`}>
+                                          <p className="text-[9px] uppercase tracking-wider text-foreground/50 mb-1">{tier.name}</p>
+                                          <p className="text-sm font-medium text-foreground">KES {tier.price.toLocaleString()}</p>
                                         </div>
-                                      )
-                                    })}
+                                      ))}
+                                    </div>
+                                    
+                                    {/* Wedding Decor Specific Quote Link */}
+                                    <div className="mt-4 pt-3 border-t border-foreground/10">
+                                      <Link 
+                                        href="/quote"
+                                        className="group inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-medium text-foreground/60 hover:text-foreground transition-colors"
+                                      >
+                                        <Sparkles className="w-3 h-3" />
+                                        <span>See detailed package breakdown & customize for your guest count</span>
+                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                      </Link>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
+
+                                {/* Package Comparison - Static for other services */}
+                                {hasPackages && !isWeddingDecor && service.price !== undefined && (
+                                  <div className="mb-6">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Package Options</p>
+                                    <div className="grid grid-cols-3 gap-3">
+                                      {['Essential', 'Signature', 'Luxury'].map((tier, i) => {
+                                        const multiplier = i + 1
+                                        const tierPrice = service.price * multiplier
+                                        return (
+                                          <div key={tier} className={`p-3 border rounded-sm text-center transition-colors ${i === 1 ? 'border-foreground/30 bg-foreground/[0.03]' : 'border-foreground/10'}`}>
+                                            <p className="text-[9px] uppercase tracking-wider text-foreground/50 mb-1">{tier}</p>
+                                            <p className="text-sm font-medium text-foreground">${tierPrice.toLocaleString()}</p>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Loading state for Wedding Decor */}
+                                {hasPackages && isWeddingDecor && pricingLoading && (
+                                  <div className="mb-6 text-center py-4">
+                                    <p className="text-xs text-foreground/40">Loading package prices...</p>
+                                  </div>
+                                )}
 
                                 {/* Action Buttons */}
                                 {!activeFormType ? (

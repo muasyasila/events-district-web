@@ -257,6 +257,12 @@ export default function InventoryManagement() {
     { value: 'per_maid', label: 'Per Maid (scales with bridal party)' }
   ]
 
+  // Custom select styling for all dropdowns
+  const selectClassName = "w-full px-3 py-2 bg-black border border-white/20 rounded text-sm text-white focus:outline-none focus:border-white appearance-none cursor-pointer"
+
+  // Style for options within select (ensures dark background)
+  const optionClassName = "bg-black text-white"
+
   return (
     <div>
       {error && (
@@ -291,10 +297,16 @@ export default function InventoryManagement() {
           <select
             value={filterSetup}
             onChange={(e) => setFilterSetup(e.target.value as SetupType)}
-            className="px-3 py-2 bg-black border border-white/20 rounded text-sm text-white focus:outline-none focus:border-white"
+            className={selectClassName}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+              backgroundPosition: 'right 8px center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '14px'
+            }}
           >
-            <option value="theater">Theater</option>
-            <option value="restaurant">Restaurant</option>
+            <option value="theater" className={optionClassName}>Theater</option>
+            <option value="restaurant" className={optionClassName}>Restaurant</option>
           </select>
         </div>
         
@@ -303,12 +315,18 @@ export default function InventoryManagement() {
           <select
             value={filterTier}
             onChange={(e) => setFilterTier(e.target.value as TierType | 'all')}
-            className="px-3 py-2 bg-black border border-white/20 rounded text-sm text-white focus:outline-none focus:border-white"
+            className={selectClassName}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+              backgroundPosition: 'right 8px center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '14px'
+            }}
           >
-            <option value="all">All Tiers</option>
-            <option value="essential">Essential</option>
-            <option value="signature">Signature</option>
-            <option value="luxury">Luxury</option>
+            <option value="all" className={optionClassName}>All Tiers</option>
+            <option value="essential" className={optionClassName}>Essential</option>
+            <option value="signature" className={optionClassName}>Signature</option>
+            <option value="luxury" className={optionClassName}>Luxury</option>
           </select>
         </div>
         
@@ -352,11 +370,17 @@ export default function InventoryManagement() {
                   <select
                     value={newItem.category_code || ''}
                     onChange={(e) => setNewItem({...newItem, category_code: e.target.value})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white focus:outline-none focus:border-white"
+                    className={selectClassName}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 8px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '14px'
+                    }}
                   >
-                    <option value="">Select Category</option>
+                    <option value="" className={optionClassName}>Select Category</option>
                     {categories.map(cat => (
-                      <option key={cat.code} value={cat.code}>{cat.code}: {cat.name}</option>
+                      <option key={cat.code} value={cat.code} className={optionClassName}>{cat.code}: {cat.name}</option>
                     ))}
                   </select>
                 </div>
@@ -379,10 +403,16 @@ export default function InventoryManagement() {
                   <select
                     value={newItem.setup_type}
                     onChange={(e) => setNewItem({...newItem, setup_type: e.target.value as SetupType})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white focus:outline-none focus:border-white"
+                    className={selectClassName}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 8px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '14px'
+                    }}
                   >
-                    <option value="theater">Theater</option>
-                    <option value="restaurant">Restaurant</option>
+                    <option value="theater" className={optionClassName}>Theater</option>
+                    <option value="restaurant" className={optionClassName}>Restaurant</option>
                   </select>
                 </div>
                 
@@ -391,11 +421,17 @@ export default function InventoryManagement() {
                   <select
                     value={newItem.tier}
                     onChange={(e) => setNewItem({...newItem, tier: e.target.value as TierType})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white focus:outline-none focus:border-white"
+                    className={selectClassName}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 8px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '14px'
+                    }}
                   >
-                    <option value="essential">Essential</option>
-                    <option value="signature">Signature</option>
-                    <option value="luxury">Luxury</option>
+                    <option value="essential" className={optionClassName}>Essential</option>
+                    <option value="signature" className={optionClassName}>Signature</option>
+                    <option value="luxury" className={optionClassName}>Luxury</option>
                   </select>
                 </div>
               </div>
@@ -406,10 +442,16 @@ export default function InventoryManagement() {
                   <select
                     value={newItem.scaling_rule}
                     onChange={(e) => setNewItem({...newItem, scaling_rule: e.target.value as ScalingRule})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white focus:outline-none focus:border-white"
+                    className={selectClassName}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 8px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '14px'
+                    }}
                   >
                     {scalingRuleOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      <option key={opt.value} value={opt.value} className={optionClassName}>{opt.label}</option>
                     ))}
                   </select>
                 </div>
@@ -541,9 +583,15 @@ export default function InventoryManagement() {
                             value={editForm.category_code || ''}
                             onChange={(e) => setEditForm({...editForm, category_code: e.target.value})}
                             className="px-2 py-1 bg-white/5 border border-white/20 rounded text-sm text-white"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                              backgroundPosition: 'right 6px center',
+                              backgroundRepeat: 'no-repeat',
+                              backgroundSize: '12px'
+                            }}
                           >
                             {categories.map(cat => (
-                              <option key={cat.code} value={cat.code}>{cat.code}</option>
+                              <option key={cat.code} value={cat.code} className="bg-black text-white">{cat.code}</option>
                             ))}
                           </select>
                         </td>
@@ -560,9 +608,15 @@ export default function InventoryManagement() {
                             value={editForm.scaling_rule || 'fixed'}
                             onChange={(e) => setEditForm({...editForm, scaling_rule: e.target.value as ScalingRule})}
                             className="px-2 py-1 bg-white/5 border border-white/20 rounded text-sm text-white"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                              backgroundPosition: 'right 6px center',
+                              backgroundRepeat: 'no-repeat',
+                              backgroundSize: '12px'
+                            }}
                           >
                             {scalingRuleOptions.map(opt => (
-                              <option key={opt.value} value={opt.value}>{opt.label.split(' ')[0]}</option>
+                              <option key={opt.value} value={opt.value} className="bg-black text-white">{opt.label.split(' ')[0]}</option>
                             ))}
                           </select>
                         </td>
