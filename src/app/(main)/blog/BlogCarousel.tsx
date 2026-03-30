@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
+import { Calendar, Eye, BookOpen, Bookmark, ArrowRight } from 'lucide-react'
 
 // Types for blog data from database
 interface BlogPostFromDB {
@@ -56,8 +57,7 @@ export default function BlogCarousel() {
   
   const AUTO_PLAY_DURATION = 5000
   const minSwipeDistance = 50
-  // Dynamic navbar height state
-  const [navbarHeight, setNavbarHeight] = useState(80) // Default fallback
+  const [navbarHeight, setNavbarHeight] = useState(80)
 
   // Fetch blog posts from database
   useEffect(() => {
@@ -67,7 +67,6 @@ export default function BlogCarousel() {
         const posts = await getPublishedPosts()
         setBlogPosts(posts)
         
-        // Fetch authors
         const authorsData = await getAuthors()
         const authorsMap: Record<string, Author> = {}
         authorsData.forEach(author => {
@@ -80,12 +79,10 @@ export default function BlogCarousel() {
         })
         setAuthors(authorsMap)
         
-        // Fetch categories
         const categoriesData = await getBlogCategories()
         const categoryNames = ['All', ...categoriesData.map(c => c.name)]
         setCategories(categoryNames)
         
-        // Set initial active index to middle of carousel
         if (posts.length > 0) {
           setActiveIndex(Math.floor(posts.length / 2))
         }
@@ -99,32 +96,21 @@ export default function BlogCarousel() {
     fetchData()
   }, [])
   
-  // Dynamic navbar height detection
   useEffect(() => {
     const updateNavbarHeight = () => {
-      // Try to find navbar by common selectors
       const navbar = document.querySelector('header, nav, [class*="navbar"], [class*="Navbar"]')
       if (navbar) {
         setNavbarHeight(navbar.getBoundingClientRect().height)
       } else {
-        // Fallback to 80px if no navbar found
         setNavbarHeight(80)
       }
     }
-    
-    // Initial update
     updateNavbarHeight()
-    
-    // Update on resize
     window.addEventListener('resize', updateNavbarHeight)
-    
-    // Also update after a short delay to ensure DOM is fully loaded
     setTimeout(updateNavbarHeight, 100)
-    
     return () => window.removeEventListener('resize', updateNavbarHeight)
   }, [])
   
-  // Load saved posts from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('blogSavedPosts')
     if (saved) setSavedPosts(JSON.parse(saved))
@@ -132,7 +118,6 @@ export default function BlogCarousel() {
     if (savedClaps) setClaps(JSON.parse(savedClaps))
   }, [])
 
-  // Save to localStorage
   useEffect(() => {
     localStorage.setItem('blogSavedPosts', JSON.stringify(savedPosts))
   }, [savedPosts])
@@ -141,7 +126,6 @@ export default function BlogCarousel() {
     localStorage.setItem('blogClaps', JSON.stringify(claps))
   }, [claps])
 
-  // Touch handlers for swipe
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null)
     setTouchStart(e.targetTouches[0].clientX)
@@ -159,12 +143,8 @@ export default function BlogCarousel() {
     const isLeftSwipe = distance > minSwipeDistance
     const isRightSwipe = distance < -minSwipeDistance
     
-    if (isLeftSwipe && filteredPosts.length > 2) {
-      handleNext()
-    }
-    if (isRightSwipe && filteredPosts.length > 2) {
-      handlePrev()
-    }
+    if (isLeftSwipe && filteredPosts.length > 2) handleNext()
+    if (isRightSwipe && filteredPosts.length > 2) handlePrev()
     
     setIsSwiping(false)
     setTouchStart(null)
@@ -173,38 +153,30 @@ export default function BlogCarousel() {
 
   const getCarouselConfig = () => {
     const width = typeof window !== 'undefined' ? window.innerWidth : 1200
-    const height = typeof window !== 'undefined' ? window.innerHeight : 800
     const isMobile = width < 768
     const isTablet = width >= 768 && width < 1024
     const isDesktop = width >= 1024
     
-    // Card sizes - based on original code but adjusted for mobile margins
-    const cardWidth = isMobile ? 240 : 300
-    const cardHeight = isMobile ? 320 : 400
+    const cardWidth = isMobile ? 280 : 340
+    const cardHeight = isMobile ? 420 : 500
     
-    // Dynamic radius based on screen size for optimal visible cards
-    // Mobile: max 3 cards, Tablet: max 5 cards, Desktop: max 7 cards
     let radiusX, radiusY, angleSpacing
     
     if (isDesktop) {
-      // Desktop - 7 visible cards
-      radiusX = Math.min(width * 0.35, 450)
-      radiusY = 30
-      angleSpacing = Math.PI / 5.2 // About 34.6-degree spacing
+      radiusX = Math.min(width * 0.32, 420)
+      radiusY = 35
+      angleSpacing = Math.PI / 5.2
     } else if (isTablet) {
-      // Tablet - 5 visible cards
-      radiusX = Math.min(width * 0.35, 380)
+      radiusX = Math.min(width * 0.32, 360)
       radiusY = 30
-      angleSpacing = Math.PI / 6.5 // About 27.7-degree spacing
+      angleSpacing = Math.PI / 6.5
     } else {
-      // Mobile - 3 visible cards - add left/right margin
-      radiusX = width * 0.4 // Slightly smaller radius to keep cards from edges
-      radiusY = 20
-      angleSpacing = Math.PI / 8 // About 22.5-degree spacing
+      radiusX = width * 0.38
+      radiusY = 25
+      angleSpacing = Math.PI / 7.5
     }
     
-    // Add padding to prevent cards from touching screen edges
-    const horizontalPadding = isMobile ? 16 : isTablet ? 40 : 60
+    const horizontalPadding = isMobile ? 20 : isTablet ? 50 : 80
     
     return {
       radiusX,
@@ -227,53 +199,31 @@ export default function BlogCarousel() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Filter and search posts
   const filteredPosts = blogPosts.filter(post => {
     const matchesCategory = selectedCategory === "All" || post.category === selectedCategory
     const matchesSearch = searchQuery === "" || 
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchQuery.toLowerCase())
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
-  // Calculate layout based on filtered posts count with max visible cards
   const getFilteredCardStyle = (index: number, totalFiltered: number, currentActiveIndex: number) => {
     const { radiusX, radiusY, cardWidth, angleSpacing, isMobile } = config
     
     if (totalFiltered === 0) return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
-    
-    if (totalFiltered === 1) {
-      return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
-    }
+    if (totalFiltered === 1) return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
     
     if (totalFiltered === 2) {
       const offset = index === 0 ? -1 : 1
       const x = offset * (cardWidth * 0.7)
-      return { 
-        x, 
-        z: 0, 
-        scale: 0.9, 
-        rotateY: offset * -5, 
-        opacity: 1, 
-        zIndex: 10, 
-        isActive: true 
-      }
+      return { x, z: 0, scale: 0.9, rotateY: offset * -5, opacity: 1, zIndex: 10, isActive: true }
     }
     
     let offset = index - currentActiveIndex
-    
-    // Handle wrapping for infinite carousel feel
     if (offset > totalFiltered / 2) offset -= totalFiltered
     if (offset < -totalFiltered / 2) offset += totalFiltered
     
-    // Limit visible cards based on screen size
-    let maxVisible = 3 // mobile default
-    if (config.isDesktop) maxVisible = 7
-    else if (config.isTablet) maxVisible = 5
-    else maxVisible = 3
-    
-    // Hide cards that are beyond the visible range
+    let maxVisible = config.isDesktop ? 5 : config.isTablet ? 4 : 3
     if (Math.abs(offset) > Math.floor(maxVisible / 2)) {
       return { x: 0, z: -100, scale: 0, rotateY: 0, opacity: 0, zIndex: -1, isActive: false }
     }
@@ -282,7 +232,7 @@ export default function BlogCarousel() {
     const x = Math.sin(angle) * radiusX
     const z = Math.cos(angle) * radiusY - radiusY
     const scale = 0.75 + (0.25 * ((z + radiusY) / radiusY))
-    const rotateY = -offset * (isMobile ? 8 : 12)
+    const rotateY = -offset * (isMobile ? 10 : 12)
     const opacity = 0.3 + (0.7 * ((z + radiusY) / radiusY))
     const zIndex = Math.round((z + radiusY) * 10)
     
@@ -308,7 +258,6 @@ export default function BlogCarousel() {
   const handleMouseEnter = () => setIsAutoPlaying(false)
   const handleMouseLeave = () => setIsAutoPlaying(true)
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (filteredPosts.length > 2) {
@@ -323,18 +272,13 @@ export default function BlogCarousel() {
   const toggleSave = (postId: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
     setSavedPosts(prev => 
-      prev.includes(postId) 
-        ? prev.filter(id => id !== postId)
-        : [...prev, postId]
+      prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
     )
   }
 
   const handleClap = (postId: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    setClaps(prev => ({
-      ...prev,
-      [postId]: (prev[postId] || 0) + 1
-    }))
+    setClaps(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
   }
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -346,28 +290,18 @@ export default function BlogCarousel() {
     }
   }
 
-  // Click any card to navigate to the blog post page
   const handleCardClick = (post: BlogPostFromDB, isActive: boolean, index: number) => {
     if (!isActive) {
-      // If card is not active, bring it to center first
       setActiveIndex(index)
-      setTimeout(() => {
-        router.push(`/blog/${post.slug}`)
-      }, 400)
+      setTimeout(() => router.push(`/blog/${post.slug}`), 400)
     } else {
-      // If card is already active, navigate directly
       router.push(`/blog/${post.slug}`)
     }
   }
 
-  const currentPost = filteredPosts[activeIndex]
-  const isSaved = currentPost ? savedPosts.includes(currentPost.id) : false
-  const currentClaps = currentPost ? claps[currentPost.id] || 0 : 0
-
-  // Calculate visible count for progress bars (same as max visible cards)
   const getVisibleCount = () => {
-    if (config.isDesktop) return 7
-    if (config.isTablet) return 5
+    if (config.isDesktop) return 5
+    if (config.isTablet) return 4
     return 3
   }
 
@@ -401,7 +335,7 @@ export default function BlogCarousel() {
         marginBottom: '2rem'
       }}
     >
-      {/* Cinematic Background Accents */}
+      {/* Background Accents */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[10%] left-[10%] w-64 h-64 bg-foreground/[0.02] rounded-full blur-[120px]" />
         <div className="absolute bottom-[10%] right-[10%] w-80 h-80 bg-foreground/[0.02] rounded-full blur-[120px]" />
@@ -443,7 +377,7 @@ export default function BlogCarousel() {
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery("")}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground transition-colors"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -466,7 +400,7 @@ export default function BlogCarousel() {
                 setSelectedCategory(cat)
                 setActiveIndex(0)
               }}
-              className={`text-[8px] md:text-[10px] uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 border transition-all duration-300 whitespace-nowrap ${
+              className={`text-[8px] md:text-[10px] uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 border transition-all duration-300 whitespace-nowrap rounded-full ${
                 selectedCategory === cat 
                   ? 'border-foreground bg-foreground text-background' 
                   : 'border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground'
@@ -494,7 +428,6 @@ export default function BlogCarousel() {
         >
           {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
             const style = getFilteredCardStyle(index, filteredPosts.length, activeIndex)
-            // Skip rendering hidden cards
             if (style.opacity === 0) return null
             const postClaps = claps[post.id] || 0
             const isPostSaved = savedPosts.includes(post.id)
@@ -523,100 +456,129 @@ export default function BlogCarousel() {
                   ease: [0.19, 1, 0.22, 1],
                 }}
               >
-                {/* CARD STYLE - matching original card design */}
-                <div className="relative w-full h-full bg-neutral-900 rounded-sm overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)]">
+                {/* Enhanced Card Design */}
+                <div className="relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 group-hover:shadow-3xl">
+                  {/* Image Layer */}
                   <motion.div 
                     className="absolute inset-0"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.6 }}
+                    whileHover={{ scale: 1.08 }}
+                    transition={{ duration: 0.7 }}
                   >
                     <img
                       src={post.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9'}
                       alt={post.title}
-                      className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-1000"
+                      className="w-full h-full object-cover transition-all duration-700 group-hover:brightness-110"
                       draggable={false}
                     />
-                    {/* Original gradient style from the old code */}
-                    <div className={`absolute inset-0 bg-gradient-to-t ${post.gradient || 'from-black/80 via-black/20 to-transparent'}`} />
+                    {/* Gradient Overlay - Darker at bottom for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
                   </motion.div>
+
+                  {/* Category Badge */}
+                  <div className="absolute top-4 left-4 z-20">
+                    <span className="px-3 py-1 text-[8px] font-medium uppercase tracking-wider bg-black/50 backdrop-blur-sm text-white/90 rounded-full border border-white/20">
+                      {post.category}
+                    </span>
+                  </div>
 
                   {/* Save Button */}
                   {style.isActive && (
                     <button
                       onClick={(e) => toggleSave(post.id, e)}
-                      className="absolute top-4 right-4 z-20 p-2 bg-black/30 backdrop-blur-sm rounded-full hover:bg-black/50 transition-colors"
+                      className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all duration-300"
                     >
-                      <svg 
-                        className={`w-4 h-4 transition-colors ${isPostSaved ? 'text-red-400 fill-current' : 'text-white/70'}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
+                      <Bookmark 
+                        className={`w-4 h-4 transition-all ${isPostSaved ? 'text-foreground fill-foreground' : 'text-white/70'}`} 
+                      />
                     </button>
                   )}
 
-                  {/* Card Content - matches original styling */}
-                  <div className="absolute inset-0 p-4 md:p-6 flex flex-col justify-end text-white pb-8 md:pb-10">
+                  {/* Card Content */}
+                  <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end text-white">
                     <motion.div
-                      animate={{ y: style.isActive ? 0 : 20 }}
-                      transition={{ duration: 0.8 }}
+                      animate={{ y: style.isActive ? 0 : 15 }}
+                      transition={{ duration: 0.6, delay: 0.1 }}
+                      className="space-y-2 md:space-y-3"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[8px] md:text-[9px] tracking-[0.3em] uppercase text-white/50 font-medium">
-                          {post.category}
-                        </span>
-                        {style.isActive && (
-                          <span className="text-[8px] md:text-[9px] text-white/40 flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            {post.views}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <h3 className="text-base md:text-2xl font-serif italic mb-2 md:mb-3 leading-tight [text-wrap:balance] line-clamp-2">
+                      {/* Title */}
+                      <h3 className="text-xl md:text-2xl font-serif italic leading-tight line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
                         {post.title}
                       </h3>
                       
-                      <p className="text-[9px] md:text-[11px] text-white/70 line-clamp-2 font-light leading-relaxed mb-3 md:mb-4">
+                      {/* Excerpt */}
+                      <p className="text-xs md:text-sm text-white/80 line-clamp-2 font-light leading-relaxed">
                         {post.excerpt}
                       </p>
                       
-                      <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-white/10">
-                        <span className="text-[7px] md:text-[9px] tracking-widest uppercase text-white/40">{post.read_time || '5 min read'}</span>
-                        <div className="flex items-center gap-3">
-                          {style.isActive && postClaps > 0 && (
-                            <span className="text-[7px] md:text-[9px] text-white/60 flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {postClaps}
-                            </span>
-                          )}
-                          <span className="text-[7px] md:text-[9px] tracking-widest uppercase text-white/40 group-hover:text-white transition-colors flex items-center gap-2">
-                            {style.isActive ? 'Read Story' : 'View'} <span className="text-sm">→</span>
+                      {/* Meta Info */}
+                      <div className="flex items-center gap-4 pt-2">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar size={12} className="text-white/60" />
+                          <span className="text-[10px] text-white/60">
+                            {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent'}
                           </span>
                         </div>
+                        <div className="flex items-center gap-1.5">
+                          <BookOpen size={12} className="text-white/60" />
+                          <span className="text-[10px] text-white/60">{post.read_time || '5 min'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Eye size={12} className="text-white/60" />
+                          <span className="text-[10px] text-white/60">{post.views}</span>
+                        </div>
                       </div>
+
+                      {/* Read More Button - Only visible on active card */}
+                      {style.isActive && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="pt-2"
+                        >
+                          <span className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-white/80 hover:text-white transition-colors group/link">
+                            Read Full Story
+                            <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+                          </span>
+                        </motion.div>
+                      )}
                     </motion.div>
                   </div>
+
+                  {/* Bottom Border Accent */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-foreground/50 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
                 </div>
 
-                {/* Author Info */}
+                {/* Author Info for Active Card with Avatar */}
                 {style.isActive && filteredPosts.length > 2 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute -bottom-12 md:-bottom-16 left-0 right-0 text-center"
+                    transition={{ delay: 0.15 }}
+                    className="absolute -bottom-14 md:-bottom-16 left-0 right-0 text-center"
                   >
-                    <p className="text-foreground font-serif italic text-xs md:text-sm">{post.author}</p>
-                    <p className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-widest mt-0.5 md:mt-1">
-                      {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Just now'}
-                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      {/* Author Avatar */}
+                      {author?.avatar_url ? (
+                        <img
+                          src={author.avatar_url}
+                          alt={post.author}
+                          className="w-6 h-6 md:w-7 md:h-7 rounded-full object-cover border border-foreground/20"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20">
+                          <span className="text-[8px] md:text-[9px] text-foreground/50">
+                            {post.author.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-foreground font-serif italic text-xs md:text-sm">{post.author}</p>
+                        <p className="text-foreground/50 text-[8px] md:text-[10px] uppercase tracking-wider">
+                          {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
+                        </p>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </motion.article>
@@ -628,8 +590,8 @@ export default function BlogCarousel() {
           )}
         </div>
 
-        {/* Integrated Navigation Footer - with progress bar matching original design */}
-        <div className="mt-6 md:mt-8 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
+        {/* Navigation Footer */}
+<div className="mt-3 md:mt-6 flex flex-col items-center gap-3 md:gap-4 flex-shrink-0 pb-4">
           <div className="flex items-center gap-6 md:gap-10">
             <button 
               onClick={handlePrev} 
@@ -641,17 +603,14 @@ export default function BlogCarousel() {
               </svg>
             </button>
 
-            {/* PROGRESS BAR NAVIGATION - matches original style */}
+            {/* Progress Bars */}
             <div className="flex gap-3 md:gap-4 items-center">
               {(() => {
                 const visibleCount = getVisibleCount()
                 const halfVisible = Math.floor(visibleCount / 2)
-                
-                // Generate array of visible indices centered around active
                 const visibleIndices = []
                 for (let i = -halfVisible; i <= halfVisible; i++) {
                   let idx = activeIndex + i
-                  // Handle wrapping
                   if (idx < 0) idx += filteredPosts.length
                   if (idx >= filteredPosts.length) idx -= filteredPosts.length
                   visibleIndices.push(idx)
@@ -663,8 +622,8 @@ export default function BlogCarousel() {
                     <div 
                       key={index}
                       onClick={() => filteredPosts.length > 2 && setActiveIndex(index)}
-                      className={`relative h-[2px] overflow-hidden bg-foreground/10 transition-all duration-500 ${filteredPosts.length > 2 ? 'cursor-pointer' : ''}`}
-                      style={{ width: isActive ? '40px' : '6px' }}
+                      className={`relative h-[2px] overflow-hidden bg-foreground/10 transition-all duration-500 cursor-pointer rounded-full`}
+                      style={{ width: isActive ? '32px' : '24px' }}
                     >
                       {isActive && filteredPosts.length > 2 && (
                         <motion.div 
@@ -675,11 +634,11 @@ export default function BlogCarousel() {
                             ease: "linear" 
                           }}
                           key={activeIndex}
-                          className="absolute inset-0 bg-foreground"
+                          className="absolute inset-0 bg-foreground rounded-full"
                         />
                       )}
                       {isActive && filteredPosts.length <= 2 && (
-                        <div className="absolute inset-0 bg-foreground" />
+                        <div className="absolute inset-0 bg-foreground rounded-full" />
                       )}
                     </div>
                   );
@@ -698,11 +657,11 @@ export default function BlogCarousel() {
             </button>
           </div>
 
-          <Link href="/blog" className="group flex flex-col items-center gap-3">
-            <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/40 group-hover:text-foreground transition-all font-bold">
+          <Link href="/blog" className="group flex flex-col items-center gap-2">
+            <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] text-foreground/40 group-hover:text-foreground transition-all font-bold">
               View All Stories
             </span>
-            <motion.div className="h-px bg-foreground/20 w-16 group-hover:w-24 transition-all duration-500" />
+            <motion.div className="h-px bg-foreground/20 w-12 group-hover:w-20 transition-all duration-500" />
           </Link>
         </div>
 
