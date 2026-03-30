@@ -228,7 +228,9 @@ export default function BlogCarousel() {
     if (totalFiltered === 2) {
       const offset = index === 0 ? -1 : 1
       const x = offset * (cardWidth * 0.7)
-      return { x, z: 0, scale: 0.9, rotateY: offset * -5, opacity: 1, zIndex: 10, isActive: true }
+      const isActiveCard = index === currentActiveIndex
+      const scale = isActiveCard ? 1 : 0.85
+      return { x, z: 0, scale, rotateY: offset * -5, opacity: 1, zIndex: 10, isActive: isActiveCard }
     }
     
     let offset = index - currentActiveIndex
@@ -243,12 +245,14 @@ export default function BlogCarousel() {
     const angle = offset * angleSpacing
     const x = Math.sin(angle) * radiusX
     const z = Math.cos(angle) * radiusY - radiusY
-    const scale = 0.75 + (0.25 * ((z + radiusY) / radiusY))
+    const baseScale = 0.75 + (0.25 * ((z + radiusY) / radiusY))
+    const scale = baseScale * (1 - Math.abs(offset) * 0.08)
     const rotateY = -offset * (isMobile ? 10 : 12)
     const opacity = 0.3 + (0.7 * ((z + radiusY) / radiusY))
     const zIndex = Math.round((z + radiusY) * 10)
+    const isActive = offset === 0
     
-    return { x, z, scale, rotateY, opacity, zIndex, isActive: offset === 0 }
+    return { x, z, scale, rotateY, opacity, zIndex, isActive }
   }
 
   const handleNext = useCallback(() => {
@@ -531,14 +535,8 @@ export default function BlogCarousel() {
                         {post.excerpt}
                       </p>
                       
-                      {/* Meta Info - Added padding bottom for side cards to prevent text touching edge */}
-                      <div className={`flex items-center gap-4 pt-2 ${!isActiveCard ? 'pb-2' : ''}`}>
-                        <div className="flex items-center gap-1.5">
-                          <Calendar size={12} className="text-white/60" />
-                          <span className="text-[10px] text-white/60">
-                            {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recent'}
-                          </span>
-                        </div>
+                      {/* Meta Info - Only read time and views */}
+                      <div className="flex items-center gap-4 pt-2">
                         <div className="flex items-center gap-1.5">
                           <BookOpen size={12} className="text-white/60" />
                           <span className="text-[10px] text-white/60">{post.read_time || '5 min'}</span>
@@ -574,45 +572,43 @@ export default function BlogCarousel() {
                   }`} />
                 </div>
 
-                {/* Author Info for Active Card with Avatar - Positioned lower on mobile to avoid navigation */}
+                {/* Author Info for Active Card with Avatar and Date - Positioned below navigation on mobile */}
                 {isActiveCard && filteredPosts.length > 2 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 }}
                     className={`absolute left-0 right-0 text-center ${
-                      isMobileDevice ? '-bottom-20' : '-bottom-14 md:-bottom-16'
+                      isMobileDevice ? '-bottom-28' : '-bottom-14 md:-bottom-16'
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      {/* Author Avatar */}
-                      {author?.avatar_url ? (
-                        <img
-                          src={author.avatar_url}
-                          alt={post.author}
-                          className={`rounded-full object-cover border border-foreground/20 ${
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Author Avatar */}
+                        {author?.avatar_url ? (
+                          <img
+                            src={author.avatar_url}
+                            alt={post.author}
+                            className={`rounded-full object-cover border border-foreground/20 ${
+                              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+                            }`}
+                          />
+                        ) : (
+                          <div className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
                             isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-                          }`}
-                        />
-                      ) : (
-                        <div className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
-                          isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-                        }`}>
-                          <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
-                            {post.author.charAt(0)}
-                          </span>
-                        </div>
-                      )}
-                      <div>
+                          }`}>
+                            <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
+                              {post.author.charAt(0)}
+                            </span>
+                          </div>
+                        )}
                         <p className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
                           {post.author}
                         </p>
-                        {!isMobileDevice && (
-                          <p className="text-foreground/50 text-[8px] md:text-[10px] uppercase tracking-wider">
-                            {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
-                          </p>
-                        )}
                       </div>
+                      <p className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-wider">
+                        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
+                      </p>
                     </div>
                   </motion.div>
                 )}
@@ -626,7 +622,7 @@ export default function BlogCarousel() {
         </div>
 
         {/* Navigation Footer */}
-        <div className="mt-8 md:mt-12 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
+        <div className={`flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4 ${isMobileDevice ? 'mt-12' : 'mt-8 md:mt-12'}`}>
           <div className="flex items-center gap-6 md:gap-10">
             <button 
               onClick={handlePrev} 
