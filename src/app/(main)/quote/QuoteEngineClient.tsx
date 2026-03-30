@@ -1,10 +1,16 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Minus, ChevronDown, ChevronUp, Crown } from 'lucide-react'
+import { 
+  Plus, Minus, ChevronDown, ChevronUp, Crown, 
+  Calculator, Users, LayoutTemplate, ArrowRight, Sparkles, 
+  Package, Theater, Coffee, PartyPopper
+} from 'lucide-react'
 import { InventoryItem, SetupType, TierType } from '@/app/actions/inventory'
 import { getMultiplier, getItemTotalCost, getScaledQuantity, calculateTierTotal } from '@/lib/utils/scaling'
+import ItemWithImage from '@/components/quote/ItemWithImage'
+import Link from 'next/link'
 
 interface QuoteEngineClientProps {
   initialPax: number
@@ -35,9 +41,7 @@ export default function QuoteEngineClient({
   const [setup, setSetup] = useState<SetupType>(initialSetup)
   const [activeTiers, setActiveTiers] = useState<Set<TierType>>(new Set())
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
-  const [hoveredImage, setHoveredImage] = useState<string | null>(null)
-  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 })
-  const imageRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const [showPlayground, setShowPlayground] = useState(false)
 
   // Get the current multiplier based on pax
   const multiplier = useMemo(() => getMultiplier(pax, scalingFactors), [pax, scalingFactors])
@@ -58,18 +62,44 @@ export default function QuoteEngineClient({
     }
   }
 
+  const getTierDescription = (tier: TierType): string => {
+    switch(tier) {
+      case 'essential': return 'Essential elegance for intimate celebrations'
+      case 'signature': return 'Signature style for unforgettable moments'
+      case 'luxury': return 'Luxury redefined for the extraordinary'
+      default: return ''
+    }
+  }
+
   const getTierIcon = (tier: TierType) => {
     switch(tier) {
-      case 'luxury': return <Crown size={14} className="inline-block ml-1" />
+      case 'luxury': return <Crown size={16} className="inline-block ml-1" />
+      case 'signature': return <PartyPopper size={14} className="inline-block ml-1" />
       default: return null
     }
   }
 
+  // Check if a tier has any items
+  const hasItems = (tier: TierType): boolean => {
+    const groupedItems = currentInventory[tier]
+    return groupedItems && Object.keys(groupedItems).length > 0
+  }
+
   const toggleTier = (tier: TierType) => {
+    // Don't open if there are no items
+    if (!hasItems(tier)) return
+    
     setActiveTiers(prev => {
       const newSet = new Set(prev)
       if (newSet.has(tier)) {
         newSet.delete(tier)
+        // Reset expanded categories for this tier when closing
+        const keysToRemove = Object.keys(expandedCategories).filter(key => key.startsWith(`${tier}-`))
+        if (keysToRemove.length > 0) {
+          const newExpanded = { ...expandedCategories }
+          keysToRemove.forEach(key => delete newExpanded[key])
+          setExpandedCategories(newExpanded)
+        }
       } else {
         newSet.add(tier)
       }
@@ -78,12 +108,16 @@ export default function QuoteEngineClient({
   }
 
   const toggleCategory = (tier: TierType, cat: string) => {
+    // Only allow expanding categories for active tiers
+    if (!activeTiers.has(tier)) return
+    
     const key = `${tier}-${cat}`
     setExpandedCategories(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
   const isCategoryExpanded = (tier: TierType, cat: string) => {
-    return expandedCategories[`${tier}-${cat}`] || false
+    const key = `${tier}-${cat}`
+    return expandedCategories[key] || false
   }
 
   // Calculate total for a tier
@@ -100,372 +134,377 @@ export default function QuoteEngineClient({
     return currentInventory[tier] || {}
   }
 
-  // Helper to get scaling rule description
-  const getScalingDescription = (rule: string): string => {
-    switch(rule) {
-      case 'per_person': return 'Scales with guest count'
-      case 'per_table': return 'Scales with number of tables'
-      case 'per_car': return 'Scales with number of cars'
-      case 'per_maid': return 'Scales with bridal party size'
-      case 'fixed': return 'Fixed quantity per setup'
-      default: return 'Quantity may vary based on setup'
-    }
-  }
-
-  // Handle image hover to calculate position
-  const handleImageHover = (itemId: string) => {
-    const imageElement = imageRefs.current.get(itemId)
-    if (imageElement) {
-      const rect = imageElement.getBoundingClientRect()
-      const windowHeight = window.innerHeight
-      const windowWidth = window.innerWidth
-      const popupWidth = 288
-      const popupHeight = 380
-      
-      let top = rect.bottom + 10
-      let left = rect.right + 10
-      
-      // Check if popup would go off screen to the right
-      if (left + popupWidth > windowWidth) {
-        left = rect.left - popupWidth - 10
-      }
-      
-      // Check if popup would go off screen at the bottom
-      if (top + popupHeight > windowHeight) {
-        top = rect.top - popupHeight - 10
-      }
-      
-      // Ensure popup stays within viewport bounds
-      top = Math.max(10, Math.min(top, windowHeight - popupHeight - 10))
-      left = Math.max(10, Math.min(left, windowWidth - popupWidth - 10))
-      
-      setPopupPosition({ top, left })
-    }
-    setHoveredImage(itemId)
-  }
-
   return (
-    <div className="min-h-screen bg-[#FDFDFD] text-black py-20 px-4 md:px-10">
-      {/* Header */}
-      <div className="max-w-6xl mx-auto mb-16 space-y-12">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-black pb-8">
+    <div className="min-h-screen bg-background">
+      {/* Simple Header */}
+      <div className="max-w-7xl mx-auto px-6 md:px-8 pt-12 pb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-6xl md:text-7xl font-black tracking-tighter uppercase leading-none italic">
-              Events District
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-foreground/5 border border-foreground/10 rounded-full mb-3">
+              <Calculator className="w-3 h-3 text-foreground/60" />
+              <span className="text-[9px] uppercase tracking-[0.2em] text-foreground/50 font-medium">
+                Interactive Quote Engine
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-serif italic text-foreground">
+              Design Your Vision,
+              <span className="block text-foreground/40">Price with Precision</span>
             </h1>
-            <p className="mt-4 text-[10px] tracking-[0.4em] font-bold text-gray-400 uppercase">
-              Atmosphere Engineering / Est. 2026
-            </p>
           </div>
-          <div className="mt-8 md:mt-0 text-right">
-            <span className="text-[10px] font-black uppercase text-gray-400 block mb-2">
-              System Scale
-            </span>
-            <p className="text-2xl font-light">
-              {pax} Guests — {setup.toUpperCase()} Setup
-            </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowPlayground(!showPlayground)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-foreground/5 border border-foreground/20 text-foreground text-xs uppercase tracking-wider font-medium hover:border-foreground/40 hover:bg-foreground/10 transition-all duration-300 rounded-full"
+            >
+              <Package size={14} />
+              <span>Build Custom Your Package</span>
+            </button>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-5 py-2.5 border border-foreground/20 text-foreground text-xs uppercase tracking-wider font-medium hover:border-foreground/40 hover:bg-foreground/5 transition-all duration-300 rounded-full"
+            >
+              <span>Request Quote</span>
+              <ArrowRight size={14} />
+            </Link>
           </div>
         </div>
+      </div>
 
-        {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div>
-            <h3 className="text-[10px] font-black uppercase mb-6 tracking-widest text-gray-400">
-              1. Guest Count
-            </h3>
+      {/* Controls Section */}
+      <div className="max-w-7xl mx-auto px-6 md:px-8 pb-8">
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Guest Count Selector */}
+          <div className="bg-background border border-foreground/10 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-foreground/5 border border-foreground/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-foreground/60" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Guest Count</h3>
+                <p className="text-[10px] text-foreground/40">Adjust to see pricing update in real-time</p>
+              </div>
+            </div>
+            
             <div className="flex flex-wrap gap-2">
               {scalingFactors.map(factor => (
                 <button 
                   key={factor.pax} 
                   onClick={() => setPax(factor.pax)}
-                  className={`px-4 py-2 text-xs font-bold border transition-all ${
+                  className={`px-4 py-2 text-xs font-bold border transition-all duration-300 rounded-full ${
                     pax === factor.pax 
-                      ? 'bg-black text-white border-black' 
-                      : 'bg-white border-gray-200 hover:border-black'
+                      ? 'bg-foreground text-background border-foreground' 
+                      : 'bg-background border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground'
                   }`}
                 >
                   {factor.pax}
                 </button>
               ))}
             </div>
-            <p className="text-[8px] text-gray-400 mt-3">
+            <p className="text-[8px] text-foreground/40 mt-4">
               *Item quantities automatically adjust based on guest count
             </p>
           </div>
-          
-          <div>
-            <h3 className="text-[10px] font-black uppercase mb-6 tracking-widest text-gray-400">
-              2. Layout Configuration
-            </h3>
-            <div className="flex gap-2 p-1 bg-gray-50 border border-gray-200">
-              {(['theater', 'restaurant'] as SetupType[]).map(type => (
-                <button 
-                  key={type} 
-                  onClick={() => setSetup(type)}
-                  className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${
-                    setup === type 
-                      ? 'bg-black text-white shadow-lg' 
-                      : 'text-gray-400 hover:text-black'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
+
+          {/* Layout Selector */}
+          <div className="bg-background border border-foreground/10 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-foreground/5 border border-foreground/10 flex items-center justify-center">
+                <LayoutTemplate className="w-5 h-5 text-foreground/60" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Layout Style</h3>
+                <p className="text-[10px] text-foreground/40">Choose your seating arrangement</p>
+              </div>
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setSetup('theater')}
+                className={`group p-4 text-center transition-all duration-300 rounded-xl border ${
+                  setup === 'theater' 
+                    ? 'bg-foreground text-background border-foreground' 
+                    : 'bg-background border-foreground/20 hover:border-foreground/40'
+                }`}
+              >
+                <Theater className={`w-6 h-6 mx-auto mb-2 transition-colors ${
+                  setup === 'theater' ? 'text-background' : 'text-foreground/60 group-hover:text-foreground'
+                }`} />
+                <p className={`text-xs font-bold uppercase tracking-wider ${
+                  setup === 'theater' ? 'text-background' : 'text-foreground'
+                }`}>
+                  Theater Style
+                </p>
+                <p className={`text-[9px] mt-1 ${
+                  setup === 'theater' ? 'text-background/70' : 'text-foreground/40'
+                }`}>
+                  Rows facing forward
+                </p>
+              </button>
+              
+              <button 
+                onClick={() => setSetup('restaurant')}
+                className={`group p-4 text-center transition-all duration-300 rounded-xl border ${
+                  setup === 'restaurant' 
+                    ? 'bg-foreground text-background border-foreground' 
+                    : 'bg-background border-foreground/20 hover:border-foreground/40'
+                }`}
+              >
+                <Coffee className={`w-6 h-6 mx-auto mb-2 transition-colors ${
+                  setup === 'restaurant' ? 'text-background' : 'text-foreground/60 group-hover:text-foreground'
+                }`} />
+                <p className={`text-xs font-bold uppercase tracking-wider ${
+                  setup === 'restaurant' ? 'text-background' : 'text-foreground'
+                }`}>
+                  Restaurant Style
+                </p>
+                <p className={`text-[9px] mt-1 ${
+                  setup === 'restaurant' ? 'text-background/70' : 'text-foreground/40'
+                }`}>
+                  Tables for dining
+                </p>
+              </button>
+            </div>
+            
+            <p className="text-[10px] text-foreground/40 mt-4 text-center">
+              {setup === 'theater' 
+                ? '✨ Row-style seating facing one direction — perfect for ceremonies, conferences, and presentations' 
+                : '🍽️ Table-based seating for dining and conversation — ideal for receptions and social gatherings'}
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Tiers */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {tiers.map((tier) => {
-          const isLuxury = tier === 'luxury'
-          const total = getTierTotal(tier)
-          const groupedItems = getGroupedItems(tier)
-          const isActive = activeTiers.has(tier)
-          const tierDisplayName = getTierDisplayName(tier)
-          const tierIcon = getTierIcon(tier)
-          
-          if (Object.keys(groupedItems).length === 0) return null
-          
-          return (
-            <div 
-              key={tier} 
-              className={`border-2 ${isLuxury && !isActive ? 'bg-black text-white border-black shadow-2xl' : isLuxury && isActive ? 'bg-black text-white border-black shadow-2xl' : 'bg-white border-gray-200'} transition-all h-fit`}
+        {/* Custom Quote Playground (Placeholder for now) */}
+        <AnimatePresence>
+          {showPlayground && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mt-6 overflow-hidden"
             >
-              {/* Tier Header */}
-              <div className="p-8 border-b border-current/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
-                    {tierDisplayName}
-                  </span>
-                  {tierIcon}
+              <div className="bg-gradient-to-r from-foreground/5 via-foreground/10 to-foreground/5 border border-foreground/10 rounded-xl p-8 text-center">
+                <Package className="w-12 h-12 text-foreground/40 mx-auto mb-4" />
+                <h3 className="text-xl font-serif italic text-foreground mb-2">
+                  Your Custom Package Builder
+                </h3>
+                <p className="text-foreground/60 max-w-md mx-auto mb-6">
+                  Coming soon! Build your own package by selecting individual items that match your vision.
+                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/10 text-foreground/60 text-xs rounded-full">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Launching Soon</span>
                 </div>
-                <div className="mt-6">
-                  <h4 className="text-4xl font-light tracking-tighter">
-                    <span className="text-sm font-bold mr-2 opacity-60">KES</span>
-                    {total.toLocaleString()}
-                  </h4>
-                  {isLuxury && (
-                    <p className="text-[8px] uppercase tracking-wider mt-2 opacity-60">
-                      Premium Experience • All-Inclusive
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tiers Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
+          {tiers.map((tier, index) => {
+            const isLuxury = tier === 'luxury'
+            const total = getTierTotal(tier)
+            const groupedItems = getGroupedItems(tier)
+            const isActive = activeTiers.has(tier)
+            const tierDisplayName = getTierDisplayName(tier)
+            const tierDescription = getTierDescription(tier)
+            const tierIcon = getTierIcon(tier)
+            const tierHasItems = hasItems(tier)
+            
+            // If no items, don't render the card at all
+            if (!tierHasItems) return null
+            
+            return (
+              <motion.div
+                key={tier}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
+                className={`bg-background border rounded-xl overflow-hidden transition-all duration-300 ${
+                  isActive 
+                    ? `border-foreground/30 ring-1 ring-foreground/20 ${isLuxury ? 'shadow-2xl shadow-foreground/5' : ''}`
+                    : 'border-foreground/10 hover:border-foreground/20'
+                }`}
+              >
+                {/* Tier Header */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/40">
+                        {tierDisplayName}
+                      </span>
+                      {tierIcon}
+                    </div>
+                    {isLuxury && (
+                      <span className="px-2 py-0.5 bg-foreground/10 text-[8px] uppercase tracking-wider rounded-full text-foreground/60">
+                        Best Value
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="mt-4">
+                    <p className="text-4xl font-light tracking-tighter text-foreground">
+                      <span className="text-sm font-bold mr-1 opacity-60">KES</span>
+                      {total.toLocaleString()}
                     </p>
-                  )}
+                    <p className="text-xs text-foreground/40 mt-2">
+                      {tierDescription}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Toggle Button */}
-              <div className="p-8 pt-0">
-                <button 
-                  onClick={() => toggleTier(tier)}
-                  className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] flex justify-between items-center px-4 border transition-all ${
-                    isLuxury 
-                      ? 'border-white/20 hover:bg-white hover:text-black' 
-                      : 'border-black/10 hover:border-black'
-                  }`}
-                >
-                  {isActive ? 'Close Breakdown' : 'View Inventory'}
-                  {isActive ? <Minus size={14}/> : <Plus size={14}/>}
-                </button>
-              </div>
-
-              {/* Detailed Inventory */}
-              <AnimatePresence>
-                {isActive && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
+                {/* View Inventory Button */}
+                <div className="px-6 pb-6">
+                  <button 
+                    onClick={() => toggleTier(tier)}
+                    className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.2em] flex justify-between items-center px-5 rounded-lg border transition-all duration-300 ${
+                      isActive 
+                        ? 'bg-foreground text-background border-foreground' 
+                        : 'bg-background border-foreground/20 text-foreground hover:border-foreground/40'
+                    }`}
                   >
-                    <div className="px-8 pb-8 space-y-6">
-                      {Object.entries(groupedItems).map(([cat, items]) => {
-                        const categoryTotal = items.reduce((sum, item) => 
-                          sum + getItemTotalCost(item, pax, multiplier), 0
-                        )
-                        const isExpanded = isCategoryExpanded(tier, cat)
-                        
-                        return (
-                          <div key={cat} className="border-t border-current/10 pt-4 first:border-t-0 first:pt-0">
-                            <button
-                              onClick={() => toggleCategory(tier, cat)}
-                              className="w-full flex justify-between items-center group"
-                            >
-                              <div className="text-left">
-                                <p className="text-[8px] font-black uppercase tracking-wider opacity-50">
-                                  Category {cat}
-                                </p>
-                                <p className="text-xs font-bold">
-                                  {categoryNames[cat] || cat}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <span className="text-sm font-mono whitespace-nowrap">
-                                  KES {categoryTotal.toLocaleString()}
-                                </span>
-                                {isExpanded ? (
-                                  <ChevronUp size={14} className="opacity-50 flex-shrink-0" />
-                                ) : (
-                                  <ChevronDown size={14} className="opacity-50 flex-shrink-0" />
+                    {isActive ? 'Close Details' : 'View Package Details'}
+                    {isActive ? <Minus size={14}/> : <Plus size={14}/>}
+                  </button>
+                </div>
+
+                {/* Detailed Inventory - Only shows if there are items */}
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-6 space-y-4 border-t border-foreground/10 pt-4">
+                        {Object.entries(groupedItems).map(([cat, items]) => {
+                          const categoryTotal = items.reduce((sum, item) => 
+                            sum + getItemTotalCost(item, pax, multiplier), 0
+                          )
+                          const isExpanded = isCategoryExpanded(tier, cat)
+                          
+                          return (
+                            <div key={cat} className="border-t border-foreground/10 pt-4 first:border-t-0 first:pt-0">
+                              <button
+                                onClick={() => toggleCategory(tier, cat)}
+                                className="w-full flex justify-between items-center group"
+                              >
+                                <div className="text-left">
+                                  <p className="text-[8px] font-black uppercase tracking-wider opacity-50 text-foreground/40">
+                                    Category {cat}
+                                  </p>
+                                  <p className="text-sm font-medium text-foreground">
+                                    {categoryNames[cat] || cat}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-mono whitespace-nowrap text-foreground">
+                                    KES {categoryTotal.toLocaleString()}
+                                  </span>
+                                  {isExpanded ? (
+                                    <ChevronUp size={14} className="opacity-50 text-foreground" />
+                                  ) : (
+                                    <ChevronDown size={14} className="opacity-50 text-foreground" />
+                                  )}
+                                </div>
+                              </button>
+                              
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden mt-3 space-y-2"
+                                  >
+                                    {items.map((item) => {
+                                      const scaledQuantity = getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name)
+                                      const itemTotal = getItemTotalCost(item, pax, multiplier)
+                                      const unitPrice = item.base_cost / item.base_quantity
+                                      const scaledUnitPrice = Math.round(unitPrice * multiplier)
+                                      const showUnitPrice = item.base_quantity > 1
+                                      
+                                      return (
+                                        <ItemWithImage
+                                          key={item.id}
+                                          item={item}
+                                          scaledQuantity={scaledQuantity}
+                                          scaledUnitPrice={scaledUnitPrice}
+                                          showUnitPrice={showUnitPrice}
+                                          itemTotal={itemTotal}
+                                        />
+                                      )
+                                    })}
+                                  </motion.div>
                                 )}
-                              </div>
-                            </button>
-                            
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden mt-3 space-y-2"
-                                >
-                                  {items.map((item) => {
-                                    const scaledQuantity = getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name)
-                                    const itemTotal = getItemTotalCost(item, pax, multiplier)
-                                    const unitPrice = item.base_cost / item.base_quantity
-                                    const scaledUnitPrice = Math.round(unitPrice * multiplier)
-                                    const showUnitPrice = item.base_quantity > 1
-                                    
-                                    return (
-                                      <div 
-                                        key={item.id} 
-                                        className="flex justify-between items-center pl-4 py-2 border-l-2 border-current/20 relative"
-                                      >
-                                        <div className="flex items-start gap-3 flex-1">
-                                          {/* Image Preview with Hover Popup */}
-                                          {item.primary_image_url ? (
-                                            <div 
-                                              ref={(el) => {
-                                                if (el) imageRefs.current.set(item.id, el)
-                                              }}
-                                              className="relative"
-                                              onMouseEnter={() => handleImageHover(item.id)}
-                                              onMouseLeave={() => setHoveredImage(null)}
-                                            >
-                                              <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border border-current/20 cursor-pointer hover:opacity-90 transition-opacity">
-                                                <img 
-                                                  src={item.primary_image_url} 
-                                                  alt={item.name}
-                                                  className="w-full h-full object-cover"
-                                                />
-                                              </div>
-                                            </div>
-                                          ) : (
-                                            <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border border-current/20 bg-current/5 flex items-center justify-center">
-                                              <span className="text-[8px] opacity-40">No img</span>
-                                            </div>
-                                          )}
-                                          
-                                          <div className="flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <span className="text-[10px] font-mono font-bold">
-                                                {scaledQuantity}×
-                                              </span>
-                                              <p className="text-[10px] leading-tight font-medium">
-                                                {item.name}
-                                              </p>
-                                            </div>
-                                            {showUnitPrice && (
-                                              <p className="text-[7px] opacity-60 mt-0.5">
-                                                {scaledUnitPrice.toLocaleString()} each
-                                              </p>
-                                            )}
-                                            {!item.primary_image_url && (
-                                              <p className="text-[7px] opacity-40 mt-0.5">
-                                                No image available
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-                                        <div className="text-right ml-4">
-                                          <p className="text-[9px] font-mono whitespace-nowrap font-bold">
-                                            KES {itemTotal.toLocaleString()}
-                                          </p>
-                                          <p className="text-[7px] opacity-60">Total</p>
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                              </AnimatePresence>
+                            </div>
+                          )
+                        })}
+                        
+                        {/* Grand Total for Tier */}
+                        <div className="pt-4 border-t-2 border-foreground/20 mt-4">
+                          <div className="flex justify-between items-center">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-foreground/60">
+                              Total {tierDisplayName.toUpperCase()} Package
+                            </p>
+                            <p className="text-xl font-bold text-foreground">
+                              KES {total.toLocaleString()}
+                            </p>
                           </div>
-                        )
-                      })}
-                      
-                      {/* Grand Total for Tier */}
-                      <div className="pt-4 border-t-2 border-current/20 mt-6">
-                        <div className="flex justify-between items-center">
-                          <p className="text-[10px] font-black uppercase tracking-wider">
-                            Total {tierDisplayName.toUpperCase()} Package
-                          </p>
-                          <p className="text-lg font-bold">
-                            KES {total.toLocaleString()}
+                          <p className="text-[8px] opacity-50 text-foreground/40 mt-2">
+                            *Based on {pax} guests • Scaled with {multiplier}x price multiplier
                           </p>
                         </div>
-                        <p className="text-[8px] opacity-50 mt-2">
-                          *Based on {pax} guests • Scaled with {multiplier}x price multiplier
-                        </p>
-                        <p className="text-[7px] opacity-40 mt-1">
-                          Quantities automatically adjusted for {pax} guests
-                        </p>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )
-        })}
-      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )
+          })}
+        </div>
 
-      {/* Global Popup - Rendered outside all containers */}
-      {hoveredImage && (() => {
-        const item = Object.values(currentInventory).flatMap(tier => 
-          Object.values(tier).flat()
-        ).find(i => i.id === hoveredImage)
-        
-        if (!item || !item.primary_image_url) return null
-        
-        const scaledQuantity = getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name)
-        const unitPrice = item.base_cost / item.base_quantity
-        const scaledUnitPrice = Math.round(unitPrice * multiplier)
-        
-        return (
-          <div
-            className="fixed z-[10000] w-72 bg-white shadow-2xl rounded-lg overflow-hidden border border-gray-200"
-            style={{
-              top: `${popupPosition.top}px`,
-              left: `${popupPosition.left}px`,
-            }}
-          >
-            <img 
-              src={item.primary_image_url} 
-              alt={item.name}
-              className="w-full h-52 object-cover"
-            />
-            <div className="p-4">
-              <p className="text-sm font-bold text-gray-800">{item.name}</p>
-              <p className="text-[10px] text-gray-500 mt-2">
-                ✓ {getScalingDescription(item.scaling_rule)}
-              </p>
-              <p className="text-[11px] font-mono text-gray-600 mt-3 pt-2 border-t border-gray-100">
-                {scaledUnitPrice.toLocaleString()} KES per unit
-              </p>
-              <p className="text-[10px] text-gray-400 mt-1">
-                Quantity: {scaledQuantity} units
-              </p>
-              {item.base_quantity > 1 && (
-                <p className="text-[9px] text-gray-400">
-                  Base pack: {item.base_quantity} units
-                </p>
-              )}
+        {/* Custom Quote CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mt-12 pt-8 border-t border-foreground/10"
+        >
+          <div className="bg-gradient-to-r from-foreground/[0.02] via-transparent to-foreground/[0.02] border border-foreground/10 rounded-xl p-8 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/5 border border-foreground/10 rounded-full mb-6">
+              <Sparkles className="w-4 h-4 text-foreground/60" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/50 font-medium">
+                Need Something Unique?
+              </span>
+            </div>
+            
+            <h3 className="text-2xl font-serif italic text-foreground mb-4">
+              Create Your Custom Package
+            </h3>
+            
+            <p className="text-foreground/60 max-w-2xl mx-auto mb-8">
+              Don't see exactly what you're looking for? We specialize in creating bespoke experiences 
+              tailored to your unique vision. Let's collaborate to design something extraordinary.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center gap-3 px-8 py-3 bg-foreground text-background text-[11px] uppercase tracking-[0.2em] font-bold hover:bg-foreground/90 transition-all duration-300 rounded-full"
+              >
+                <span>Request Custom Quote</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
-        )
-      })()}
+        </motion.div>
+      </div>
     </div>
   )
 }
