@@ -572,46 +572,46 @@ export default function BlogCarousel() {
                   }`} />
                 </div>
 
-                {/* Author Info for Active Card with Avatar and Date - Positioned below navigation on mobile */}
-                {isActiveCard && filteredPosts.length > 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                    className={`absolute left-0 right-0 text-center ${
-                      isMobileDevice ? '-bottom-28' : '-bottom-14 md:-bottom-16'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <div className="flex items-center justify-center gap-2">
-                        {/* Author Avatar */}
-                        {author?.avatar_url ? (
-                          <img
-                            src={author.avatar_url}
-                            alt={post.author}
-                            className={`rounded-full object-cover border border-foreground/20 ${
-                              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-                            }`}
-                          />
-                        ) : (
-                          <div className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
-                            isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-                          }`}>
-                            <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
-                              {post.author.charAt(0)}
-                            </span>
-                          </div>
-                        )}
-                        <p className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
-                          {post.author}
-                        </p>
-                      </div>
-                      <p className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-wider">
-                        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+                {/* Author Info for Active Card with Avatar and Date - Positioned closer to card on mobile with fade-in animation */}
+{isActiveCard && filteredPosts.length > 2 && (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.15 }}
+    className={`absolute left-0 right-0 text-center ${
+      isMobileDevice ? '-bottom-14' : '-bottom-14 md:-bottom-16'
+    }`}
+  >
+    <div className="flex flex-col items-center justify-center gap-1">
+      <div className="flex items-center justify-center gap-2">
+        {/* Author Avatar */}
+        {author?.avatar_url ? (
+          <img
+            src={author.avatar_url}
+            alt={post.author}
+            className={`rounded-full object-cover border border-foreground/20 ${
+              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+            }`}
+          />
+        ) : (
+          <div className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
+            isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+          }`}>
+            <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
+              {post.author.charAt(0)}
+            </span>
+          </div>
+        )}
+        <p className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
+          {post.author}
+        </p>
+      </div>
+      <p className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-wider">
+        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
+      </p>
+    </div>
+  </motion.div>
+)}
               </motion.article>
             )
           }) : (
