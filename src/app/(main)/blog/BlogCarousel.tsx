@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
-import { Calendar, Eye, BookOpen, Bookmark, ArrowRight } from 'lucide-react'
+import { Calendar, Eye, BookOpen, Heart, ArrowRight } from 'lucide-react'
 
 // Types for blog data from database
 interface BlogPostFromDB {
@@ -176,7 +176,8 @@ export default function BlogCarousel() {
       angleSpacing = Math.PI / 7.5
     }
     
-    const horizontalPadding = isMobile ? 20 : isTablet ? 50 : 80
+    // Increased horizontal padding for mobile to prevent cards touching edges
+    const horizontalPadding = isMobile ? 40 : isTablet ? 50 : 80
     
     return {
       radiusX,
@@ -432,12 +433,15 @@ export default function BlogCarousel() {
             const postClaps = claps[post.id] || 0
             const isPostSaved = savedPosts.includes(post.id)
             const author = authors[post.author]
+            const isActiveCard = style.isActive
             
             return (
               <motion.article
                 key={post.id}
-                onClick={() => handleCardClick(post, style.isActive, index)}
-                className="absolute cursor-pointer group select-none"
+                onClick={() => handleCardClick(post, isActiveCard, index)}
+                className={`absolute cursor-pointer group select-none transition-all duration-300 ${
+                  isActiveCard ? 'z-20' : ''
+                }`}
                 style={{
                   width: config.cardWidth,
                   height: config.cardHeight,
@@ -456,8 +460,12 @@ export default function BlogCarousel() {
                   ease: [0.19, 1, 0.22, 1],
                 }}
               >
-                {/* Enhanced Card Design */}
-                <div className="relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 group-hover:shadow-3xl">
+                {/* Enhanced Card Design with Active Card Highlight */}
+                <div className={`relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 group-hover:shadow-3xl ${
+                  isActiveCard 
+                    ? 'ring-2 ring-foreground/30 ring-offset-2 ring-offset-background scale-[1.02]' 
+                    : ''
+                }`}>
                   {/* Image Layer */}
                   <motion.div 
                     className="absolute inset-0"
@@ -481,14 +489,14 @@ export default function BlogCarousel() {
                     </span>
                   </div>
 
-                  {/* Save Button */}
-                  {style.isActive && (
+                  {/* Save Button - Heart Icon */}
+                  {isActiveCard && (
                     <button
                       onClick={(e) => toggleSave(post.id, e)}
                       className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all duration-300"
                     >
-                      <Bookmark 
-                        className={`w-4 h-4 transition-all ${isPostSaved ? 'text-foreground fill-foreground' : 'text-white/70'}`} 
+                      <Heart 
+                        className={`w-4 h-4 transition-all ${isPostSaved ? 'text-red-500 fill-red-500' : 'text-white/70 hover:text-red-400'}`} 
                       />
                     </button>
                   )}
@@ -496,7 +504,7 @@ export default function BlogCarousel() {
                   {/* Card Content */}
                   <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end text-white">
                     <motion.div
-                      animate={{ y: style.isActive ? 0 : 15 }}
+                      animate={{ y: isActiveCard ? 0 : 15 }}
                       transition={{ duration: 0.6, delay: 0.1 }}
                       className="space-y-2 md:space-y-3"
                     >
@@ -529,7 +537,7 @@ export default function BlogCarousel() {
                       </div>
 
                       {/* Read More Button - Only visible on active card */}
-                      {style.isActive && (
+                      {isActiveCard && (
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -550,7 +558,7 @@ export default function BlogCarousel() {
                 </div>
 
                 {/* Author Info for Active Card with Avatar */}
-                {style.isActive && filteredPosts.length > 2 && (
+                {isActiveCard && filteredPosts.length > 2 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -591,7 +599,7 @@ export default function BlogCarousel() {
         </div>
 
         {/* Navigation Footer */}
-<div className="mt-3 md:mt-6 flex flex-col items-center gap-3 md:gap-4 flex-shrink-0 pb-4">
+        <div className="mt-6 md:mt-8 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
           <div className="flex items-center gap-6 md:gap-10">
             <button 
               onClick={handlePrev} 

@@ -55,3 +55,14 @@
   width: 0px;
   background: transparent;
 }
+
+/* ADD THIS SECTION - Fix for scroll position when navigating back */
+/* This prevents content from hiding behind the fixed navbar */
+html {
+  scroll-padding-top: 100px;
+}
+
+/* Ensures all sections have proper spacing when scrolled to */
+[id] {
+  scroll-margin-top: 100px;
+}
