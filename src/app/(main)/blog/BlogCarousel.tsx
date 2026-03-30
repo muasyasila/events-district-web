@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
-import { Calendar, Eye, BookOpen, Heart, ArrowRight } from 'lucide-react'
+import { Calendar, Eye, BookOpen, Bookmark, ArrowRight } from 'lucide-react'
 
 // Types for blog data from database
 interface BlogPostFromDB {
@@ -58,6 +58,18 @@ export default function BlogCarousel() {
   const AUTO_PLAY_DURATION = 5000
   const minSwipeDistance = 50
   const [navbarHeight, setNavbarHeight] = useState(80)
+
+  // Detect mobile for author positioning and card sizing
+  const [isMobileDevice, setIsMobileDevice] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileDevice(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Fetch blog posts from database
   useEffect(() => {
@@ -157,8 +169,8 @@ export default function BlogCarousel() {
     const isTablet = width >= 768 && width < 1024
     const isDesktop = width >= 1024
     
-    const cardWidth = isMobile ? 280 : 340
-    const cardHeight = isMobile ? 420 : 500
+    const cardWidth = isMobile ? 260 : 340
+    const cardHeight = isMobile ? 380 : 500
     
     let radiusX, radiusY, angleSpacing
     
@@ -176,8 +188,7 @@ export default function BlogCarousel() {
       angleSpacing = Math.PI / 7.5
     }
     
-    // Increased horizontal padding for mobile to prevent cards touching edges
-    const horizontalPadding = isMobile ? 40 : isTablet ? 50 : 80
+    const horizontalPadding = isMobile ? 32 : isTablet ? 50 : 80
     
     return {
       radiusX,
@@ -439,9 +450,7 @@ export default function BlogCarousel() {
               <motion.article
                 key={post.id}
                 onClick={() => handleCardClick(post, isActiveCard, index)}
-                className={`absolute cursor-pointer group select-none transition-all duration-300 ${
-                  isActiveCard ? 'z-20' : ''
-                }`}
+                className="absolute cursor-pointer group select-none"
                 style={{
                   width: config.cardWidth,
                   height: config.cardHeight,
@@ -456,14 +465,14 @@ export default function BlogCarousel() {
                   opacity: style.opacity,
                 }}
                 transition={{
-                  duration: 1.2,
-                  ease: [0.19, 1, 0.22, 1],
+                  duration: 0.6,
+                  ease: [0.25, 0.1, 0.25, 1],
                 }}
               >
-                {/* Enhanced Card Design with Active Card Highlight */}
+                {/* Enhanced Card Design - Active Card gets unique styling */}
                 <div className={`relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 group-hover:shadow-3xl ${
                   isActiveCard 
-                    ? 'ring-2 ring-foreground/30 ring-offset-2 ring-offset-background scale-[1.02]' 
+                    ? 'ring-2 ring-foreground/40 ring-offset-2 ring-offset-background scale-[1.02] shadow-foreground/20' 
                     : ''
                 }`}>
                   {/* Image Layer */}
@@ -484,19 +493,21 @@ export default function BlogCarousel() {
 
                   {/* Category Badge */}
                   <div className="absolute top-4 left-4 z-20">
-                    <span className="px-3 py-1 text-[8px] font-medium uppercase tracking-wider bg-black/50 backdrop-blur-sm text-white/90 rounded-full border border-white/20">
+                    <span className={`px-3 py-1 text-[8px] font-medium uppercase tracking-wider backdrop-blur-sm text-white/90 rounded-full border border-white/20 ${
+                      isActiveCard ? 'bg-foreground/40' : 'bg-black/50'
+                    }`}>
                       {post.category}
                     </span>
                   </div>
 
-                  {/* Save Button - Heart Icon */}
+                  {/* Save Button */}
                   {isActiveCard && (
                     <button
                       onClick={(e) => toggleSave(post.id, e)}
                       className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all duration-300"
                     >
-                      <Heart 
-                        className={`w-4 h-4 transition-all ${isPostSaved ? 'text-red-500 fill-red-500' : 'text-white/70 hover:text-red-400'}`} 
+                      <Bookmark 
+                        className={`w-4 h-4 transition-all ${isPostSaved ? 'text-foreground fill-foreground' : 'text-white/70'}`} 
                       />
                     </button>
                   )}
@@ -509,7 +520,9 @@ export default function BlogCarousel() {
                       className="space-y-2 md:space-y-3"
                     >
                       {/* Title */}
-                      <h3 className="text-xl md:text-2xl font-serif italic leading-tight line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
+                      <h3 className={`text-xl md:text-2xl font-serif italic leading-tight line-clamp-2 group-hover:line-clamp-none transition-all duration-300 ${
+                        isActiveCard ? 'text-white' : 'text-white/90'
+                      }`}>
                         {post.title}
                       </h3>
                       
@@ -518,8 +531,8 @@ export default function BlogCarousel() {
                         {post.excerpt}
                       </p>
                       
-                      {/* Meta Info */}
-                      <div className="flex items-center gap-4 pt-2">
+                      {/* Meta Info - Added padding bottom for side cards to prevent text touching edge */}
+                      <div className={`flex items-center gap-4 pt-2 ${!isActiveCard ? 'pb-2' : ''}`}>
                         <div className="flex items-center gap-1.5">
                           <Calendar size={12} className="text-white/60" />
                           <span className="text-[10px] text-white/60">
@@ -553,17 +566,23 @@ export default function BlogCarousel() {
                     </motion.div>
                   </div>
 
-                  {/* Bottom Border Accent */}
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-foreground/50 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+                  {/* Bottom Border Accent - Enhanced for active card */}
+                  <div className={`absolute bottom-0 left-0 right-0 h-[2px] transition-transform duration-500 ${
+                    isActiveCard 
+                      ? 'bg-gradient-to-r from-transparent via-foreground to-transparent scale-x-100' 
+                      : 'bg-gradient-to-r from-transparent via-foreground/50 to-transparent scale-x-0 group-hover:scale-x-100'
+                  }`} />
                 </div>
 
-                {/* Author Info for Active Card with Avatar */}
+                {/* Author Info for Active Card with Avatar - Positioned lower on mobile to avoid navigation */}
                 {isActiveCard && filteredPosts.length > 2 && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 }}
-                    className="absolute -bottom-14 md:-bottom-16 left-0 right-0 text-center"
+                    className={`absolute left-0 right-0 text-center ${
+                      isMobileDevice ? '-bottom-20' : '-bottom-14 md:-bottom-16'
+                    }`}
                   >
                     <div className="flex items-center justify-center gap-2">
                       {/* Author Avatar */}
@@ -571,20 +590,28 @@ export default function BlogCarousel() {
                         <img
                           src={author.avatar_url}
                           alt={post.author}
-                          className="w-6 h-6 md:w-7 md:h-7 rounded-full object-cover border border-foreground/20"
+                          className={`rounded-full object-cover border border-foreground/20 ${
+                            isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+                          }`}
                         />
                       ) : (
-                        <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20">
-                          <span className="text-[8px] md:text-[9px] text-foreground/50">
+                        <div className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
+                          isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+                        }`}>
+                          <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
                             {post.author.charAt(0)}
                           </span>
                         </div>
                       )}
                       <div>
-                        <p className="text-foreground font-serif italic text-xs md:text-sm">{post.author}</p>
-                        <p className="text-foreground/50 text-[8px] md:text-[10px] uppercase tracking-wider">
-                          {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
+                        <p className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
+                          {post.author}
                         </p>
+                        {!isMobileDevice && (
+                          <p className="text-foreground/50 text-[8px] md:text-[10px] uppercase tracking-wider">
+                            {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -599,7 +626,7 @@ export default function BlogCarousel() {
         </div>
 
         {/* Navigation Footer */}
-        <div className="mt-6 md:mt-8 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
+        <div className="mt-8 md:mt-12 flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4">
           <div className="flex items-center gap-6 md:gap-10">
             <button 
               onClick={handlePrev} 
