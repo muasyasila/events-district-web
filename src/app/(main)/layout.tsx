@@ -1,5 +1,6 @@
 // src/app/(main)/layout.tsx
 import Navigation from '@/components/Navigation'
+import LuxuryFooter from '@/components/sections/LuxuryFooter'
 
 export default function MainLayout({
   children,
@@ -12,6 +13,7 @@ export default function MainLayout({
       <main className="pt-20">
         {children}
       </main>
+      <LuxuryFooter />
     </>
   )
 }

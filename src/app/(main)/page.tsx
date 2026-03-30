@@ -10,7 +10,7 @@ import { ServicesCodex } from '@/components/sections/ServicesCodex'
 import { SocialAtelier } from "@/components/sections/SocialAtelier";
 import { ContactAtelier } from "@/components/sections/ContactAtelier";
 import { PartnershipAtelier } from "@/components/sections/PartnershipAtelier"
-import { LuxuryFooter } from "@/components/sections/LuxuryFooter";
+import LuxuryFooter from "@/components/sections/LuxuryFooter";
 import WeddingQuoteSection from "@/components/sections/WeddingQuoteSection"
 
 export default function Home() {
