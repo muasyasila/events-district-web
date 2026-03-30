@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
-import { Calendar, Eye, BookOpen, Bookmark, ArrowRight } from 'lucide-react'
+import { Calendar, Eye, BookOpen, Heart, ArrowRight } from 'lucide-react'
 
 // Types for blog data from database
 interface BlogPostFromDB {
@@ -469,21 +469,24 @@ export default function BlogCarousel() {
                   opacity: style.opacity,
                 }}
                 transition={{
-                  duration: 0.6,
-                  ease: [0.25, 0.1, 0.25, 1],
+                  duration: 0.8,
+                  ease: [0.34, 1.2, 0.64, 1],
                 }}
               >
-                {/* Enhanced Card Design - Active Card gets unique styling */}
-                <div className={`relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 group-hover:shadow-3xl ${
-                  isActiveCard 
-                    ? 'ring-2 ring-foreground/40 ring-offset-2 ring-offset-background scale-[1.02] shadow-foreground/20' 
-                    : ''
-                }`}>
-                  {/* Image Layer */}
+                {/* Enhanced Card Design with Modern Spring Animation */}
+                <motion.div 
+                  className={`relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 ${
+                    isActiveCard 
+                      ? 'ring-2 ring-foreground/40 ring-offset-2 ring-offset-background shadow-foreground/20' 
+                      : ''
+                  }`}
+                  whileHover={!isActiveCard ? { scale: 1.02, transition: { duration: 0.3, ease: "easeOut" } } : {}}
+                >
+                  {/* Image Layer with Subtle Zoom on Hover */}
                   <motion.div 
                     className="absolute inset-0"
-                    whileHover={{ scale: 1.08 }}
-                    transition={{ duration: 0.7 }}
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.6, ease: [0.34, 1.2, 0.64, 1] }}
                   >
                     <img
                       src={post.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9'}
@@ -495,32 +498,41 @@ export default function BlogCarousel() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
                   </motion.div>
 
-                  {/* Category Badge */}
-                  <div className="absolute top-4 left-4 z-20">
+                  {/* Category Badge with Spring Animation */}
+                  <motion.div 
+                    className="absolute top-4 left-4 z-20"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
+                  >
                     <span className={`px-3 py-1 text-[8px] font-medium uppercase tracking-wider backdrop-blur-sm text-white/90 rounded-full border border-white/20 ${
                       isActiveCard ? 'bg-foreground/40' : 'bg-black/50'
                     }`}>
                       {post.category}
                     </span>
-                  </div>
+                  </motion.div>
 
-                  {/* Save Button */}
+                  {/* Love Heart Button */}
                   {isActiveCard && (
-                    <button
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      whileTap={{ scale: 0.9 }}
+                      transition={{ delay: 0.25, type: "spring", stiffness: 400, damping: 17 }}
                       onClick={(e) => toggleSave(post.id, e)}
                       className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all duration-300"
                     >
-                      <Bookmark 
-                        className={`w-4 h-4 transition-all ${isPostSaved ? 'text-foreground fill-foreground' : 'text-white/70'}`} 
+                      <Heart 
+                        className={`w-4 h-4 transition-all duration-300 ${isPostSaved ? 'text-red-500 fill-red-500' : 'text-white/70 hover:text-red-400'}`} 
                       />
-                    </button>
+                    </motion.button>
                   )}
 
-                  {/* Card Content */}
+                  {/* Card Content with Spring Animation */}
                   <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end text-white">
                     <motion.div
-                      animate={{ y: isActiveCard ? 0 : 15 }}
-                      transition={{ duration: 0.6, delay: 0.1 }}
+                      animate={{ y: isActiveCard ? 0 : 15, opacity: isActiveCard ? 1 : 0.8 }}
+                      transition={{ duration: 0.6, ease: [0.34, 1.2, 0.64, 1] }}
                       className="space-y-2 md:space-y-3"
                     >
                       {/* Title */}
@@ -535,7 +547,7 @@ export default function BlogCarousel() {
                         {post.excerpt}
                       </p>
                       
-                      {/* Meta Info - Only read time and views */}
+                      {/* Meta Info */}
                       <div className="flex items-center gap-4 pt-2">
                         <div className="flex items-center gap-1.5">
                           <BookOpen size={12} className="text-white/60" />
@@ -547,12 +559,12 @@ export default function BlogCarousel() {
                         </div>
                       </div>
 
-                      {/* Read More Button - Only visible on active card */}
+                      {/* Read More Button - Only visible on active card with spring animation */}
                       {isActiveCard && (
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
+                          transition={{ delay: 0.3, duration: 0.5, ease: [0.34, 1.2, 0.64, 1] }}
                           className="pt-2"
                         >
                           <span className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-white/80 hover:text-white transition-colors group/link">
@@ -564,54 +576,77 @@ export default function BlogCarousel() {
                     </motion.div>
                   </div>
 
-                  {/* Bottom Border Accent - Enhanced for active card */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-[2px] transition-transform duration-500 ${
-                    isActiveCard 
-                      ? 'bg-gradient-to-r from-transparent via-foreground to-transparent scale-x-100' 
-                      : 'bg-gradient-to-r from-transparent via-foreground/50 to-transparent scale-x-0 group-hover:scale-x-100'
-                  }`} />
-                </div>
+                  {/* Bottom Border Accent with Spring Animation */}
+                  <motion.div 
+                    className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+                      isActiveCard 
+                        ? 'bg-gradient-to-r from-transparent via-foreground to-transparent' 
+                        : 'bg-gradient-to-r from-transparent via-foreground/50 to-transparent'
+                    }`}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: isActiveCard ? 1 : 0 }}
+                    transition={{ duration: 0.6, ease: [0.34, 1.2, 0.64, 1] }}
+                  />
+                </motion.div>
 
-                {/* Author Info for Active Card with Avatar and Date - Positioned closer to card on mobile with fade-in animation */}
-{isActiveCard && filteredPosts.length > 2 && (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: 0.15 }}
-    className={`absolute left-0 right-0 text-center ${
-      isMobileDevice ? '-bottom-14' : '-bottom-14 md:-bottom-16'
-    }`}
-  >
-    <div className="flex flex-col items-center justify-center gap-1">
-      <div className="flex items-center justify-center gap-2">
-        {/* Author Avatar */}
-        {author?.avatar_url ? (
-          <img
-            src={author.avatar_url}
-            alt={post.author}
-            className={`rounded-full object-cover border border-foreground/20 ${
-              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-            }`}
-          />
-        ) : (
-          <div className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
-            isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-          }`}>
-            <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
-              {post.author.charAt(0)}
-            </span>
-          </div>
-        )}
-        <p className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
-          {post.author}
-        </p>
-      </div>
-      <p className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-wider">
-        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
-      </p>
-    </div>
-  </motion.div>
-)}
+                {/* Author Info for Active Card with Avatar and Date - iPhone-style fade-in */}
+                {isActiveCard && filteredPosts.length > 2 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
+                    className={`absolute left-0 right-0 text-center ${
+                      isMobileDevice ? '-bottom-14' : '-bottom-14 md:-bottom-16'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Author Avatar */}
+                        {author?.avatar_url ? (
+                          <motion.img
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.45, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
+                            src={author.avatar_url}
+                            alt={post.author}
+                            className={`rounded-full object-cover border border-foreground/20 ${
+                              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+                            }`}
+                          />
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.45, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
+                            className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
+                              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
+                            }`}
+                          >
+                            <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
+                              {post.author.charAt(0)}
+                            </span>
+                          </motion.div>
+                        )}
+                        <motion.p
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.5, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
+                          className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}
+                        >
+                          {post.author}
+                        </motion.p>
+                      </div>
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.55, duration: 0.4 }}
+                        className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-wider"
+                      >
+                        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
+                      </motion.p>
+                    </div>
+                  </motion.div>
+                )}
               </motion.article>
             )
           }) : (
@@ -624,7 +659,8 @@ export default function BlogCarousel() {
         {/* Navigation Footer */}
         <div className={`flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4 ${isMobileDevice ? 'mt-12' : 'mt-8 md:mt-12'}`}>
           <div className="flex items-center gap-6 md:gap-10">
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
               onClick={handlePrev} 
               disabled={filteredPosts.length <= 2}
               className={`group p-2 ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}`}
@@ -632,7 +668,7 @@ export default function BlogCarousel() {
               <svg className="w-5 h-5 text-foreground/30 group-hover:text-foreground transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 19l-7-7 7-7" />
               </svg>
-            </button>
+            </motion.button>
 
             {/* Progress Bars */}
             <div className="flex gap-3 md:gap-4 items-center">
@@ -677,7 +713,8 @@ export default function BlogCarousel() {
               })()}
             </div>
 
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
               onClick={handleNext} 
               disabled={filteredPosts.length <= 2}
               className={`group p-2 ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}`}
@@ -685,7 +722,7 @@ export default function BlogCarousel() {
               <svg className="w-5 h-5 text-foreground/30 group-hover:text-foreground transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+            </motion.button>
           </div>
 
           <Link href="/blog" className="group flex flex-col items-center gap-2">
