@@ -9,37 +9,54 @@ const slideData = [
   {
     title: "MODERN",
     subtitle: "Aesthetics",
-    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80 "
+    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80"
   },
   {
     title: "BESPOKE",
     subtitle: "Curation",
-    img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80 "
+    img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80"
   },
   {
     title: "LUXURY",
     subtitle: "Events",
-    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80 "
+    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80"
   }
 ]
 
 export default function Hero() {
-  const [selectedIndex, setSelectedIndex] = useState(0)
-
-  const [emblaRef, emblaApi] = useEmblaCarousel(
+  // Mobile carousel instance
+  const [mobileSelectedIndex, setMobileSelectedIndex] = useState(0)
+  const [mobileEmblaRef, mobileEmblaApi] = useEmblaCarousel(
     { loop: true, duration: 30 }, 
     [Autoplay({ delay: 5000, stopOnInteraction: false })]
   )
 
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return
-    setSelectedIndex(emblaApi.selectedScrollSnap())
-  }, [emblaApi])
+  const onMobileSelect = useCallback(() => {
+    if (!mobileEmblaApi) return
+    setMobileSelectedIndex(mobileEmblaApi.selectedScrollSnap())
+  }, [mobileEmblaApi])
 
   useEffect(() => {
-    if (!emblaApi) return
-    emblaApi.on('select', onSelect)
-  }, [emblaApi, onSelect])
+    if (!mobileEmblaApi) return
+    mobileEmblaApi.on('select', onMobileSelect)
+  }, [mobileEmblaApi, onMobileSelect])
+
+  // Desktop carousel instance
+  const [desktopSelectedIndex, setDesktopSelectedIndex] = useState(0)
+  const [desktopEmblaRef, desktopEmblaApi] = useEmblaCarousel(
+    { loop: true, duration: 30 }, 
+    [Autoplay({ delay: 5000, stopOnInteraction: false })]
+  )
+
+  const onDesktopSelect = useCallback(() => {
+    if (!desktopEmblaApi) return
+    setDesktopSelectedIndex(desktopEmblaApi.selectedScrollSnap())
+  }, [desktopEmblaApi])
+
+  useEffect(() => {
+    if (!desktopEmblaApi) return
+    desktopEmblaApi.on('select', onDesktopSelect)
+  }, [desktopEmblaApi, onDesktopSelect])
 
   return (
     <>
@@ -55,8 +72,8 @@ export default function Hero() {
           >
             <AnimatePresence initial={false}>
               <motion.img 
-                key={selectedIndex}
-                src={slideData[(selectedIndex + 1) % 3].img} 
+                key={mobileSelectedIndex}
+                src={slideData[(mobileSelectedIndex + 1) % 3].img} 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
@@ -72,7 +89,7 @@ export default function Hero() {
             <div className="min-h-[100px] md:min-h-[260px] flex flex-col justify-center items-center relative z-20 mb-2 md:mb-4 px-4">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={selectedIndex}
+                  key={mobileSelectedIndex}
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -30, opacity: 0 }}
@@ -80,17 +97,17 @@ export default function Hero() {
                   className="text-center flex flex-col items-center"
                 >
                   <h1 className="text-5xl sm:text-6xl md:text-[9rem] font-light tracking-[0.1em] text-foreground uppercase leading-none">
-                    {slideData[selectedIndex].title}
+                    {slideData[mobileSelectedIndex].title}
                   </h1>
                   <motion.p 
-                    key={`subtitle-${selectedIndex}`}
+                    key={`subtitle-${mobileSelectedIndex}`}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 1.2, opacity: 0 }}
                     transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
                     className="italic font-serif text-3xl sm:text-4xl md:text-7xl text-foreground/70 mt-2 md:mt-4 leading-tight"
                   >
-                    {slideData[selectedIndex].subtitle}
+                    {slideData[mobileSelectedIndex].subtitle}
                   </motion.p>
                 </motion.div>
               </AnimatePresence>
@@ -99,7 +116,7 @@ export default function Hero() {
             {/* Main Slider */}
             <div 
               className="w-full h-[55vh] sm:h-[60vh] md:h-[480px] bg-neutral-900 overflow-hidden cursor-grab border border-foreground/5 shadow-2xl"
-              ref={emblaRef}
+              ref={mobileEmblaRef}
             >
               <div className="flex h-full">
                 {slideData.map((slide, i) => (
@@ -116,8 +133,8 @@ export default function Hero() {
                 <motion.div 
                   key={i} 
                   animate={{ 
-                    width: selectedIndex === i ? 60 : 15,
-                    backgroundColor: selectedIndex === i ? "var(--foreground)" : "rgba(128,128,128,0.3)"
+                    width: mobileSelectedIndex === i ? 60 : 15,
+                    backgroundColor: mobileSelectedIndex === i ? "var(--foreground)" : "rgba(128,128,128,0.3)"
                   }}
                   className="h-[1px]" 
                 />
@@ -133,8 +150,8 @@ export default function Hero() {
           >
             <AnimatePresence initial={false}>
               <motion.img 
-                key={selectedIndex}
-                src={slideData[(selectedIndex + 2) % 3].img} 
+                key={mobileSelectedIndex}
+                src={slideData[(mobileSelectedIndex + 2) % 3].img} 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
@@ -160,8 +177,8 @@ export default function Hero() {
           >
             <AnimatePresence initial={false}>
               <motion.img 
-                key={selectedIndex}
-                src={slideData[(selectedIndex + 1) % 3].img} 
+                key={desktopSelectedIndex}
+                src={slideData[(desktopSelectedIndex + 1) % 3].img} 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
@@ -177,7 +194,7 @@ export default function Hero() {
             <div className="min-h-[180px] md:min-h-[260px] flex flex-col justify-center items-center relative z-20 mb-4 px-4">
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={selectedIndex}
+                  key={desktopSelectedIndex}
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -30, opacity: 0 }}
@@ -185,17 +202,17 @@ export default function Hero() {
                   className="text-center flex flex-col items-center"
                 >
                   <h1 className="text-6xl md:text-[9rem] font-light tracking-[0.1em] text-foreground uppercase leading-none">
-                    {slideData[selectedIndex].title}
+                    {slideData[desktopSelectedIndex].title}
                   </h1>
                   <motion.p 
-                    key={`subtitle-${selectedIndex}`}
+                    key={`subtitle-${desktopSelectedIndex}`}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 1.2, opacity: 0 }}
                     transition={{ duration: 0.5, ease: [0.19, 1, 0.22, 1] }}
                     className="italic font-serif text-4xl md:text-7xl text-foreground/70 mt-4 leading-tight"
                   >
-                    {slideData[selectedIndex].subtitle}
+                    {slideData[desktopSelectedIndex].subtitle}
                   </motion.p>
                 </motion.div>
               </AnimatePresence>
@@ -204,7 +221,7 @@ export default function Hero() {
             {/* Main Slider */}
             <div 
               className="w-full h-[350px] md:h-[480px] bg-neutral-900 overflow-hidden cursor-grab border border-foreground/5 shadow-2xl"
-              ref={emblaRef}
+              ref={desktopEmblaRef}
             >
               <div className="flex h-full">
                 {slideData.map((slide, i) => (
@@ -221,8 +238,8 @@ export default function Hero() {
                 <motion.div 
                   key={i} 
                   animate={{ 
-                    width: selectedIndex === i ? 60 : 15,
-                    backgroundColor: selectedIndex === i ? "var(--foreground)" : "rgba(128,128,128,0.3)"
+                    width: desktopSelectedIndex === i ? 60 : 15,
+                    backgroundColor: desktopSelectedIndex === i ? "var(--foreground)" : "rgba(128,128,128,0.3)"
                   }}
                   className="h-[1px]" 
                 />
@@ -238,8 +255,8 @@ export default function Hero() {
           >
             <AnimatePresence initial={false}>
               <motion.img 
-                key={selectedIndex}
-                src={slideData[(selectedIndex + 2) % 3].img} 
+                key={desktopSelectedIndex}
+                src={slideData[(desktopSelectedIndex + 2) % 3].img} 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
