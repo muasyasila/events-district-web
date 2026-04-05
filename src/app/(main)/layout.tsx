@@ -1,6 +1,8 @@
 // src/app/(main)/layout.tsx
 import Navigation from '@/components/Navigation'
 import LuxuryFooter from '@/components/sections/LuxuryFooter'
+import ExitIntentPopup from '@/components/ExitIntentPopup'
+import WhatsAppButton from '@/components/WhatsAppButton'
 
 export default function MainLayout({
   children,
@@ -14,6 +16,8 @@ export default function MainLayout({
         {children}
       </main>
       <LuxuryFooter />
+      <ExitIntentPopup />
+      <WhatsAppButton />
     </>
   )
 }

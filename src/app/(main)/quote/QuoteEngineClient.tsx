@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, Minus, ChevronDown, ChevronUp, Crown, 
   Calculator, Users, LayoutTemplate, ArrowRight, Sparkles, 
-  Package, Theater, Coffee, PartyPopper
+  Package, Theater, Coffee, PartyPopper, Mail, Bookmark, Calendar, CheckCircle, Copy
 } from 'lucide-react'
 import { InventoryItem, SetupType, TierType } from '@/app/actions/inventory'
 import { getMultiplier, getItemTotalCost, getScaledQuantity, calculateTierTotal } from '@/lib/utils/scaling'
 import ItemWithImage from '@/components/quote/ItemWithImage'
 import Link from 'next/link'
+import { toast, Toaster } from 'sonner'
 
 interface QuoteEngineClientProps {
   initialPax: number
@@ -42,6 +43,13 @@ export default function QuoteEngineClient({
   const [activeTiers, setActiveTiers] = useState<Set<TierType>>(new Set())
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({})
   const [showPlayground, setShowPlayground] = useState(false)
+  
+  // New states for quote actions
+  const [showEmailQuote, setShowEmailQuote] = useState(false)
+  const [emailQuoteAddress, setEmailQuoteAddress] = useState('')
+  const [isEmailSending, setIsEmailSending] = useState(false)
+  const [isQuoteSaved, setIsQuoteSaved] = useState(false)
+  const [selectedTierForQuote, setSelectedTierForQuote] = useState<TierType | null>(null)
 
   // Get the current multiplier based on pax
   const multiplier = useMemo(() => getMultiplier(pax, scalingFactors), [pax, scalingFactors])
@@ -134,8 +142,108 @@ export default function QuoteEngineClient({
     return currentInventory[tier] || {}
   }
 
+  // Save quote to localStorage
+  const saveQuoteToLocalStorage = (tier: TierType) => {
+    const total = getTierTotal(tier)
+    const groupedItems = getGroupedItems(tier)
+    
+    // Create a simplified version of items for storage
+    const itemsSummary = Object.entries(groupedItems).map(([cat, items]) => ({
+      category: cat,
+      categoryName: categoryNames[cat] || cat,
+      items: items.map(item => ({
+        name: item.name,
+        quantity: getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name),
+        cost: getItemTotalCost(item, pax, multiplier)
+      }))
+    }))
+    
+    const quoteData = {
+      id: Date.now(),
+      tier: getTierDisplayName(tier),
+      total: total,
+      pax: pax,
+      setup: setup,
+      date: new Date().toISOString(),
+      itemsSummary: itemsSummary
+    }
+    
+    const savedQuotes = JSON.parse(localStorage.getItem('savedQuotes') || '[]')
+    savedQuotes.push(quoteData)
+    localStorage.setItem('savedQuotes', JSON.stringify(savedQuotes))
+    
+    setIsQuoteSaved(true)
+    toast.success(`${getTierDisplayName(tier)} quote saved! You can view it later.`)
+    setTimeout(() => setIsQuoteSaved(false), 3000)
+  }
+
+  // Send quote to email
+  const sendQuoteToEmail = async (tier: TierType, email: string) => {
+    if (!email) {
+      toast.error('Please enter your email address')
+      return
+    }
+    
+    if (!tier) {
+      toast.error('Please select a package tier')
+      return
+    }
+    
+    setIsEmailSending(true)
+    
+    const total = getTierTotal(tier)
+    const groupedItems = getGroupedItems(tier)
+    
+    // Format the quote for email
+    let itemsHtml = ''
+    Object.entries(groupedItems).forEach(([cat, items]) => {
+      itemsHtml += `<h3 style="font-size: 16px; margin-top: 20px; margin-bottom: 10px; color: #FFFFFF;">Category ${cat}: ${categoryNames[cat] || cat}</h3>`
+      itemsHtml += `<ul style="margin: 0; padding-left: 20px; list-style: none;">`
+      items.forEach(item => {
+        const quantity = getScaledQuantity(pax, item.scaling_rule, item.base_quantity, item.name)
+        const itemTotal = getItemTotalCost(item, pax, multiplier)
+        itemsHtml += `<li style="margin-bottom: 8px; color: #CCCCCC;"><strong style="color: #FFFFFF;">${item.name}</strong> - ${quantity}× - KES ${itemTotal.toLocaleString()}</li>`
+      })
+      itemsHtml += `</ul>`
+    })
+    
+    try {
+      // Send email via API route
+      const response = await fetch('/api/send-quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          tier: getTierDisplayName(tier),
+          total,
+          pax,
+          setup,
+          itemsHtml,
+          date: new Date().toLocaleDateString()
+        })
+      })
+      
+      if (response.ok) {
+        toast.success(`Quote sent to ${email}! Check your inbox.`)
+        setShowEmailQuote(false)
+        setEmailQuoteAddress('')
+        setSelectedTierForQuote(null)
+      } else {
+        throw new Error('Failed to send email')
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      toast.error('Failed to send email. Please try again.')
+    } finally {
+      setIsEmailSending(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Toast notifications */}
+      <Toaster position="top-center" richColors />
+      
       {/* Simple Header */}
       <div className="max-w-7xl mx-auto px-6 md:px-8 pt-12 pb-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -147,8 +255,8 @@ export default function QuoteEngineClient({
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-serif italic text-foreground">
-              Design Your Vision,
-              <span className="block text-foreground/40">Price with Precision</span>
+              Design Your Wedding Vision,
+              <span className="block text-foreground/40">With Precision</span>
             </h1>
           </div>
           <div className="flex gap-3">
@@ -352,6 +460,15 @@ export default function QuoteEngineClient({
                       {tierDescription}
                     </p>
                   </div>
+                  
+                  {/* Save Quote Button in Header */}
+                  <button
+                    onClick={() => saveQuoteToLocalStorage(tier)}
+                    className="absolute top-6 right-6 p-1.5 rounded-full bg-foreground/10 hover:bg-foreground/20 transition-colors"
+                    title="Save this quote"
+                  >
+                    <Bookmark size={14} className="text-foreground/60" />
+                  </button>
                 </div>
 
                 {/* View Inventory Button */}
@@ -468,6 +585,136 @@ export default function QuoteEngineClient({
             )
           })}
         </div>
+
+        {/* Quote Actions Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mt-16 pt-8 border-t border-foreground/10"
+        >
+          <div className="text-center mb-8">
+            <h3 className="text-xl font-serif italic text-foreground mb-2">
+              Ready to Move Forward?
+            </h3>
+            <p className="text-foreground/50 text-sm">
+              Save your quote, share it with us, or book a consultation to bring your vision to life.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Save Quote Button */}
+            <div className="bg-background border border-foreground/10 rounded-xl p-6 text-center hover:border-foreground/30 transition-all duration-300">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-foreground/5 border border-foreground/10 mb-4">
+                <Bookmark className="w-5 h-5 text-foreground/60" />
+              </div>
+              <h4 className="text-base font-serif italic text-foreground mb-2">
+                Save Your Quote
+              </h4>
+              <p className="text-xs text-foreground/50 mb-4">
+                Save this quote to your browser for later reference.
+              </p>
+              <div className="flex gap-2 justify-center flex-wrap">
+                {tiers.map((tier) => {
+                  const tierTotal = getTierTotal(tier)
+                  if (tierTotal === 0) return null
+                  return (
+                    <button
+                      key={tier}
+                      onClick={() => saveQuoteToLocalStorage(tier)}
+                      className="px-3 py-1.5 text-[10px] uppercase tracking-wider font-medium border border-foreground/20 rounded-full hover:border-foreground/40 transition-colors"
+                    >
+                      Save {getTierDisplayName(tier)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Email Quote */}
+            <div className="bg-background border border-foreground/10 rounded-xl p-6 text-center hover:border-foreground/30 transition-all duration-300">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-foreground/5 border border-foreground/10 mb-4">
+                <Mail className="w-5 h-5 text-foreground/60" />
+              </div>
+              <h4 className="text-base font-serif italic text-foreground mb-2">
+                Email Your Quote
+              </h4>
+              <p className="text-xs text-foreground/50 mb-4">
+                Send this quote to your email address for later.
+              </p>
+              
+              {!showEmailQuote ? (
+                <button
+                  onClick={() => setShowEmailQuote(true)}
+                  className="px-4 py-1.5 text-[10px] uppercase tracking-wider font-medium border border-foreground/20 rounded-full hover:border-foreground/40 transition-colors"
+                >
+                  Email Quote
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedTierForQuote || ''}
+                      onChange={(e) => setSelectedTierForQuote(e.target.value as TierType)}
+                      className="flex-1 px-2 py-1.5 text-xs bg-foreground/5 border border-foreground/20 rounded-lg text-foreground focus:outline-none focus:border-foreground/30"
+                    >
+                      <option value="">Select tier</option>
+                      {tiers.map((tier) => {
+                        const tierTotal = getTierTotal(tier)
+                        if (tierTotal === 0) return null
+                        return (
+                          <option key={tier} value={tier}>{getTierDisplayName(tier)} - KES {tierTotal.toLocaleString()}</option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={emailQuoteAddress}
+                      onChange={(e) => setEmailQuoteAddress(e.target.value)}
+                      placeholder="your@email.com"
+                      className="flex-1 px-2 py-1.5 text-xs bg-foreground/5 border border-foreground/20 rounded-lg text-foreground focus:outline-none focus:border-foreground/30 placeholder:text-foreground/40"
+                    />
+                    <button
+                      onClick={() => sendQuoteToEmail(selectedTierForQuote!, emailQuoteAddress)}
+                      disabled={!selectedTierForQuote || !emailQuoteAddress || isEmailSending}
+                      className="px-3 py-1.5 text-[10px] uppercase tracking-wider font-medium bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                    >
+                      {isEmailSending ? 'Sending...' : 'Send'}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setShowEmailQuote(false)}
+                    className="text-[9px] text-foreground/40 hover:text-foreground/60 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Book Consultation */}
+            <div className="bg-background border border-foreground/10 rounded-xl p-6 text-center hover:border-foreground/30 transition-all duration-300">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-foreground/5 border border-foreground/10 mb-4">
+                <Calendar className="w-5 h-5 text-foreground/60" />
+              </div>
+              <h4 className="text-base font-serif italic text-foreground mb-2">
+                Book a Consultation
+              </h4>
+              <p className="text-xs text-foreground/50 mb-4">
+                Let's discuss your vision in detail and bring it to life.
+              </p>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 px-4 py-1.5 text-[10px] uppercase tracking-wider font-medium bg-foreground text-background rounded-full hover:bg-foreground/90 transition-colors"
+              >
+                <Calendar size={12} />
+                Schedule Call
+              </Link>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Custom Quote CTA */}
         <motion.div

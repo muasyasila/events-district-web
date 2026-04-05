@@ -186,6 +186,149 @@ export async function sendFollowUpEmail(
   }
 }
 
+// Send notification to admin when someone fills contact form
+export async function sendContactNotification(data: {
+  name: string
+  email: string
+  phone: string
+  eventType: string
+  eventDate: string
+  guestCount: string
+  message: string
+  howDidYouHear: string
+}) {
+  try {
+    const { error } = await resend.emails.send({
+      from: 'Events District <onboarding@resend.dev>',
+      to: ['hello@eventsdistrict.com'],
+      subject: `New Inquiry: ${data.eventType} from ${data.name}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { background-color: #0A0A0A; font-family: Georgia, serif; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #0A0A0A; }
+            h1 { font-size: 24px; font-style: italic; font-weight: normal; margin-bottom: 20px; color: #FFFFFF; }
+            h2 { font-size: 18px; font-style: italic; margin: 20px 0 10px; color: #FFFFFF; }
+            p { font-size: 14px; line-height: 1.6; margin-bottom: 20px; color: #CCCCCC; }
+            .info-box { background-color: #1A1A1A; padding: 20px; margin: 20px 0; border-radius: 8px; }
+            .label { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 4px; }
+            .value { font-size: 14px; color: #FFFFFF; }
+            .footer { font-size: 11px; color: #666; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>New Inquiry from ${data.name}</h1>
+            
+            <div class="info-box">
+              <div class="label">Event Type</div>
+              <div class="value">${data.eventType}</div>
+              <div style="margin-top: 15px;"></div>
+              <div class="label">Event Date</div>
+              <div class="value">${data.eventDate || 'Not specified'}</div>
+              <div style="margin-top: 15px;"></div>
+              <div class="label">Guest Count</div>
+              <div class="value">${data.guestCount || 'Not specified'}</div>
+            </div>
+            
+            <div class="info-box">
+              <div class="label">Contact Information</div>
+              <div class="value">${data.name}</div>
+              <div class="value">${data.email}</div>
+              <div class="value">${data.phone || 'Not provided'}</div>
+            </div>
+            
+            <div class="info-box">
+              <div class="label">How They Heard</div>
+              <div class="value">${data.howDidYouHear || 'Not specified'}</div>
+            </div>
+            
+            <div class="info-box">
+              <div class="label">Message</div>
+              <div class="value">${data.message.replace(/\n/g, '<br/>')}</div>
+            </div>
+            
+            <div class="footer">
+              <p>View this inquiry in your admin dashboard at /admin/leads</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    })
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (error) {
+    console.error('Admin notification error:', error)
+    return { success: false, error: 'Failed to send notification' }
+  }
+}
+
+// Send auto-reply to client
+export async function sendAutoReply(email: string, name: string) {
+  try {
+    const { error } = await resend.emails.send({
+      from: 'Events District <onboarding@resend.dev>',
+      to: email,
+      subject: 'Thank You for Reaching Out!',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { background-color: #0A0A0A; font-family: Georgia, serif; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #0A0A0A; }
+            h1 { font-size: 28px; font-style: italic; font-weight: normal; margin-bottom: 20px; color: #FFFFFF; }
+            p { font-size: 16px; line-height: 1.6; margin-bottom: 20px; color: #CCCCCC; }
+            .button { background-color: #FFFFFF; color: #000000; padding: 12px 24px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; margin: 20px 0; border-radius: 30px; }
+            .footer { font-size: 12px; color: #666666; margin-top: 40px; padding-top: 20px; border-top: 1px solid #333333; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Hi ${name} 👋</h1>
+            
+            <p>Thank you for reaching out to Events District! We're so excited to learn about your vision and help bring it to life.</p>
+            
+            <p>We've received your inquiry and will review it shortly. One of our design consultants will get back to you within <strong>24 hours</strong> to discuss your event in more detail.</p>
+            
+            <p>In the meantime, feel free to explore our <a href="https://your-domain.com/quote" style="color: #FFFFFF;">wedding quote calculator</a> to get an instant estimate for your special day.</p>
+            
+            <div style="text-align: center;">
+              <a href="https://your-domain.com/quote" class="button">Get an Instant Quote →</a>
+            </div>
+            
+            <p>If you have any urgent questions, feel free to reply to this email or call us at +254 700 000 000.</p>
+            
+            <p>We can't wait to create something extraordinary with you!</p>
+            
+            <p>Warmly,<br>The Events District Team</p>
+            
+            <div class="footer">
+              <p>Events District | Atmosphere Engineering</p>
+              <p>Nairobi, Kenya</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    })
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (error) {
+    console.error('Auto-reply error:', error)
+    return { success: false, error: 'Failed to send auto-reply' }
+  }
+}
+
 // Process automated follow-ups
 export async function processAutomatedFollowUps() {
   const supabase = await createClient()
