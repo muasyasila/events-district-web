@@ -15,6 +15,24 @@ interface PricingData {
   luxury: number
 }
 
+interface BirthdayPricingData {
+  essential: number
+  signature: number
+  luxury: number
+}
+
+interface GraduationPricingData {
+  essential: number
+  signature: number
+  luxury: number
+}
+
+interface PicnicPricingData {
+  essential: number
+  signature: number
+  luxury: number
+}
+
 const categories = [
   {
     id: 'romance',
@@ -87,7 +105,7 @@ const categories = [
         fullDesc: 'From first birthdays to centenarian celebrations, we design age-appropriate themes that wow guests. Balloon installations, photo backdrops, and custom signage. Tell us about the guest of honor—we love creating personalized celebrations!',
         image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&h=300&fit=crop',
         trending: true,
-        hasPackages: false,
+        hasPackages: true,
         related: ['Surprise Parties', 'Cakes & Confectionery', 'Bar & Lounge']
       },
       { 
@@ -96,7 +114,7 @@ const categories = [
         fullDesc: 'Celebrate academic achievements with style. Custom backdrops for photos, themed decor for school colors, and setups that honor the graduate. Every achievement is unique—share yours with us and we\'ll design the perfect celebration.',
         image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=400&h=300&fit=crop',
         trending: false,
-        hasPackages: false,
+        hasPackages: true,
         related: ['Graduation Ceremonies', 'Birthday Decor', 'Catering Presentation']
       },
       { 
@@ -114,7 +132,7 @@ const categories = [
         fullDesc: 'Romantic outdoor experiences complete with low tables, luxury cushions, grazing platters, and fresh florals. Perfect for proposals or anniversaries. Dreaming of a perfect picnic? Tell us your ideal setting—we\'ll bring it to life.',
         image: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=300&fit=crop',
         trending: false,
-        hasPackages: false,
+        hasPackages: true,
         related: ['Engagement Parties', 'Anniversary Celebrations', 'Catering Presentation']
       },
       { 
@@ -327,11 +345,10 @@ const timeSlots = [
 
 const AUTO_ROTATE_INTERVAL = 6000
 
-// Helper function to calculate tier total for 100 pax
+// Helper function to calculate tier total for 100 pax (Wedding)
 async function fetchWeddingPricing(): Promise<PricingData> {
   const supabase = createClient()
   
-  // Fetch all items for theater setup (since weddings typically use theater setup)
   const tiers = ['essential', 'signature', 'luxury'] as const
   const setup = 'theater'
   
@@ -351,11 +368,9 @@ async function fetchWeddingPricing(): Promise<PricingData> {
     
     if (error || !items) continue
     
-    // Calculate total for 100 pax (multiplier = 1.0)
     const multiplier = 1.0
     
     for (const item of items) {
-      // Calculate scaled quantity based on rule
       let quantity = item.base_quantity
       
       switch (item.scaling_rule) {
@@ -378,7 +393,6 @@ async function fetchWeddingPricing(): Promise<PricingData> {
           quantity = item.base_quantity
       }
       
-      // Calculate unit price
       const unitPrice = item.base_cost / item.base_quantity
       const scaledUnitPrice = unitPrice * multiplier
       const itemTotal = Math.round(scaledUnitPrice * quantity)
@@ -388,6 +402,48 @@ async function fetchWeddingPricing(): Promise<PricingData> {
   }
   
   return totals
+}
+
+// Helper function to calculate Birthday package prices (for 50 guests, Essential package)
+async function fetchBirthdayPricing(): Promise<BirthdayPricingData> {
+  const supabase = createClient()
+  
+  // Birthday specific pricing - for 50 guests (typical birthday size)
+  const birthdayPackages = {
+    essential: 25000,
+    signature: 55000,
+    luxury: 95000
+  }
+  
+  return birthdayPackages
+}
+
+// Helper function to calculate Graduation package prices (for 100 guests)
+async function fetchGraduationPricing(): Promise<GraduationPricingData> {
+  const supabase = createClient()
+  
+  // Graduation specific pricing
+  const graduationPackages = {
+    essential: 35000,
+    signature: 75000,
+    luxury: 125000
+  }
+  
+  return graduationPackages
+}
+
+// Helper function to calculate Picnic package prices (for 2 people)
+async function fetchPicnicPricing(): Promise<PicnicPricingData> {
+  const supabase = createClient()
+  
+  // Picnic specific pricing
+  const picnicPackages = {
+    essential: 15000,
+    signature: 35000,
+    luxury: 65000
+  }
+  
+  return picnicPackages
 }
 
 export function ServicesCodex() {
@@ -414,13 +470,36 @@ export function ServicesCodex() {
     signature: 0,
     luxury: 0
   })
+  const [birthdayPricing, setBirthdayPricing] = useState<BirthdayPricingData>({
+    essential: 0,
+    signature: 0,
+    luxury: 0
+  })
+  const [graduationPricing, setGraduationPricing] = useState<GraduationPricingData>({
+    essential: 0,
+    signature: 0,
+    luxury: 0
+  })
+  const [picnicPricing, setPicnicPricing] = useState<PicnicPricingData>({
+    essential: 0,
+    signature: 0,
+    luxury: 0
+  })
   const [pricingLoading, setPricingLoading] = useState(true)
 
-  // Fetch wedding pricing on component mount
+  // Fetch all pricing on component mount
   useEffect(() => {
     const loadPricing = async () => {
-      const pricing = await fetchWeddingPricing()
-      setWeddingPricing(pricing)
+      const [wedding, birthday, graduation, picnic] = await Promise.all([
+        fetchWeddingPricing(),
+        fetchBirthdayPricing(),
+        fetchGraduationPricing(),
+        fetchPicnicPricing()
+      ])
+      setWeddingPricing(wedding)
+      setBirthdayPricing(birthday)
+      setGraduationPricing(graduation)
+      setPicnicPricing(picnic)
       setPricingLoading(false)
     }
     loadPricing()
@@ -633,6 +712,9 @@ export function ServicesCodex() {
                 const isChat = activeFormType === 'chat' && isExpanded
                 const hasPackages = service.hasPackages === true
                 const isWeddingDecor = service.name === 'Wedding Decor'
+                const isBirthday = service.name === 'Birthday Decor'
+                const isGraduationParty = service.name === 'Graduation Parties'
+                const isPicnicDate = service.name === 'Picnic Dates'
                 
                 return (
                   <motion.div
@@ -703,14 +785,45 @@ export function ServicesCodex() {
                                     </p>
                                   </div>
                                 )}
+                                
+                                {/* Show dynamic price for Birthday */}
+                                {hasPackages && isBirthday && !pricingLoading && (
+                                  <div className="absolute bottom-4 left-6">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
+                                    <p className="text-2xl font-serif italic text-foreground">
+                                      KES {birthdayPricing.essential.toLocaleString()}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Show dynamic price for Graduation */}
+                                {hasPackages && isGraduationParty && !pricingLoading && (
+                                  <div className="absolute bottom-4 left-6">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
+                                    <p className="text-2xl font-serif italic text-foreground">
+                                      KES {graduationPricing.essential.toLocaleString()}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Show dynamic price for Picnic */}
+                                {hasPackages && isPicnicDate && !pricingLoading && (
+                                  <div className="absolute bottom-4 left-6">
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
+                                    <p className="text-2xl font-serif italic text-foreground">
+                                      KES {picnicPricing.essential.toLocaleString()}
+                                    </p>
+                                  </div>
+                                )}
+                                
                                 {/* Fallback for loading or other services */}
-                                {hasPackages && !isWeddingDecor && service.price !== undefined && (
+                                {hasPackages && !isWeddingDecor && !isBirthday && !isGraduationParty && !isPicnicDate && service.price !== undefined && (
                                   <div className="absolute bottom-4 left-6">
                                     <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Starting from</p>
                                     <p className="text-2xl font-serif italic text-foreground">${service.price.toLocaleString()}</p>
                                   </div>
                                 )}
-                                {hasPackages && isWeddingDecor && pricingLoading && (
+                                {hasPackages && (isWeddingDecor || isBirthday || isGraduationParty || isPicnicDate) && pricingLoading && (
                                   <div className="absolute bottom-4 left-6">
                                     <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/60 mb-1">Loading prices...</p>
                                   </div>
@@ -753,8 +866,101 @@ export function ServicesCodex() {
                                   </div>
                                 )}
 
+                                {/* Package Comparison - Dynamic for Birthday */}
+                                {hasPackages && isBirthday && !pricingLoading && (
+                                  <div className="mb-6">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Birthday Packages</p>
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                      {[
+                                        { name: 'Essential', price: birthdayPricing.essential },
+                                        { name: 'Signature', price: birthdayPricing.signature },
+                                        { name: 'Luxury', price: birthdayPricing.luxury }
+                                      ].map((tier, i) => (
+                                        <div key={tier.name} className={`p-3 border rounded-sm text-center transition-colors ${i === 1 ? 'border-foreground/30 bg-foreground/[0.03]' : 'border-foreground/10'}`}>
+                                          <p className="text-[9px] uppercase tracking-wider text-foreground/50 mb-1">{tier.name}</p>
+                                          <p className="text-sm font-medium text-foreground">KES {tier.price.toLocaleString()}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    
+                                    {/* Birthday Specific Quote Link */}
+                                    <div className="mt-4 pt-3 border-t border-foreground/10">
+                                      <Link 
+                                        href="/quote/birthday"
+                                        className="group inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-medium text-foreground/60 hover:text-foreground transition-colors"
+                                      >
+                                        <Sparkles className="w-3 h-3" />
+                                        <span>Customize your birthday celebration →</span>
+                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                      </Link>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Package Comparison - Dynamic for Graduation */}
+                                {hasPackages && isGraduationParty && !pricingLoading && (
+                                  <div className="mb-6">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Graduation Packages</p>
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                      {[
+                                        { name: 'Essential', price: graduationPricing.essential },
+                                        { name: 'Signature', price: graduationPricing.signature },
+                                        { name: 'Luxury', price: graduationPricing.luxury }
+                                      ].map((tier, i) => (
+                                        <div key={tier.name} className={`p-3 border rounded-sm text-center transition-colors ${i === 1 ? 'border-foreground/30 bg-foreground/[0.03]' : 'border-foreground/10'}`}>
+                                          <p className="text-[9px] uppercase tracking-wider text-foreground/50 mb-1">{tier.name}</p>
+                                          <p className="text-sm font-medium text-foreground">KES {tier.price.toLocaleString()}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    
+                                    {/* Graduation Specific Quote Link */}
+                                    <div className="mt-4 pt-3 border-t border-foreground/10">
+                                      <Link 
+                                        href="/quote/graduation"
+                                        className="group inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-medium text-foreground/60 hover:text-foreground transition-colors"
+                                      >
+                                        <Sparkles className="w-3 h-3" />
+                                        <span>Customize your graduation celebration →</span>
+                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                      </Link>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Package Comparison - Dynamic for Picnic */}
+                                {hasPackages && isPicnicDate && !pricingLoading && (
+                                  <div className="mb-6">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Picnic Packages</p>
+                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                      {[
+                                        { name: 'Essential', price: picnicPricing.essential },
+                                        { name: 'Signature', price: picnicPricing.signature },
+                                        { name: 'Luxury', price: picnicPricing.luxury }
+                                      ].map((tier, i) => (
+                                        <div key={tier.name} className={`p-3 border rounded-sm text-center transition-colors ${i === 1 ? 'border-foreground/30 bg-foreground/[0.03]' : 'border-foreground/10'}`}>
+                                          <p className="text-[9px] uppercase tracking-wider text-foreground/50 mb-1">{tier.name}</p>
+                                          <p className="text-sm font-medium text-foreground">KES {tier.price.toLocaleString()}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    
+                                    {/* Picnic Specific Quote Link */}
+                                    <div className="mt-4 pt-3 border-t border-foreground/10">
+                                      <Link 
+                                        href="/quote/picnic"
+                                        className="group inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-medium text-foreground/60 hover:text-foreground transition-colors"
+                                      >
+                                        <Sparkles className="w-3 h-3" />
+                                        <span>Plan your perfect picnic →</span>
+                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                      </Link>
+                                    </div>
+                                  </div>
+                                )}
+
                                 {/* Package Comparison - Static for other services */}
-                                {hasPackages && !isWeddingDecor && service.price !== undefined && (
+                                {hasPackages && !isWeddingDecor && !isBirthday && !isGraduationParty && !isPicnicDate && service.price !== undefined && (
                                   <div className="mb-6">
                                     <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 mb-3">Package Options</p>
                                     <div className="grid grid-cols-3 gap-3">
@@ -772,8 +978,8 @@ export function ServicesCodex() {
                                   </div>
                                 )}
 
-                                {/* Loading state for Wedding Decor */}
-                                {hasPackages && isWeddingDecor && pricingLoading && (
+                                {/* Loading state for all dynamic packages */}
+                                {hasPackages && (isWeddingDecor || isBirthday || isGraduationParty || isPicnicDate) && pricingLoading && (
                                   <div className="mb-6 text-center py-4">
                                     <p className="text-xs text-foreground/40">Loading package prices...</p>
                                   </div>

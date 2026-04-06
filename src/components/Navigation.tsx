@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sun, Moon, ChevronDown, Calculator, BookOpen, Briefcase, Users, Heart, Coffee, Crown, Sparkles, Calendar, MessageCircle, Clock, PartyPopper, Cake, GraduationCap, Gift, Music, Globe, Building, Church, ArrowRight } from "lucide-react"
+import { Sun, Moon, ChevronDown, Calculator, BookOpen, Briefcase, Users, Heart, Coffee, Crown, Sparkles, Calendar, MessageCircle, Clock, PartyPopper, Cake, GraduationCap, Gift, Music, Globe, Building, Church, ArrowRight, Images } from "lucide-react"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -83,6 +83,7 @@ export default function Navigation() {
   const isActiveLink = (href: string) => {
     if (href === '/quote') return pathname === '/quote'
     if (href === '/blog') return pathname === '/blog' || pathname?.startsWith('/blog/')
+    if (href === '/portfolio') return pathname === '/portfolio'
     return pathname === href
   }
 
@@ -141,7 +142,7 @@ export default function Navigation() {
   const company = {
     items: [
       { name: "About Us", href: "/#about", icon: <Users size={14} />, description: "Our story & philosophy" },
-      { name: "Portfolio", href: "/#portfolio", icon: <Heart size={14} />, description: "Our work" },
+      { name: "Portfolio", href: "/portfolio", icon: <Images size={14} />, description: "Our work" },
       { name: "Contact", href: "/contact", icon: <MessageCircle size={14} />, description: "Get in touch" },
     ]
   }
@@ -162,6 +163,16 @@ export default function Navigation() {
         <div className="flex items-center space-x-2 md:space-x-4">
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-6" ref={dropdownRef}>
+            {/* Portfolio Link - Added */}
+            <Link 
+              href="/portfolio" 
+              className={`text-[10px] uppercase tracking-[0.3em] font-medium text-foreground hover:opacity-100 transition-all ${
+                isActiveLink('/portfolio') ? 'opacity-100' : 'opacity-60'
+              }`}
+            >
+              Portfolio
+            </Link>
+
             {/* Services Dropdown - 3 services per category + "X more" */}
             <div className="relative">
               <button
@@ -469,6 +480,15 @@ export default function Navigation() {
             {/* Quick Links */}
             <div className="hidden sm:flex items-center space-x-2 md:space-x-3">
               <Link 
+                href="/portfolio"
+                className={`flex items-center gap-1 text-[9px] md:text-[10px] uppercase tracking-wider font-medium transition-all ${
+                  isActiveLink('/portfolio') ? 'text-foreground' : 'text-foreground/50 hover:text-foreground'
+                }`}
+              >
+                <Images size={11} />
+                <span>Portfolio</span>
+              </Link>
+              <Link 
                 href="/quote"
                 className={`flex items-center gap-1 text-[9px] md:text-[10px] uppercase tracking-wider font-medium transition-all ${
                   isActiveLink('/quote') ? 'text-foreground' : 'text-foreground/50 hover:text-foreground'
@@ -556,6 +576,18 @@ export default function Navigation() {
               </div>
 
               <div className="flex flex-col space-y-6">
+                {/* Portfolio - Added to mobile menu */}
+                <div className="border-b border-foreground/10 pb-4">
+                  <Link 
+                    href="/portfolio" 
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 py-2 group"
+                  >
+                    <Images size={18} className="text-foreground/60 group-hover:text-foreground transition-colors" />
+                    <span className="text-base font-medium text-foreground group-hover:opacity-80">Portfolio</span>
+                  </Link>
+                </div>
+
                 {/* Wedding Quote - Highlighted */}
                 <div className="bg-foreground/5 border border-foreground/10 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
