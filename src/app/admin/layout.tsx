@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Package, FileText, Users, LogOut, Menu, X, LayoutGrid } from 'lucide-react'
+import { Package, FileText, Users, LogOut, Menu, X, LayoutGrid, Tag } from 'lucide-react'
 
 export default function AdminLayout({
   children,
@@ -49,9 +49,10 @@ export default function AdminLayout({
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { href: '/admin/inventory', label: 'Inventory', icon: Package },
+    { href: '/admin/categories', label: 'Categories', icon: Tag },
     { href: '/admin/blog', label: 'Blog Posts', icon: FileText },
     { href: '/admin/blog/authors', label: 'Authors', icon: Users },
-    { href: '/admin/blog/categories', label: 'Categories', icon: FileText },
+    { href: '/admin/blog/categories', label: 'Blog Categories', icon: FileText },
     { href: '/admin/leads', label: 'Leads', icon: Users },
   ]
 

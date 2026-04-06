@@ -8,6 +8,7 @@ import ImageUpload from '@/components/admin/ImageUpload'
 type SetupType = 'theater' | 'restaurant'
 type TierType = 'essential' | 'signature' | 'luxury'
 type ScalingRule = 'per_person' | 'per_table' | 'fixed' | 'per_car' | 'per_maid'
+type QuoteType = 'wedding' | 'birthday' | 'graduation' | 'picnic' | 'custom'
 
 interface InventoryItem {
   id: string
@@ -21,23 +22,32 @@ interface InventoryItem {
   primary_image_url: string | null
   is_active: boolean
   sort_order: number
+  quote_type: QuoteType
+}
+
+interface CategoryGroup {
+  code: string
+  name: string
+  quote_type: string
 }
 
 export default function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
-  const [categories, setCategories] = useState<Array<{ code: string; name: string }>>([])
+  const [categories, setCategories] = useState<CategoryGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<InventoryItem>>({})
   const [filterSetup, setFilterSetup] = useState<SetupType>('theater')
   const [filterTier, setFilterTier] = useState<TierType | 'all'>('all')
+  const [filterQuoteType, setFilterQuoteType] = useState<QuoteType>('wedding')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItem, setNewItem] = useState<Partial<InventoryItem>>({
     setup_type: 'theater',
     tier: 'essential',
     scaling_rule: 'fixed',
     base_quantity: 1,
-    is_active: true
+    is_active: true,
+    quote_type: 'wedding'
   })
   const [newItemImage, setNewItemImage] = useState<File | null>(null)
   const [newItemImagePreview, setNewItemImagePreview] = useState<string | null>(null)
@@ -53,6 +63,7 @@ export default function InventoryManagement() {
     let query = supabase
       .from('inventory_items')
       .select('*')
+      .eq('quote_type', filterQuoteType)
       .order('sort_order', { ascending: true })
     
     query = query.eq('setup_type', filterSetup)
@@ -73,18 +84,34 @@ export default function InventoryManagement() {
   }
 
   const fetchCategories = async () => {
-    const { data } = await supabase
-      .from('categories')
-      .select('code, name')
-      .order('sort_order', { ascending: true })
+    // Fetch categories specific to the selected quote_type
+    const { data, error } = await supabase
+      .from('category_groups')
+      .select('category_code, category_name, quote_type')
+      .eq('quote_type', filterQuoteType)
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
     
-    if (data) setCategories(data)
+    if (error) {
+      console.error('Error fetching categories:', error)
+      setCategories([])
+      return
+    }
+    
+    // Map the data to match the CategoryGroup interface
+    const mappedCategories = data?.map(item => ({
+      code: item.category_code,
+      name: item.category_name,
+      quote_type: item.quote_type
+    })) || []
+    
+    setCategories(mappedCategories)
   }
 
   useEffect(() => {
     fetchItems()
     fetchCategories()
-  }, [filterSetup, filterTier])
+  }, [filterSetup, filterTier, filterQuoteType])
 
   const startEdit = (item: InventoryItem) => {
     setEditingId(item.id)
@@ -114,6 +141,7 @@ export default function InventoryManagement() {
         base_quantity: editForm.base_quantity,
         is_active: editForm.is_active,
         sort_order: editForm.sort_order,
+        quote_type: editForm.quote_type,
         updated_at: new Date().toISOString()
       })
       .eq('id', editingId)
@@ -152,7 +180,8 @@ export default function InventoryManagement() {
         scaling_rule: newItem.scaling_rule,
         base_quantity: newItem.base_quantity || 1,
         is_active: newItem.is_active !== false,
-        sort_order: items.length + 1
+        sort_order: items.length + 1,
+        quote_type: newItem.quote_type || 'wedding'
       }])
       .select()
     
@@ -199,7 +228,8 @@ export default function InventoryManagement() {
       tier: 'essential',
       scaling_rule: 'fixed',
       base_quantity: 1,
-      is_active: true
+      is_active: true,
+      quote_type: 'wedding'
     })
     setNewItemImage(null)
     setNewItemImagePreview(null)
@@ -231,13 +261,11 @@ export default function InventoryManagement() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please upload an image file')
         return
       }
       
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('Image must be less than 5MB')
         return
@@ -257,10 +285,15 @@ export default function InventoryManagement() {
     { value: 'per_maid', label: 'Per Maid (scales with bridal party)' }
   ]
 
-  // Custom select styling for all dropdowns
-  const selectClassName = "w-full px-3 py-2 bg-black border border-white/20 rounded text-sm text-white focus:outline-none focus:border-white appearance-none cursor-pointer"
+  const quoteTypeOptions: { value: QuoteType; label: string }[] = [
+    { value: 'wedding', label: 'Wedding' },
+    { value: 'birthday', label: 'Birthday' },
+    { value: 'graduation', label: 'Graduation' },
+    { value: 'picnic', label: 'Picnic Date' },
+    { value: 'custom', label: 'Custom' }
+  ]
 
-  // Style for options within select (ensures dark background)
+  const selectClassName = "w-full px-3 py-2 bg-black border border-white/20 rounded text-sm text-white focus:outline-none focus:border-white appearance-none cursor-pointer"
   const optionClassName = "bg-black text-white"
 
   return (
@@ -292,6 +325,29 @@ export default function InventoryManagement() {
 
       {/* Filters */}
       <div className="flex gap-4 mb-6 flex-wrap">
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">Quote Type</label>
+          <select
+            value={filterQuoteType}
+            onChange={(e) => {
+              setFilterQuoteType(e.target.value as QuoteType)
+              // Reset category selection when quote type changes
+              setNewItem({...newItem, category_code: ''})
+            }}
+            className={selectClassName}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+              backgroundPosition: 'right 8px center',
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: '14px'
+            }}
+          >
+            {quoteTypeOptions.map(opt => (
+              <option key={opt.value} value={opt.value} className={optionClassName}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        
         <div>
           <label className="block text-[10px] font-bold uppercase tracking-wider text-white/40 mb-1">Setup Type</label>
           <select
@@ -334,6 +390,7 @@ export default function InventoryManagement() {
           onClick={() => {
             setFilterSetup('theater')
             setFilterTier('all')
+            setFilterQuoteType('wedding')
           }}
           className="px-4 py-2 text-sm text-white/60 hover:text-white border border-white/20 rounded"
         >
@@ -366,6 +423,27 @@ export default function InventoryManagement() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-white/60 mb-1">Quote Type</label>
+                  <select
+                    value={newItem.quote_type || 'wedding'}
+                    onChange={(e) => {
+                      setNewItem({...newItem, quote_type: e.target.value as QuoteType, category_code: ''})
+                    }}
+                    className={selectClassName}
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 8px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '14px'
+                    }}
+                  >
+                    {quoteTypeOptions.map(opt => (
+                      <option key={opt.value} value={opt.value} className={optionClassName}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
                   <label className="block text-sm font-medium text-white/60 mb-1">Category *</label>
                   <select
                     value={newItem.category_code || ''}
@@ -383,17 +461,6 @@ export default function InventoryManagement() {
                       <option key={cat.code} value={cat.code} className={optionClassName}>{cat.code}: {cat.name}</option>
                     ))}
                   </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-white/60 mb-1">Base Cost (KES) *</label>
-                  <input
-                    type="number"
-                    value={newItem.base_cost || ''}
-                    onChange={(e) => setNewItem({...newItem, base_cost: parseInt(e.target.value)})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder:text-white/30 focus:outline-none focus:border-white"
-                    placeholder="e.g., 6000"
-                  />
                 </div>
               </div>
               
@@ -438,6 +505,17 @@ export default function InventoryManagement() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-white/60 mb-1">Base Cost (KES) *</label>
+                  <input
+                    type="number"
+                    value={newItem.base_cost || ''}
+                    onChange={(e) => setNewItem({...newItem, base_cost: parseInt(e.target.value)})}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white placeholder:text-white/30 focus:outline-none focus:border-white"
+                    placeholder="e.g., 6000"
+                  />
+                </div>
+                
+                <div>
                   <label className="block text-sm font-medium text-white/60 mb-1">Scaling Rule</label>
                   <select
                     value={newItem.scaling_rule}
@@ -455,7 +533,9 @@ export default function InventoryManagement() {
                     ))}
                   </select>
                 </div>
-                
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-white/60 mb-1">Base Quantity</label>
                   <input
