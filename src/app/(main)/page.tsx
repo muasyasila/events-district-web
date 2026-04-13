@@ -21,15 +21,11 @@ export default function Home() {
       <BrandStatement />
       <ServicesCodex />
       <ConversionEngine />
-      <WeddingQuoteSection />
-      <LeadMagnet />
-      <BlogJournal />
+
+      
       <Blog />
       <EpicTestimonials />
-      <SocialAtelier />
-      <ContactAtelier />
-      <PartnershipAtelier />
-  
+      <ContactAtelier />  
       <BackToTop />
     </div>
   )
