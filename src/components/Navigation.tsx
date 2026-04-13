@@ -114,7 +114,7 @@ export default function Navigation() {
   const resources = [
     { name: "Wedding Quote", href: "/quote", icon: <Calculator size={13} />, description: "Instant pricing for weddings" },
     { name: "The Journal", href: "/blog", icon: <BookOpen size={13} />, description: "Stories & insights" },
-    { name: "Free Checklist", href: "/#free-guide", icon: <Sparkles size={13} />, description: "Wedding planning guide" },
+    { name: "Free Checklist", href: "/free-guide", icon: <Sparkles size={13} />, description: "Wedding planning guide" },
   ]
 
   const company = [

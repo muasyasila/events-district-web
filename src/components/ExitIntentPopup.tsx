@@ -7,7 +7,6 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { sendChecklistEmail } from '@/app/actions/email'
 
-// ─── Gold palette ─────────────────────────────────────────────────────────────
 const gold = {
   light:    '#D4AF37',
   metallic: 'linear-gradient(135deg, #D4AF37 0%, #FFF2A8 50%, #D4AF37 100%)',
@@ -43,25 +42,45 @@ export default function ExitIntentPopup() {
 
     // Check for wedding intent flag (set by WeddingPageTracker on quote pages)
     const hasWeddingIntent = sessionStorage.getItem('hasWeddingIntent') === 'true'
-    if (!hasWeddingIntent) return // Do NOT show to random visitors
+    if (!hasWeddingIntent) return
+
+    // Function to show popup (called from multiple triggers)
+    const showExitPopup = () => {
+      if (triggered || isOpen) return
+      
+      setIsOpen(true)
+      setTriggered(true)
+      sessionStorage.setItem('exitPopupShown', 'true')
+    }
 
     let mouseLeaveTimer: NodeJS.Timeout
 
+    // TRIGGER 1: Mouse leaving from top of viewport
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY > 0) return      // only trigger from top of window
-      if (triggered)     return      // only once per session
-      if (isOpen)        return
+      if (e.clientY > 0) return      // Only trigger from top
+      mouseLeaveTimer = setTimeout(showExitPopup, 100)
+    }
 
-      mouseLeaveTimer = setTimeout(() => {
-        setIsOpen(true)
-        setTriggered(true)
-        sessionStorage.setItem('exitPopupShown', 'true')
-      }, 100)
+    // TRIGGER 2: Page visibility change (e.g., switching tabs)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        showExitPopup()
+      }
+    }
+
+    // TRIGGER 3: Before page unload (back button, link click, etc.)
+    const handleBeforeUnload = () => {
+      showExitPopup()
     }
 
     document.addEventListener('mouseleave', handleMouseLeave)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
       clearTimeout(mouseLeaveTimer)
     }
   }, [triggered, isOpen])
@@ -92,7 +111,7 @@ export default function ExitIntentPopup() {
         event_type: 'wedding',
         source:     'exit_intent_popup',
         status:     'new',
-        notes:      `Exit intent capture — source: ${sessionStorage.getItem('weddingIntentSource') || 'unknown'}${form.date ? ` | Wedding: ${form.date}` : ''}`,
+        notes:      `Exit intent capture${form.date ? ` | Wedding: ${form.date}` : ''}`,
       }])
       if (dbError) throw dbError
 
@@ -107,7 +126,6 @@ export default function ExitIntentPopup() {
 
   const handleClose = () => {
     setIsOpen(false)
-    // Don't reset step/form — if they close and somehow reopen we want to show success
   }
 
   return (
