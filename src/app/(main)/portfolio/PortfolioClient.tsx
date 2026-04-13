@@ -1,547 +1,555 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue } from 'framer-motion'
 import Image from 'next/image'
-import { 
-  Sparkles, 
-  ArrowRight, 
-  X, 
-  ChevronLeft, 
-  ChevronRight,
-  Calendar,
-  MapPin,
-  Users,
-  Heart,
-  Camera,
-  Grid3x3,
-  LayoutGrid,
-  Images,
-  Star
-} from 'lucide-react'
 import Link from 'next/link'
+import {
+  ArrowRight,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
+  Calculator
+} from 'lucide-react'
 
-// Portfolio data structure
+// ─── Gold palette ─────────────────────────────────────────────────────────────
+const gold = {
+  light:    '#D4AF37',
+  metallic: 'linear-gradient(135deg, #D4AF37 0%, #FFF2A8 50%, #D4AF37 100%)',
+  shadow:   'rgba(212, 175, 55, 0.18)',
+  glow:     'rgba(212, 175, 55, 0.07)',
+  border:   'rgba(212, 175, 55, 0.22)',
+}
+
+const unsplashLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }) =>
+  `${src}&w=${width}&q=${quality || 75}`
+
 interface PortfolioItem {
   id: number
   title: string
   category: 'wedding' | 'corporate' | 'social' | 'culinary'
-  subcategory: string
   clientName: string
   eventDate: string
   location: string
-  guestCount: number
   description: string
+  story: string
   images: string[]
-  beforeImage?: string
-  afterImage?: string
-  featured?: boolean
-  tags: string[]
+  quote: string
+  mood: string
+  quoteHref: string
 }
 
-// Sample portfolio data - Replace with your actual data from database
 const portfolioData: PortfolioItem[] = [
   {
     id: 1,
-    title: "Romantic Garden Wedding",
-    category: "wedding",
-    subcategory: "Outdoor Wedding",
-    clientName: "Sarah & Michael",
-    eventDate: "March 15, 2025",
-    location: "Nairobi, Kenya",
-    guestCount: 180,
-    description: "A breathtaking garden wedding with floral arches, cascading centerpieces, and warm ambient lighting. The couple wanted a romantic, ethereal feel with soft pinks and whites.",
+    title: 'Garden Estate',
+    category: 'wedding',
+    clientName: 'Sarah & Michael',
+    eventDate: 'March 2025',
+    location: 'Nairobi',
+    description: 'Where wildflowers met crystal.',
+    story: "They wanted the feeling of stumbling upon a secret garden. We used 4,000 hand-foraged blooms, suspended crystal droplets that caught the afternoon light, and a ceremony arch that seemed to grow from the earth itself. As Sarah walked down the aisle, the wind moved through the florals — exactly as we had planned.",
     images: [
-      "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&h=600&fit=crop",
+      'https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=2000&h=1333&fit=crop',
     ],
-    beforeImage: "https://images.unsplash.com/photo-1582719471381-5c85e5d6d4e2?w=800&h=600&fit=crop",
-    afterImage: "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop",
-    featured: true,
-    tags: ["Romantic", "Floral", "Garden", "Elegant"]
+    quote: "It felt like walking into a dream we didn't know we had",
+    mood: 'Ethereal',
+    quoteHref: '/quote?type=wedding',
   },
   {
     id: 2,
-    title: "Corporate Gala Dinner",
-    category: "corporate",
-    subcategory: "Corporate Event",
-    clientName: "Tech Innovation Summit",
-    eventDate: "February 10, 2025",
-    location: "Nairobi, Kenya",
-    guestCount: 350,
-    description: "A sophisticated black-tie gala with dramatic lighting, luxury table settings, and a stunning red carpet entrance.",
+    title: 'Midnight Gala',
+    category: 'corporate',
+    clientName: 'Tech Summit',
+    eventDate: 'February 2025',
+    location: 'Nairobi',
+    description: 'Black tie under starlight.',
+    story: "The brief was simple: make technology feel human. We transformed a concrete warehouse into a constellation — 2,000 fibre-optic points embedded in the ceiling, responding to the music's rhythm. When the CEO spoke, the lights dimmed to a single spotlight. The silence in that room was the loudest thing I have ever heard.",
     images: [
-      "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=800&h=600&fit=crop",
+      'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1511578314322-379afb476865?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=2000&h=1333&fit=crop',
     ],
-    tags: ["Corporate", "Elegant", "Lighting", "Red Carpet"]
+    quote: "They didn't just light the room, they lit the mood",
+    mood: 'Dramatic',
+    quoteHref: '/contact?type=corporate',
   },
   {
     id: 3,
-    title: "Luxury Birthday Celebration",
-    category: "social",
-    subcategory: "Birthday",
-    clientName: "Amanda's 30th Birthday",
-    eventDate: "January 20, 2025",
-    location: "Nairobi, Kenya",
-    guestCount: 120,
-    description: "A glamorous 30th birthday celebration with rose gold accents, balloon installations, and a stunning dessert table.",
+    title: 'Rose Gold',
+    category: 'social',
+    clientName: "Amanda's 30th",
+    eventDate: 'January 2025',
+    location: 'Nairobi',
+    description: 'Metallic surfaces catching candlelight.',
+    story: "Amanda wanted to feel like she was inside a jewellery box. We mirrored the walls, installed a ceiling of hanging brass discs, and placed candles at every height. At midnight, we released 500 rose petals from above. Guests touched the walls to confirm they were real.",
     images: [
-      "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=800&h=600&fit=crop",
+      'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=2000&h=1333&fit=crop',
     ],
-    tags: ["Birthday", "Glamorous", "Balloons", "Dessert Table"]
+    quote: "Every corner had its own secret",
+    mood: 'Glamorous',
+    quoteHref: '/contact?type=birthday',
   },
   {
     id: 4,
-    title: "Traditional Wedding Ceremony",
-    category: "wedding",
-    subcategory: "Traditional Wedding",
-    clientName: "James & Grace",
-    eventDate: "December 5, 2024",
-    location: "Nairobi, Kenya",
-    guestCount: 250,
-    description: "A beautiful traditional wedding blending cultural elements with modern elegance. Rich colors, ceremonial arches, and vibrant floral arrangements.",
+    title: 'Heritage',
+    category: 'wedding',
+    clientName: 'James & Grace',
+    eventDate: 'December 2024',
+    location: 'Nairobi',
+    description: 'Ancient patterns reimagined.',
+    story: "Two families, two traditions. We studied patterns from both cultures for months, then wove them into every surface — etched into glass, embroidered on linen, projected onto walls. The ceremony began with silence: 300 guests, no music, just the sound of a single gong. Then the colours exploded.",
     images: [
-      "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop",
+      'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&h=1333&fit=crop',
     ],
-    tags: ["Traditional", "Cultural", "Vibrant", "Ceremony"]
+    quote: "Tradition never looked so alive",
+    mood: 'Vibrant',
+    quoteHref: '/quote?type=wedding',
   },
   {
     id: 5,
-    title: "Product Launch Experience",
-    category: "corporate",
-    subcategory: "Product Launch",
-    clientName: "Luxury Beauty Brand",
-    eventDate: "November 18, 2024",
-    location: "Nairobi, Kenya",
-    guestCount: 200,
-    description: "An immersive product launch with branded installations, interactive displays, and Instagram-worthy photo moments.",
+    title: 'Product Immersion',
+    category: 'corporate',
+    clientName: 'Luxury Brand',
+    eventDate: 'November 2024',
+    location: 'Nairobi',
+    description: 'Guests entered a world.',
+    story: "No presentations. No speeches. Just rooms that breathed the brand's essence. In the first room, the temperature dropped — sensory shock. By the third room, they were converts. The product sold out in 48 hours.",
     images: [
-      "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=800&h=600&fit=crop",
+      'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1511578314322-379afb476865?w=2000&h=1333&fit=crop',
+      'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=2000&h=1333&fit=crop',
     ],
-    tags: ["Product Launch", "Branded", "Interactive", "Modern"]
+    quote: "We forgot we were at a launch",
+    mood: 'Immersive',
+    quoteHref: '/contact?type=corporate',
   },
-  {
-    id: 6,
-    title: "Baby Shower Celebration",
-    category: "social",
-    subcategory: "Baby Shower",
-    clientName: "Emily & David",
-    eventDate: "October 12, 2024",
-    location: "Nairobi, Kenya",
-    guestCount: 60,
-    description: "A whimsical baby shower with gender reveal elements, pastel decor, and a stunning dessert table.",
-    images: [
-      "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=800&h=600&fit=crop",
-    ],
-    tags: ["Baby Shower", "Whimsical", "Pastel", "Dessert Table"]
-  }
 ]
 
-const categoryConfig = {
-  all: { label: "All Work", icon: Grid3x3, color: "from-foreground/20" },
-  wedding: { label: "Weddings", icon: Heart, color: "from-rose-500/20" },
-  corporate: { label: "Corporate", icon: LayoutGrid, color: "from-blue-500/20" },
-  social: { label: "Social", icon: Users, color: "from-purple-500/20" },
-  culinary: { label: "Culinary", icon: Camera, color: "from-amber-500/20" }
-}
+// ─── Image experience modal ───────────────────────────────────────────────────
+function ProjectExperience({ project, onClose }: { project: PortfolioItem; onClose: () => void }) {
+  const [idx, setIdx]           = useState(0)
+  const [playing, setPlaying]   = useState(true)
+  const [controls, setControls] = useState(true)
+  const timerRef                = useRef<NodeJS.Timeout>()
 
-export default function PortfolioClient() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showBeforeAfter, setShowBeforeAfter] = useState(false)
-  const [beforeAfterValue, setBeforeAfterValue] = useState(50)
-
-  const filteredItems = portfolioData.filter(item => 
-    selectedCategory === "all" || item.category === selectedCategory
-  )
-
-  const featuredItems = portfolioData.filter(item => item.featured)
-
-  const openLightbox = (item: PortfolioItem, index: number) => {
-    setSelectedItem(item)
-    setCurrentImageIndex(index)
-    setShowBeforeAfter(false)
+  const resetTimer = () => {
+    setControls(true)
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => setControls(false), 3000)
   }
 
-  const closeLightbox = () => {
-    setSelectedItem(null)
-    setCurrentImageIndex(0)
-    setShowBeforeAfter(false)
-    setBeforeAfterValue(50)
-  }
+  useEffect(() => { resetTimer(); return () => clearTimeout(timerRef.current) }, [idx])
 
-  const nextImage = () => {
-    if (selectedItem) {
-      setCurrentImageIndex((prev) => (prev + 1) % selectedItem.images.length)
-    }
-  }
-
-  const prevImage = () => {
-    if (selectedItem) {
-      setCurrentImageIndex((prev) => (prev - 1 + selectedItem.images.length) % selectedItem.images.length)
-    }
-  }
-
-  // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedItem) {
-        if (e.key === 'ArrowLeft') prevImage()
-        if (e.key === 'ArrowRight') nextImage()
-        if (e.key === 'Escape') closeLightbox()
-      }
+    if (!playing) return
+    const t = setInterval(() => setIdx(p => (p + 1) % project.images.length), 5000)
+    return () => clearInterval(t)
+  }, [playing, project.images.length])
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape')       onClose()
+      if (e.key === 'ArrowRight')   setIdx(p => (p + 1) % project.images.length)
+      if (e.key === 'ArrowLeft')    setIdx(p => (p - 1 + project.images.length) % project.images.length)
+      if (e.key === ' ')            { e.preventDefault(); setPlaying(p => !p) }
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedItem])
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose, project.images.length])
+
+  const next = () => setIdx(p => (p + 1) % project.images.length)
+  const prev = () => setIdx(p => (p - 1 + project.images.length) % project.images.length)
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 md:px-8 pt-24 pb-12">
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onMouseMove={resetTimer}
+      className="fixed inset-0 z-50 bg-black"
+    >
+      {/* Progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'rgba(255,255,255,0.1)' }}>
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/5 border border-foreground/10 rounded-full mb-6">
-            <Images className="w-4 h-4 text-foreground/60" />
-            <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/50 font-medium">
-              Our Work
-            </span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-serif italic text-foreground mb-4">
-            Design Gallery
-          </h1>
-          <p className="text-foreground/60 max-w-2xl mx-auto font-light">
-            Explore our collection of stunning event transformations. Each space tells a unique story.
-          </p>
-          <div className="h-px w-12 bg-foreground/20 mx-auto mt-8" />
-        </motion.div>
+          className="h-full"
+          style={{ background: gold.metallic }}
+          initial={{ width: '0%' }}
+          animate={{ width: `${((idx + 1) / project.images.length) * 100}%` }}
+          transition={{ duration: 0.5 }}
+        />
       </div>
 
-      {/* Category Filter */}
-      <div className="sticky top-20 z-30 bg-background/80 backdrop-blur-md border-b border-foreground/10 py-4">
-        <div className="max-w-7xl mx-auto px-6 md:px-8">
-          <div className="flex flex-wrap justify-center gap-2">
-            {Object.entries(categoryConfig).map(([key, config]) => {
-              const Icon = config.icon
-              const isActive = selectedCategory === key
-              return (
-                <button
-                  key={key}
-                  onClick={() => setSelectedCategory(key)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 ${
-                    isActive
-                      ? 'bg-foreground text-background'
-                      : 'bg-foreground/5 text-foreground/60 hover:bg-foreground/10 hover:text-foreground'
-                  }`}
-                >
-                  <Icon size={14} />
-                  <span>{config.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="absolute top-5 right-5 z-50 w-9 h-9 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all"
+      >
+        <X size={14} />
+      </button>
 
-      {/* Featured Section */}
-      {selectedCategory === "all" && featuredItems.length > 0 && (
-        <div className="max-w-7xl mx-auto px-6 md:px-8 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-serif italic text-foreground mb-2">
-              Featured Work
-            </h2>
-            <div className="h-px w-12 bg-foreground/20 mx-auto" />
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            {featuredItems.map((item, idx) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="group cursor-pointer"
-                onClick={() => openLightbox(item, 0)}
-              >
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-4">
-                  <img
-                    src={item.images[0]}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute bottom-4 left-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Heart size={14} />
-                      <span>{item.clientName}</span>
-                    </div>
-                  </div>
-                  {item.beforeImage && (
-                    <div className="absolute top-4 right-4 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full text-[10px] text-white">
-                      Before & After
-                    </div>
-                  )}
-                </div>
-                <h3 className="text-lg font-serif italic text-foreground mb-1">{item.title}</h3>
-                <p className="text-sm text-foreground/50">{item.subcategory}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Portfolio Grid */}
-      <div className="max-w-7xl mx-auto px-6 md:px-8 py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item, idx) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.05 }}
-              className="group cursor-pointer"
-              onClick={() => openLightbox(item, 0)}
-            >
-              <div className="relative aspect-[4/5] rounded-xl overflow-hidden mb-3">
-                <img
-                  src={item.images[0]}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <p className="text-sm font-medium">{item.title}</p>
-                  <p className="text-xs text-white/70">{item.subcategory}</p>
-                </div>
-                {item.beforeImage && (
-                  <div className="absolute top-3 right-3 px-2 py-0.5 bg-black/50 backdrop-blur-sm rounded-full text-[8px] text-white">
-                    Before & After
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-foreground">{item.title}</h3>
-                  <p className="text-xs text-foreground/40">{item.clientName}</p>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-foreground/40">
-                  <Calendar size={10} />
-                  <span>{new Date(item.eventDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Lightbox Modal */}
+      {/* Controls */}
       <AnimatePresence>
-        {selectedItem && (
+        {controls && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center"
-            onClick={closeLightbox}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute bottom-6 left-6 right-6 z-50 flex items-end justify-between pointer-events-none"
           >
-            <div className="relative w-full max-w-6xl mx-auto p-4" onClick={(e) => e.stopPropagation()}>
-              {/* Close Button */}
-              <button
-                onClick={closeLightbox}
-                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
-              >
-                <X size={24} />
+            <div className="pointer-events-auto">
+              <p className="text-white text-2xl md:text-4xl font-light mb-2">{project.title}</p>
+              <p className="text-white/50 text-sm">{idx + 1} / {project.images.length} · {project.mood}</p>
+            </div>
+            <div className="flex gap-2 pointer-events-auto">
+              <button onClick={() => setPlaying(p => !p)} className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all">
+                {playing ? <Pause size={14} /> : <Play size={14} />}
               </button>
-
-              {/* Before/After Toggle */}
-              {selectedItem.beforeImage && selectedItem.afterImage && (
-                <div className="absolute top-4 left-4 z-10 flex gap-2">
-                  <button
-                    onClick={() => setShowBeforeAfter(!showBeforeAfter)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      showBeforeAfter
-                        ? 'bg-white text-black'
-                        : 'bg-white/20 text-white hover:bg-white/30'
-                    }`}
-                  >
-                    {showBeforeAfter ? 'Hide Comparison' : 'View Before & After'}
-                  </button>
-                </div>
-              )}
-
-              {/* Navigation Buttons */}
-              {selectedItem.images.length > 1 && !showBeforeAfter && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
-                  >
-                    <ChevronLeft size={32} />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
-                  >
-                    <ChevronRight size={32} />
-                  </button>
-                </>
-              )}
-
-              {/* Image Display */}
-              <div className="flex items-center justify-center min-h-[80vh]">
-                {showBeforeAfter && selectedItem.beforeImage && selectedItem.afterImage ? (
-                  <div className="relative w-full max-w-4xl">
-                    <div className="relative aspect-video rounded-xl overflow-hidden">
-                      <img
-                        src={selectedItem.afterImage}
-                        alt="After"
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div
-                        className="absolute inset-0 overflow-hidden"
-                        style={{ width: `${beforeAfterValue}%` }}
-                      >
-                        <img
-                          src={selectedItem.beforeImage}
-                          alt="Before"
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      </div>
-                      <div
-                        className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize"
-                        style={{ left: `${beforeAfterValue}%` }}
-                        onMouseDown={(e) => {
-                          const onMouseMove = (moveEvent: MouseEvent) => {
-                            const rect = (moveEvent.currentTarget as HTMLElement).parentElement?.getBoundingClientRect()
-                            if (rect) {
-                              const newValue = ((moveEvent.clientX - rect.left) / rect.width) * 100
-                              setBeforeAfterValue(Math.min(100, Math.max(0, newValue)))
-                            }
-                          }
-                          const onMouseUp = () => {
-                            document.removeEventListener('mousemove', onMouseMove)
-                            document.removeEventListener('mouseup', onMouseUp)
-                          }
-                          document.addEventListener('mousemove', onMouseMove)
-                          document.addEventListener('mouseup', onMouseUp)
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between mt-4 text-sm text-white/60">
-                      <span>Before</span>
-                      <span>After</span>
-                    </div>
-                  </div>
-                ) : (
-                  <img
-                    src={selectedItem.images[currentImageIndex]}
-                    alt={selectedItem.title}
-                    className="max-h-[80vh] max-w-full object-contain rounded-lg"
-                  />
-                )}
-              </div>
-
-              {/* Image Info */}
-              {!showBeforeAfter && (
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                  <div className="max-w-4xl mx-auto">
-                    <h2 className="text-2xl font-serif italic text-white mb-2">{selectedItem.title}</h2>
-                    <p className="text-white/80 text-sm mb-3">{selectedItem.description}</p>
-                    <div className="flex flex-wrap gap-4 text-sm text-white/60">
-                      <div className="flex items-center gap-1">
-                        <Heart size={14} />
-                        <span>{selectedItem.clientName}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        <span>{selectedItem.eventDate}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin size={14} />
-                        <span>{selectedItem.location}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users size={14} />
-                        <span>{selectedItem.guestCount} guests</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {selectedItem.tags.map((tag) => (
-                        <span key={tag} className="px-2 py-0.5 bg-white/10 rounded-full text-[9px] text-white/70">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Image Counter */}
-              {selectedItem.images.length > 1 && !showBeforeAfter && (
-                <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 rounded-full text-xs text-white/70">
-                  {currentImageIndex + 1} / {selectedItem.images.length}
-                </div>
-              )}
+              <button onClick={prev} className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all">
+                <ChevronLeft size={16} />
+              </button>
+              <button onClick={next} className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all">
+                <ChevronRight size={16} />
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* CTA Section */}
-      <div className="max-w-7xl mx-auto px-6 md:px-8 py-20">
-        <div className="bg-background border border-foreground/10 rounded-xl p-8 md:p-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-foreground/5 border border-foreground/10 rounded-full mb-6">
-            <Sparkles className="w-3 h-3 text-foreground/60" />
-            <span className="text-[8px] uppercase tracking-[0.2em] text-foreground/50 font-medium">
-              Ready to Create Something Beautiful?
-            </span>
+      {/* Quote on first image */}
+      <AnimatePresence>
+        {idx === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 flex items-center justify-center px-8 pointer-events-none"
+          >
+            <div className="max-w-2xl text-center">
+              <p className="text-white/90 text-2xl md:text-4xl font-light italic leading-relaxed mb-4">"{project.quote}"</p>
+              <p className="text-white/50 text-xs uppercase tracking-wider">— {project.clientName}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, scale: 1.08 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute inset-0"
+        >
+          <Image src={project.images[idx]} alt={project.title} fill loader={unsplashLoader} className="object-cover" priority sizes="100vw" />
+          <div className="absolute inset-0 bg-black/25" />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Click zones */}
+      <div className="absolute inset-y-0 left-0 w-1/3 z-30 cursor-w-resize" onClick={prev} />
+      <div className="absolute inset-y-0 right-0 w-1/3 z-30 cursor-e-resize" onClick={next} />
+    </motion.div>
+  )
+}
+
+// ─── Project story section ─────────────────────────────────────────────────────
+function ProjectStory({ project, index, onOpen }: { project: PortfolioItem; index: number; onOpen: (p: PortfolioItem) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const y       = useTransform(scrollYProgress, [0, 1], [80, -80])
+  const opacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0, 1, 1, 0])
+  const isEven  = index % 2 === 0
+
+  return (
+    <motion.section
+      ref={ref}
+      style={{ opacity }}
+      className="relative min-h-screen flex items-center py-20 px-6 md:px-12 overflow-hidden"
+    >
+      {/* Large number bg */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+        <span className="text-[28vw] font-light text-foreground/[0.025] leading-none">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+      </div>
+
+      <div className="max-w-6xl mx-auto w-full relative z-10">
+        <div className={`grid lg:grid-cols-2 gap-10 lg:gap-20 items-center`}>
+
+          {/* Image */}
+          <motion.div style={{ y }} className={isEven ? 'lg:order-1' : 'lg:order-2'}>
+            <div
+              className="relative aspect-[4/5] overflow-hidden rounded-2xl group cursor-pointer border transition-all duration-500 group-hover:border-amber-500/30"
+              style={{ borderColor: gold.border }}
+              onClick={() => onOpen(project)}
+            >
+              <Image
+                src={project.images[0]}
+                alt={project.title}
+                fill
+                loader={unsplashLoader}
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+              <div className="absolute inset-0 bg-black/15 group-hover:bg-black/5 transition-colors duration-500" />
+
+              {/* View overlay */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div
+                  className="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-black"
+                  style={{ background: gold.metallic }}
+                >
+                  View Gallery
+                </div>
+              </div>
+
+              {/* Category badge */}
+              <div className="absolute top-4 left-4">
+                <span
+                  className="text-[8px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider"
+                  style={{ background: gold.metallic, color: 'black' }}
+                >
+                  {project.category}
+                </span>
+              </div>
+
+              {/* Image strip on hover */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-10 pb-4 px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="flex gap-2 justify-center">
+                  {project.images.slice(0, 4).map((img, i) => (
+                    <div key={i} className={`relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 ${i === 0 ? 'ring-1' : 'opacity-70'}`} style={{ ringColor: gold.light }}>
+                      <Image src={img} alt="" fill loader={unsplashLoader} className="object-cover" />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-white/50 text-[9px] uppercase tracking-wider mt-2">
+                  {project.images.length} images
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Content */}
+          <div className={`space-y-6 ${isEven ? 'lg:order-2' : 'lg:order-1'}`}>
+            <motion.div
+              initial={{ opacity: 0, x: isEven ? 20 : -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-8 h-px" style={{ background: gold.metallic }} />
+                <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: gold.light }}>
+                  Chapter {String(index + 1).padStart(2, '0')} · {project.mood}
+                </span>
+              </div>
+
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-light leading-[0.95] mb-3 text-foreground">
+                {project.title}
+              </h2>
+              <p className="text-lg md:text-xl text-foreground/50 font-light italic">
+                "{project.description}"
+              </p>
+            </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15 }}
+              className="text-sm md:text-base text-foreground/65 font-light leading-relaxed"
+            >
+              {project.story}
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.25 }}
+              className="flex flex-wrap items-center gap-4 pt-2"
+            >
+              <button
+                onClick={() => onOpen(project)}
+                className="group inline-flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest text-black"
+                style={{ background: gold.metallic, boxShadow: `0 4px 16px ${gold.shadow}` }}
+              >
+                View Gallery
+                <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+              <Link
+                href={project.quoteHref}
+                className="inline-flex items-center gap-2 text-xs font-medium group/ql"
+                style={{ color: gold.light }}
+              >
+                <span className="underline underline-offset-4 group-hover/ql:no-underline transition-all">
+                  Plan something similar
+                </span>
+                <ArrowRight size={10} />
+              </Link>
+            </motion.div>
+
+            <motion.blockquote
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.35 }}
+              className="border-l-2 pl-5 py-2"
+              style={{ borderColor: gold.light }}
+            >
+              <p className="text-sm text-foreground/50 italic">"{project.quote}"</p>
+              <p className="text-[9px] uppercase tracking-wider text-foreground/30 mt-1">— {project.clientName} · {project.eventDate}</p>
+            </motion.blockquote>
           </div>
-          
-          <h2 className="text-2xl font-serif italic text-foreground mb-3">
-            Let's Design Your Event
-          </h2>
-          
-          <p className="text-foreground/50 max-w-xl mx-auto mb-6 font-light text-sm">
-            Whether you're planning an intimate gathering or a grand celebration, we're here to bring your vision to life.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        </div>
+      </div>
+    </motion.section>
+  )
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+export default function PortfolioPage() {
+  const [activeProject, setActiveProject] = useState<PortfolioItem | null>(null)
+  const { scrollYProgress }               = useScroll()
+  const smooth                            = useSpring(scrollYProgress, { stiffness: 100, damping: 30 })
+
+  useEffect(() => {
+    document.body.style.overflow = activeProject ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [activeProject])
+
+  return (
+    <main className="bg-background text-foreground relative">
+
+      {/* Gold top rule */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <div className="h-px w-full" style={{ background: gold.metallic }} />
+        {/* Scroll progress under the gold rule */}
+        <div className="h-px bg-foreground/5">
+          <motion.div className="h-full" style={{ background: gold.metallic, scaleX: smooth, transformOrigin: 'left' }} />
+        </div>
+      </div>
+
+      {/* Hero */}
+      <section className="min-h-[80vh] flex items-center pt-28 pb-20 px-6 md:px-12 relative overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <Image
+            src="https://images.unsplash.com/photo-1519741497674-611481863552?w=2000&q=80"
+            alt="" fill loader={unsplashLoader}
+            className="object-cover opacity-8"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/85 to-background" />
+          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center, ${gold.glow} 0%, transparent 70%)` }} />
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <div className="w-8 h-px" style={{ background: gold.metallic }} />
+              <span className="text-[9px] uppercase tracking-[0.4em]" style={{ color: gold.light }}>A Portfolio in Five Acts</span>
+              <div className="w-8 h-px" style={{ background: gold.metallic }} />
+            </div>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-light leading-[0.93] mb-8 text-foreground">
+              Every Event<br />
+              <span
+                className="italic bg-clip-text text-transparent"
+                style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
+              >
+                is a Story
+              </span>
+            </h1>
+            <p className="text-foreground/50 font-light text-lg max-w-xl mx-auto leading-relaxed mb-10">
+              Not just photographs. Five moments where space became emotion and guests became participants.
+            </p>
+            <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-foreground/30 text-[9px] uppercase tracking-widest">
+              Scroll to begin
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Chapter nav — sticky */}
+      <div
+        className="sticky top-2 z-40 bg-background/90 backdrop-blur-md border-y py-3 px-6 md:px-12"
+        style={{ borderColor: gold.border }}
+      >
+        <div className="max-w-6xl mx-auto flex items-center gap-6 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <span className="text-[9px] uppercase tracking-[0.3em] text-foreground/35 flex-shrink-0">Jump to:</span>
+          <div className="flex items-center gap-5 flex-shrink-0">
+            {portfolioData.map((p, i) => (
+              <button
+                key={p.id}
+                onClick={() => document.getElementById(`chapter-${p.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="text-[9px] uppercase tracking-wider text-foreground/40 hover:text-foreground transition-colors whitespace-nowrap"
+              >
+                {String(i + 1).padStart(2, '0')}. {p.title}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex-shrink-0">
             <Link
               href="/quote"
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-foreground text-background text-[10px] uppercase tracking-wider font-bold hover:bg-foreground/90 transition-colors rounded-full"
+              className="hidden md:inline-flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-bold px-4 py-1.5 rounded-full text-black"
+              style={{ background: gold.metallic }}
             >
-              Get a Quote
-              <ArrowRight size={12} />
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-foreground/20 text-foreground text-[10px] uppercase tracking-wider font-bold hover:border-foreground/40 transition-colors rounded-full"
-            >
-              Book Consultation
+              <Calculator size={10} /> Get Quote
             </Link>
           </div>
         </div>
       </div>
+
+      {/* Chapters */}
+      {portfolioData.map((project, i) => (
+        <div key={project.id} id={`chapter-${project.id}`}>
+          <ProjectStory project={project} index={i} onOpen={setActiveProject} />
+          {i < portfolioData.length - 1 && (
+            <div className="max-w-6xl mx-auto px-6 md:px-12">
+              <div className="h-px" style={{ background: gold.border }} />
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Epilogue */}
+      <section className="min-h-[55vh] flex items-center justify-center px-6 md:px-12 py-20 border-t" style={{ borderColor: gold.border }}>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center max-w-2xl space-y-7"
+        >
+          <div className="w-px h-16 mx-auto" style={{ background: gold.border }} />
+          <p className="text-foreground/45 font-light text-lg italic">
+            "The best events don't end when the lights come up. They live on in the stories guests tell for years."
+          </p>
+          <div className="pt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/quote"
+              className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest text-black"
+              style={{ background: gold.metallic, boxShadow: `0 6px 24px ${gold.shadow}` }}
+            >
+              Write Your Chapter
+              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-xs font-medium uppercase tracking-widest text-foreground border transition-all hover:border-amber-500/40"
+              style={{ borderColor: gold.border }}
+            >
+              Book Consultation
+            </Link>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Modal */}
+      <AnimatePresence>
+        {activeProject && <ProjectExperience project={activeProject} onClose={() => setActiveProject(null)} />}
+      </AnimatePresence>
     </main>
   )
 }

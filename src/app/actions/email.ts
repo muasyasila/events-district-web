@@ -92,9 +92,9 @@ export async function sendFollowUpEmail(
         <p>Want to see if your date is still available? Let's chat - no pressure, just good conversation about your vision.</p>
       `
     } else if (stage === 'week2') {
-      subject = "Pinterest vs. Reality (and why both can be beautiful) ✨"
+      subject = "Pinterest vs. Reality (and why both can be beautiful) "
       content = `
-        <h1>Hi ${name || 'there'}! ✨</h1>
+        <h1>Hi ${name || 'there'}! </h1>
         <p>I bet your Pinterest board is full of gorgeous inspiration right now. (No judgment - mine too!)</p>
         <p>But here's something I've learned working with hundreds of couples: <strong>the most beautiful weddings aren't the ones that perfectly copy a Pinterest photo.</strong></p>
         <p>They're the ones that tell YOUR story.</p>
@@ -132,7 +132,7 @@ export async function sendFollowUpEmail(
         <p>I'm not writing to rush you. I'm writing because I genuinely believe your wedding should be a reflection of YOU - not a checklist of things you "should" do.</p>
         <p>If you're still in the dreaming phase, here's some inspo to enjoy:</p>
         <ul>
-          <li>✨ 10 ways to make your ceremony feel uniquely yours</li>
+          <li> 10 ways to make your ceremony feel uniquely yours</li>
           <li>💐 The meaning behind different flowers (and why they matter)</li>
           <li>🎨 How to choose a color palette that feels timeless</li>
         </ul>

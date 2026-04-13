@@ -1,738 +1,309 @@
 "use client"
 
-import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useRef, useState, useEffect } from 'react'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
-import { Calendar, Eye, BookOpen, Heart, ArrowRight } from 'lucide-react'
+import { ArrowRight, Clock, Eye, BookOpen } from 'lucide-react'
 
-// Types for blog data from database
-interface BlogPostFromDB {
+// ─── Gold palette ─────────────────────────────────────────────────────────────
+const gold = {
+  light:    '#D4AF37',
+  metallic: 'linear-gradient(135deg, #D4AF37 0%, #FFF2A8 50%, #D4AF37 100%)',
+  shadow:   'rgba(212, 175, 55, 0.18)',
+  glow:     'rgba(212, 175, 55, 0.07)',
+  border:   'rgba(212, 175, 55, 0.22)',
+}
+
+interface BlogPost {
   id: string
   title: string
   slug: string
   category: string
   excerpt: string
-  content: string
   featured_image_url: string | null
   author: string
   read_time: string | null
   views: number
-  gradient: string
-  status: string
   published_at: string | null
   tags: string[]
-  insights?: string[]
-  created_at: string
 }
 
-interface Author {
-  name: string
-  bio: string
-  avatar_url: string
-  role: string
+function GoldRule({ className = '' }: { className?: string }) {
+  return <div className={`h-px flex-shrink-0 ${className}`} style={{ background: gold.metallic }} />
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <GoldRule className="w-8" />
+      <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>{children}</span>
+    </div>
+  )
 }
 
 export default function BlogCarousel() {
   const router = useRouter()
-  const [blogPosts, setBlogPosts] = useState<BlogPostFromDB[]>([])
-  const [authors, setAuthors] = useState<Record<string, Author>>({})
+  const ref = useRef<HTMLElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-8%' })
+
+  const [posts, setPosts] = useState<BlogPost[]>([])
   const [categories, setCategories] = useState<string[]>(['All'])
+  const [activeCategory, setActiveCategory] = useState('All')
   const [loading, setLoading] = useState(true)
-  
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [savedPosts, setSavedPosts] = useState<string[]>([])
-  const [claps, setClaps] = useState<Record<string, number>>({})
-  const [email, setEmail] = useState("")
-  const [subscribed, setSubscribed] = useState(false)
-  const [touchStart, setTouchStart] = useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = useState<number | null>(null)
-  const [isSwiping, setIsSwiping] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const sectionRef = useRef<HTMLElement>(null)
-  
-  const AUTO_PLAY_DURATION = 5000
-  const minSwipeDistance = 50
-  const [navbarHeight, setNavbarHeight] = useState(80)
-
-  // Detect mobile for author positioning and card sizing
-  const [isMobileDevice, setIsMobileDevice] = useState(false)
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobileDevice(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
-
-  // Fetch blog posts from database
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
+    const load = async () => {
       try {
-        const posts = await getPublishedPosts()
-        setBlogPosts(posts)
-        
-        const authorsData = await getAuthors()
-        const authorsMap: Record<string, Author> = {}
-        authorsData.forEach(author => {
-          authorsMap[author.name] = {
-            name: author.name,
-            bio: author.bio,
-            avatar_url: author.avatar_url,
-            role: author.role
-          }
-        })
-        setAuthors(authorsMap)
-        
-        const categoriesData = await getBlogCategories()
-        const categoryNames = ['All', ...categoriesData.map(c => c.name)]
-        setCategories(categoryNames)
-        
-        if (posts.length > 0) {
-          setActiveIndex(Math.floor(posts.length / 2))
-        }
-      } catch (error) {
-        console.error('Error fetching blog data:', error)
+        const [postsData, categoriesData] = await Promise.all([
+          getPublishedPosts(),
+          getBlogCategories(),
+        ])
+        setPosts(postsData)
+        setCategories(['All', ...categoriesData.map((c: any) => c.name)])
+      } catch (e) {
+        console.error(e)
       } finally {
         setLoading(false)
       }
     }
-    
-    fetchData()
-  }, [])
-  
-  useEffect(() => {
-    const updateNavbarHeight = () => {
-      const navbar = document.querySelector('header, nav, [class*="navbar"], [class*="Navbar"]')
-      if (navbar) {
-        setNavbarHeight(navbar.getBoundingClientRect().height)
-      } else {
-        setNavbarHeight(80)
-      }
-    }
-    updateNavbarHeight()
-    window.addEventListener('resize', updateNavbarHeight)
-    setTimeout(updateNavbarHeight, 100)
-    return () => window.removeEventListener('resize', updateNavbarHeight)
-  }, [])
-  
-  useEffect(() => {
-    const saved = localStorage.getItem('blogSavedPosts')
-    if (saved) setSavedPosts(JSON.parse(saved))
-    const savedClaps = localStorage.getItem('blogClaps')
-    if (savedClaps) setClaps(JSON.parse(savedClaps))
+    load()
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('blogSavedPosts', JSON.stringify(savedPosts))
-  }, [savedPosts])
-  
-  useEffect(() => {
-    localStorage.setItem('blogClaps', JSON.stringify(claps))
-  }, [claps])
+  const featured = posts[0]
+  const rest = posts.slice(1, 5) // show up to 4 grid cards
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-    setIsSwiping(true)
-  }
+  const filteredRest = activeCategory === 'All'
+    ? rest
+    : rest.filter(p => p.category === activeCategory)
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!isSwiping) return
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd || !isSwiping) return
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-    
-    if (isLeftSwipe && filteredPosts.length > 2) handleNext()
-    if (isRightSwipe && filteredPosts.length > 2) handlePrev()
-    
-    setIsSwiping(false)
-    setTouchStart(null)
-    setTouchEnd(null)
-  }
-
-  const getCarouselConfig = () => {
-    const width = typeof window !== 'undefined' ? window.innerWidth : 1200
-    const isMobile = width < 768
-    const isTablet = width >= 768 && width < 1024
-    const isDesktop = width >= 1024
-    
-    const cardWidth = isMobile ? 260 : 340
-    const cardHeight = isMobile ? 380 : 500
-    
-    let radiusX, radiusY, angleSpacing
-    
-    if (isDesktop) {
-      radiusX = Math.min(width * 0.32, 420)
-      radiusY = 35
-      angleSpacing = Math.PI / 5.2
-    } else if (isTablet) {
-      radiusX = Math.min(width * 0.32, 360)
-      radiusY = 30
-      angleSpacing = Math.PI / 6.5
-    } else {
-      radiusX = width * 0.38
-      radiusY = 25
-      angleSpacing = Math.PI / 7.5
-    }
-    
-    const horizontalPadding = isMobile ? 32 : isTablet ? 50 : 80
-    
-    return {
-      radiusX,
-      radiusY,
-      cardWidth,
-      cardHeight,
-      angleSpacing,
-      horizontalPadding,
-      isMobile,
-      isTablet,
-      isDesktop
-    }
-  }
-
-  const [config, setConfig] = useState(getCarouselConfig())
-
-  useEffect(() => {
-    const handleResize = () => setConfig(getCarouselConfig())
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  const filteredPosts = blogPosts.filter(post => {
-    const matchesCategory = selectedCategory === "All" || post.category === selectedCategory
-    const matchesSearch = searchQuery === "" || 
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
-
-  const getFilteredCardStyle = (index: number, totalFiltered: number, currentActiveIndex: number) => {
-    const { radiusX, radiusY, cardWidth, angleSpacing, isMobile } = config
-    
-    if (totalFiltered === 0) return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
-    if (totalFiltered === 1) return { x: 0, z: 0, scale: 1, rotateY: 0, opacity: 1, zIndex: 10, isActive: true }
-    
-    if (totalFiltered === 2) {
-      const offset = index === 0 ? -1 : 1
-      const x = offset * (cardWidth * 0.7)
-      const isActiveCard = index === currentActiveIndex
-      const scale = isActiveCard ? 1 : 0.85
-      return { x, z: 0, scale, rotateY: offset * -5, opacity: 1, zIndex: 10, isActive: isActiveCard }
-    }
-    
-    let offset = index - currentActiveIndex
-    if (offset > totalFiltered / 2) offset -= totalFiltered
-    if (offset < -totalFiltered / 2) offset += totalFiltered
-    
-    let maxVisible = config.isDesktop ? 5 : config.isTablet ? 4 : 3
-    if (Math.abs(offset) > Math.floor(maxVisible / 2)) {
-      return { x: 0, z: -100, scale: 0, rotateY: 0, opacity: 0, zIndex: -1, isActive: false }
-    }
-    
-    const angle = offset * angleSpacing
-    const x = Math.sin(angle) * radiusX
-    const z = Math.cos(angle) * radiusY - radiusY
-    const baseScale = 0.75 + (0.25 * ((z + radiusY) / radiusY))
-    const scale = baseScale * (1 - Math.abs(offset) * 0.08)
-    const rotateY = -offset * (isMobile ? 10 : 12)
-    const opacity = 0.3 + (0.7 * ((z + radiusY) / radiusY))
-    const zIndex = Math.round((z + radiusY) * 10)
-    const isActive = offset === 0
-    
-    return { x, z, scale, rotateY, opacity, zIndex, isActive }
-  }
-
-  const handleNext = useCallback(() => {
-    if (filteredPosts.length <= 2) return
-    setActiveIndex((prev) => (prev + 1) % filteredPosts.length)
-  }, [filteredPosts.length])
-
-  const handlePrev = useCallback(() => {
-    if (filteredPosts.length <= 2) return
-    setActiveIndex((prev) => (prev - 1 + filteredPosts.length) % filteredPosts.length)
-  }, [filteredPosts.length])
-
-  useEffect(() => {
-    if (!isAutoPlaying || searchQuery || selectedCategory !== "All" || filteredPosts.length <= 2) return
-    const timer = setInterval(handleNext, AUTO_PLAY_DURATION)
-    return () => clearInterval(timer)
-  }, [isAutoPlaying, handleNext, searchQuery, selectedCategory, filteredPosts.length])
-
-  const handleMouseEnter = () => setIsAutoPlaying(false)
-  const handleMouseLeave = () => setIsAutoPlaying(true)
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (filteredPosts.length > 2) {
-        if (e.key === 'ArrowLeft') handlePrev()
-        if (e.key === 'ArrowRight') handleNext()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleNext, handlePrev, filteredPosts.length])
-
-  const toggleSave = (postId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    setSavedPosts(prev => 
-      prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
-    )
-  }
-
-  const handleClap = (postId: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    setClaps(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
-  }
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (email) {
-      setSubscribed(true)
-      setEmail("")
-      setTimeout(() => setSubscribed(false), 3000)
-    }
-  }
-
-  const handleCardClick = (post: BlogPostFromDB, isActive: boolean, index: number) => {
-    if (!isActive) {
-      setActiveIndex(index)
-      setTimeout(() => router.push(`/blog/${post.slug}`), 400)
-    } else {
-      router.push(`/blog/${post.slug}`)
-    }
-  }
-
-  const getVisibleCount = () => {
-    if (config.isDesktop) return 5
-    if (config.isTablet) return 4
-    return 3
-  }
-
-  if (loading) {
-    return (
-      <section ref={sectionRef} id="journal" className="relative w-full bg-background overflow-hidden flex items-center justify-center" style={{ height: `calc(100svh - ${navbarHeight}px)` }}>
-        <div className="text-foreground/40 animate-pulse">Loading stories...</div>
-      </section>
-    )
-  }
-
-  if (blogPosts.length === 0) {
-    return (
-      <section ref={sectionRef} id="journal" className="relative w-full bg-background overflow-hidden flex items-center justify-center" style={{ height: `calc(100svh - ${navbarHeight}px)` }}>
-        <div className="text-center">
-          <p className="text-foreground/60">No blog posts yet.</p>
-          <p className="text-foreground/40 text-sm mt-2">Check back soon for inspiring stories.</p>
-        </div>
-      </section>
-    )
+  const formatDate = (d: string | null) => {
+    if (!d) return ''
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   return (
-    <section 
-      ref={sectionRef} 
-      id="journal" 
-      className="relative w-full bg-background overflow-hidden flex flex-col items-center justify-center"
-      style={{ 
-        minHeight: `calc(100svh - ${navbarHeight - 20}px)`,
-        height: `calc(100svh - ${navbarHeight - 20}px)`,
-        marginBottom: '2rem'
-      }}
+    <section
+      ref={ref}
+      id="journal"
+      className="relative w-full bg-background overflow-hidden border-t"
+      style={{ borderColor: gold.border }}
     >
-      {/* Background Accents */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[10%] left-[10%] w-64 h-64 bg-foreground/[0.02] rounded-full blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[10%] w-80 h-80 bg-foreground/[0.02] rounded-full blur-[120px]" />
-      </div>
+      {/* Ambient glow */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-48 pointer-events-none opacity-60"
+        style={{ background: `radial-gradient(ellipse, ${gold.glow} 0%, transparent 70%)` }}
+      />
 
-      <div className="relative z-10 w-full max-w-7xl flex flex-col items-center px-4 sm:px-6 lg:px-8 h-full justify-center">
-        
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, ease: [0.19, 1, 0.22, 1] }}
-          className="text-center mb-2 md:mb-4 flex-shrink-0"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif italic text-foreground tracking-tight">
-            The <span className="text-foreground/40 font-light">Journal</span>
-          </h2>
-          <div className="h-px w-12 bg-foreground/20 mx-auto mt-2 md:mt-3" />
-        </motion.div>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-16 md:py-24">
 
-        {/* Search Bar */}
+        {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-2 w-full max-w-md px-4 flex-shrink-0"
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7 }}
+          className="mb-10 md:mb-14"
         >
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search stories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-b border-foreground/20 py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-foreground transition-colors placeholder:text-foreground/40 text-foreground"
-            />
-            <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-foreground"
+          <SectionLabel>The Journal</SectionLabel>
+          <div className="mt-4 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-foreground leading-[1.1] mt-2">
+              Ideas that make{' '}
+              <span
+                className="italic bg-clip-text text-transparent"
+                style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+                events better.
+              </span>
+            </h2>
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 text-xs font-medium group/va flex-shrink-0"
+              style={{ color: gold.light }}
+            >
+              <span className="underline underline-offset-4 group-hover/va:no-underline transition-all">
+                View all articles
+              </span>
+              <ArrowRight size={11} className="group-hover/va:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
         </motion.div>
 
-        {/* Category Filter Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-3 flex flex-wrap justify-center gap-1.5 md:gap-2 px-4 max-w-4xl overflow-x-auto scrollbar-hide flex-shrink-0"
-        >
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => {
-                setSelectedCategory(cat)
-                setActiveIndex(0)
-              }}
-              className={`text-[8px] md:text-[10px] uppercase tracking-widest px-2 md:px-3 py-1 md:py-1.5 border transition-all duration-300 whitespace-nowrap rounded-full ${
-                selectedCategory === cat 
-                  ? 'border-foreground bg-foreground text-background' 
-                  : 'border-foreground/20 text-foreground/60 hover:border-foreground/40 hover:text-foreground'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </motion.div>
+        {/* Loading skeleton */}
+        {loading && (
+          <div className="space-y-4">
+            <div className="h-72 rounded-2xl animate-pulse" style={{ background: gold.glow }} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1,2,3,4].map(i => <div key={i} className="h-48 rounded-xl animate-pulse" style={{ background: gold.glow }} />)}
+            </div>
+          </div>
+        )}
 
-        {/* 3D Carousel Viewport */}
-        <div 
-          ref={containerRef}
-          className="relative w-full flex items-center justify-center flex-1 min-h-0"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          style={{ 
-            perspective: '1400px',
-            paddingLeft: `${config.horizontalPadding}px`,
-            paddingRight: `${config.horizontalPadding}px`,
-          }}
-        >
-          {filteredPosts.length > 0 ? filteredPosts.map((post, index) => {
-            const style = getFilteredCardStyle(index, filteredPosts.length, activeIndex)
-            if (style.opacity === 0) return null
-            const postClaps = claps[post.id] || 0
-            const isPostSaved = savedPosts.includes(post.id)
-            const author = authors[post.author]
-            const isActiveCard = style.isActive
-            
-            return (
-              <motion.article
-                key={post.id}
-                onClick={() => handleCardClick(post, isActiveCard, index)}
-                className="absolute cursor-pointer group select-none"
-                style={{
-                  width: config.cardWidth,
-                  height: config.cardHeight,
-                  zIndex: style.zIndex,
-                  transformStyle: 'preserve-3d',
-                }}
-                animate={{
-                  x: style.x,
-                  z: style.z,
-                  scale: style.scale,
-                  rotateY: style.rotateY,
-                  opacity: style.opacity,
-                }}
-                transition={{
-                  duration: 0.8,
-                  ease: [0.34, 1.2, 0.64, 1],
-                }}
+        {/* Empty state */}
+        {!loading && posts.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-foreground/40 text-sm">No articles published yet. Check back soon.</p>
+          </div>
+        )}
+
+        {/* Featured article */}
+        {!loading && featured && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="mb-8 md:mb-10"
+          >
+            <Link href={`/blog/${featured.slug}`} className="group block">
+              <div
+                className="grid md:grid-cols-2 rounded-2xl overflow-hidden border transition-all duration-300 group-hover:border-amber-500/30"
+                style={{ borderColor: gold.border }}
               >
-                {/* Enhanced Card Design with Modern Spring Animation */}
-                <motion.div 
-                  className={`relative w-full h-full bg-neutral-900 rounded-xl overflow-hidden shadow-2xl transition-all duration-500 ${
-                    isActiveCard 
-                      ? 'ring-2 ring-foreground/40 ring-offset-2 ring-offset-background shadow-foreground/20' 
-                      : ''
-                  }`}
-                  whileHover={!isActiveCard ? { scale: 1.02, transition: { duration: 0.3, ease: "easeOut" } } : {}}
-                >
-                  {/* Image Layer with Subtle Zoom on Hover */}
-                  <motion.div 
-                    className="absolute inset-0"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.6, ease: [0.34, 1.2, 0.64, 1] }}
+                {/* Image */}
+                <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[300px] overflow-hidden">
+                  <img
+                    src={featured.featured_image_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=800'}
+                    alt={featured.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/15 hidden md:block" />
+                  <div
+                    className="absolute top-4 left-4 text-[8px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider"
+                    style={{ background: gold.metallic, color: 'black' }}
                   >
-                    <img
-                      src={post.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9'}
-                      alt={post.title}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:brightness-110"
-                      draggable={false}
-                    />
-                    {/* Gradient Overlay - Darker at bottom for text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
-                  </motion.div>
+                    Featured
+                  </div>
+                </div>
 
-                  {/* Category Badge with Spring Animation */}
-                  <motion.div 
-                    className="absolute top-4 left-4 z-20"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
-                  >
-                    <span className={`px-3 py-1 text-[8px] font-medium uppercase tracking-wider backdrop-blur-sm text-white/90 rounded-full border border-white/20 ${
-                      isActiveCard ? 'bg-foreground/40' : 'bg-black/50'
-                    }`}>
-                      {post.category}
-                    </span>
-                  </motion.div>
-
-                  {/* Love Heart Button */}
-                  {isActiveCard && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileTap={{ scale: 0.9 }}
-                      transition={{ delay: 0.25, type: "spring", stiffness: 400, damping: 17 }}
-                      onClick={(e) => toggleSave(post.id, e)}
-                      className="absolute top-4 right-4 z-20 p-2 bg-black/50 backdrop-blur-sm rounded-full hover:bg-black/70 transition-all duration-300"
-                    >
-                      <Heart 
-                        className={`w-4 h-4 transition-all duration-300 ${isPostSaved ? 'text-red-500 fill-red-500' : 'text-white/70 hover:text-red-400'}`} 
-                      />
-                    </motion.button>
-                  )}
-
-                  {/* Card Content with Spring Animation */}
-                  <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end text-white">
-                    <motion.div
-                      animate={{ y: isActiveCard ? 0 : 15, opacity: isActiveCard ? 1 : 0.8 }}
-                      transition={{ duration: 0.6, ease: [0.34, 1.2, 0.64, 1] }}
-                      className="space-y-2 md:space-y-3"
-                    >
-                      {/* Title */}
-                      <h3 className={`text-xl md:text-2xl font-serif italic leading-tight line-clamp-2 group-hover:line-clamp-none transition-all duration-300 ${
-                        isActiveCard ? 'text-white' : 'text-white/90'
-                      }`}>
-                        {post.title}
-                      </h3>
-                      
-                      {/* Excerpt */}
-                      <p className="text-xs md:text-sm text-white/80 line-clamp-2 font-light leading-relaxed">
-                        {post.excerpt}
-                      </p>
-                      
-                      {/* Meta Info */}
-                      <div className="flex items-center gap-4 pt-2">
-                        <div className="flex items-center gap-1.5">
-                          <BookOpen size={12} className="text-white/60" />
-                          <span className="text-[10px] text-white/60">{post.read_time || '5 min'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Eye size={12} className="text-white/60" />
-                          <span className="text-[10px] text-white/60">{post.views}</span>
-                        </div>
-                      </div>
-
-                      {/* Read More Button - Only visible on active card with spring animation */}
-                      {isActiveCard && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3, duration: 0.5, ease: [0.34, 1.2, 0.64, 1] }}
-                          className="pt-2"
-                        >
-                          <span className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-white/80 hover:text-white transition-colors group/link">
-                            Read Full Story
-                            <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
-                          </span>
-                        </motion.div>
-                      )}
-                    </motion.div>
+                {/* Content */}
+                <div className="p-6 md:p-10 flex flex-col justify-between" style={{ background: gold.glow }}>
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: gold.light }}>
+                        {featured.category}
+                      </span>
+                      <span className="w-1 h-1 rounded-full" style={{ background: gold.border }} />
+                      <span className="text-[9px] text-foreground/40 uppercase tracking-wider flex items-center gap-1">
+                        <BookOpen size={9} /> {featured.read_time || '5 min'}
+                      </span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl lg:text-3xl font-light text-foreground leading-tight mb-4 group-hover:text-foreground/80 transition-colors">
+                      {featured.title}
+                    </h3>
+                    <p className="text-sm text-foreground/55 leading-relaxed line-clamp-3">
+                      {featured.excerpt}
+                    </p>
                   </div>
 
-                  {/* Bottom Border Accent with Spring Animation */}
-                  <motion.div 
-                    className={`absolute bottom-0 left-0 right-0 h-[2px] ${
-                      isActiveCard 
-                        ? 'bg-gradient-to-r from-transparent via-foreground to-transparent' 
-                        : 'bg-gradient-to-r from-transparent via-foreground/50 to-transparent'
-                    }`}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: isActiveCard ? 1 : 0 }}
-                    transition={{ duration: 0.6, ease: [0.34, 1.2, 0.64, 1] }}
-                  />
-                </motion.div>
-
-                {/* Author Info for Active Card with Avatar and Date - iPhone-style fade-in */}
-                {isActiveCard && filteredPosts.length > 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
-                    className={`absolute left-0 right-0 text-center ${
-                      isMobileDevice ? '-bottom-14' : '-bottom-14 md:-bottom-16'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <div className="flex items-center justify-center gap-2">
-                        {/* Author Avatar */}
-                        {author?.avatar_url ? (
-                          <motion.img
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.45, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
-                            src={author.avatar_url}
-                            alt={post.author}
-                            className={`rounded-full object-cover border border-foreground/20 ${
-                              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-                            }`}
-                          />
-                        ) : (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.45, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
-                            className={`rounded-full bg-foreground/10 flex items-center justify-center border border-foreground/20 ${
-                              isMobileDevice ? 'w-5 h-5' : 'w-6 h-6 md:w-7 md:h-7'
-                            }`}
-                          >
-                            <span className={`text-foreground/50 ${isMobileDevice ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`}>
-                              {post.author.charAt(0)}
-                            </span>
-                          </motion.div>
-                        )}
-                        <motion.p
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.5, duration: 0.4, ease: [0.34, 1.2, 0.64, 1] }}
-                          className={`text-foreground font-serif italic ${isMobileDevice ? 'text-[9px]' : 'text-xs md:text-sm'}`}
-                        >
-                          {post.author}
-                        </motion.p>
-                      </div>
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.55, duration: 0.4 }}
-                        className="text-foreground/40 text-[8px] md:text-[10px] uppercase tracking-wider"
-                      >
-                        {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Just now'}
-                      </motion.p>
+                  <div className="mt-6 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-[10px] text-foreground/35 uppercase tracking-wider">
+                      <span>{formatDate(featured.published_at)}</span>
+                      <span className="flex items-center gap-1"><Eye size={10} />{featured.views}</span>
                     </div>
-                  </motion.div>
-                )}
-              </motion.article>
-            )
-          }) : (
-            <div className="text-center text-foreground/40 text-sm font-light">
-              No stories found matching your criteria
-            </div>
-          )}
-        </div>
-
-        {/* Navigation Footer */}
-        <div className={`flex flex-col items-center gap-4 md:gap-6 flex-shrink-0 pb-4 ${isMobileDevice ? 'mt-12' : 'mt-8 md:mt-12'}`}>
-          <div className="flex items-center gap-6 md:gap-10">
-            <motion.button 
-              whileTap={{ scale: 0.9 }}
-              onClick={handlePrev} 
-              disabled={filteredPosts.length <= 2}
-              className={`group p-2 ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}`}
-            >
-              <svg className="w-5 h-5 text-foreground/30 group-hover:text-foreground transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 19l-7-7 7-7" />
-              </svg>
-            </motion.button>
-
-            {/* Progress Bars */}
-            <div className="flex gap-3 md:gap-4 items-center">
-              {(() => {
-                const visibleCount = getVisibleCount()
-                const halfVisible = Math.floor(visibleCount / 2)
-                const visibleIndices = []
-                for (let i = -halfVisible; i <= halfVisible; i++) {
-                  let idx = activeIndex + i
-                  if (idx < 0) idx += filteredPosts.length
-                  if (idx >= filteredPosts.length) idx -= filteredPosts.length
-                  visibleIndices.push(idx)
-                }
-                
-                return visibleIndices.map((index) => {
-                  const isActive = index === activeIndex;
-                  return (
-                    <div 
-                      key={index}
-                      onClick={() => filteredPosts.length > 2 && setActiveIndex(index)}
-                      className={`relative h-[2px] overflow-hidden bg-foreground/10 transition-all duration-500 cursor-pointer rounded-full`}
-                      style={{ width: isActive ? '32px' : '24px' }}
+                    <div
+                      className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-medium group-hover:gap-2.5 transition-all"
+                      style={{ color: gold.light }}
                     >
-                      {isActive && filteredPosts.length > 2 && (
-                        <motion.div 
-                          initial={{ width: "0%" }}
-                          animate={{ width: isAutoPlaying ? "100%" : "0%" }}
-                          transition={{ 
-                            duration: isAutoPlaying ? AUTO_PLAY_DURATION / 1000 : 0, 
-                            ease: "linear" 
-                          }}
-                          key={activeIndex}
-                          className="absolute inset-0 bg-foreground rounded-full"
-                        />
-                      )}
-                      {isActive && filteredPosts.length <= 2 && (
-                        <div className="absolute inset-0 bg-foreground rounded-full" />
-                      )}
+                      Read article <ArrowRight size={10} />
                     </div>
-                  );
-                })
-              })()}
-            </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        )}
 
-            <motion.button 
-              whileTap={{ scale: 0.9 }}
-              onClick={handleNext} 
-              disabled={filteredPosts.length <= 2}
-              className={`group p-2 ${filteredPosts.length <= 2 ? 'opacity-30 cursor-not-allowed' : ''}`}
-            >
-              <svg className="w-5 h-5 text-foreground/30 group-hover:text-foreground transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5l7 7-7 7" />
-              </svg>
-            </motion.button>
+        {/* Category filter */}
+        {!loading && posts.length > 1 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-wrap gap-2 mb-7"
+          >
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className="px-3.5 py-1.5 rounded-full text-xs border transition-all duration-200"
+                style={{
+                  borderColor: activeCategory === cat ? gold.light : gold.border,
+                  background: activeCategory === cat ? gold.metallic : 'transparent',
+                  color: activeCategory === cat ? 'black' : undefined,
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Grid */}
+        {!loading && filteredRest.length > 0 && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            {filteredRest.map((post, i) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.25 + i * 0.07 }}
+              >
+                <Link href={`/blog/${post.slug}`} className="group block h-full">
+                  <div
+                    className="flex flex-col h-full rounded-xl overflow-hidden border transition-all duration-300 group-hover:border-amber-500/30"
+                    style={{ borderColor: gold.border }}
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden flex-shrink-0">
+                      <img
+                        src={post.featured_image_url || 'https://images.unsplash.com/photo-1619966927665-f7e7ee04c0e0?auto=format&fit=crop&q=80&w=600'}
+                        alt={post.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="flex flex-col flex-1 p-4">
+                      <span className="text-[9px] uppercase tracking-[0.25em] mb-2 block" style={{ color: gold.light }}>
+                        {post.category}
+                      </span>
+                      <h4 className="text-sm font-medium text-foreground leading-snug mb-2 group-hover:text-foreground/75 transition-colors line-clamp-3 flex-1">
+                        {post.title}
+                      </h4>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t" style={{ borderColor: gold.border }}>
+                        <span className="text-[9px] text-foreground/35 flex items-center gap-1">
+                          <Clock size={9} />{post.read_time || '5 min'}
+                        </span>
+                        <span className="text-[9px] uppercase tracking-wider font-medium flex items-center gap-1 transition-all" style={{ color: gold.light }}>
+                          Read <ArrowRight size={8} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
           </div>
+        )}
 
-          <Link href="/blog" className="group flex flex-col items-center gap-2">
-            <span className="text-[9px] md:text-[10px] uppercase tracking-[0.5em] text-foreground/40 group-hover:text-foreground transition-all font-bold">
-              View All Stories
-            </span>
-            <motion.div className="h-px bg-foreground/20 w-12 group-hover:w-20 transition-all duration-500" />
-          </Link>
-        </div>
-
+        {/* Bottom CTA */}
+        {!loading && posts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="mt-10 pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-5"
+            style={{ borderColor: gold.border }}
+          >
+            <p className="text-sm font-light text-foreground/50 text-center sm:text-left">
+              Every article is written from real experience — 500+ events, 10+ years.
+            </p>
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest text-black flex-shrink-0"
+              style={{ background: gold.metallic, boxShadow: `0 4px 16px ${gold.shadow}` }}
+            >
+              Read All Articles <ArrowRight size={11} />
+            </Link>
+          </motion.div>
+        )}
       </div>
     </section>
   )

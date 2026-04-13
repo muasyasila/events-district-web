@@ -7,11 +7,12 @@ import EpicTestimonials from "@/components/sections/testimonials"
 import LeadMagnet from '@/components/sections/LeadMagnet'
 import BackToTop from '@/components/BackToTop'
 import { ServicesCodex } from '@/components/sections/ServicesCodex'
+import ConversionEngine from "@/components/sections/ConversionEngine";
 import { SocialAtelier } from "@/components/sections/SocialAtelier";
 import { ContactAtelier } from "@/components/sections/ContactAtelier";
 import { PartnershipAtelier } from "@/components/sections/PartnershipAtelier"
-import LuxuryFooter from "@/components/sections/LuxuryFooter";
 import WeddingQuoteSection from "@/components/sections/WeddingQuoteSection"
+import BlogJournal from "@/components/sections/BlogJournal"
 
 export default function Home() {
   return (
@@ -19,14 +20,16 @@ export default function Home() {
       <Hero />
       <BrandStatement />
       <ServicesCodex />
+      <ConversionEngine />
       <WeddingQuoteSection />
       <LeadMagnet />
+      <BlogJournal />
       <Blog />
       <EpicTestimonials />
       <SocialAtelier />
       <ContactAtelier />
       <PartnershipAtelier />
-      <LuxuryFooter />
+  
       <BackToTop />
     </div>
   )

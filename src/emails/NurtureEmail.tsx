@@ -37,7 +37,7 @@ Want to see if your date is still available? Let's chat - no pressure, just good
       ctaLink: "/consultation"
     },
     week2: {
-      subject: "Pinterest vs. Reality (and why both can be beautiful) ✨",
+      subject: "Pinterest vs. Reality (and why both can be beautiful) ",
       preview: "Making your inspiration come alive",
       heading: "From Pinterest Board to Reality",
       message: `Hi ${name || 'there'}!,

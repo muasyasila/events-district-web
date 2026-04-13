@@ -1,120 +1,113 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Download, Sparkles, Calendar, Heart, ArrowRight, CheckCircle } from 'lucide-react'
+import { X, Download, Calendar, Check, ArrowRight, Sparkles } from 'lucide-react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { sendChecklistEmail } from '@/app/actions/email'
 
+// ─── Gold palette ─────────────────────────────────────────────────────────────
+const gold = {
+  light:    '#D4AF37',
+  metallic: 'linear-gradient(135deg, #D4AF37 0%, #FFF2A8 50%, #D4AF37 100%)',
+  shadow:   'rgba(212, 175, 55, 0.22)',
+  glow:     'rgba(212, 175, 55, 0.08)',
+  border:   'rgba(212, 175, 55, 0.25)',
+}
+
+const CHECKLIST_HIGHLIGHTS = [
+  '12-month planning timeline',
+  'Budget allocation calculator',
+  'Questions to ask your florist',
+  'Day-of emergency kit list',
+]
+
 export default function ExitIntentPopup() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
-  const [weddingDate, setWeddingDate] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [hasShown, setHasShown] = useState(false)
-  const [error, setError] = useState('')
+  const [isOpen,    setIsOpen]    = useState(false)
+  const [step,      setStep]      = useState<'form' | 'success'>('form')
+  const [loading,   setLoading]   = useState(false)
+  const [error,     setError]     = useState('')
+  const [form,      setForm]      = useState({ name: '', email: '', date: '' })
+  const [triggered, setTriggered] = useState(false)
 
   const supabase = createClient()
 
-  // Get tomorrow's date for min date attribute
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const minDate = tomorrow.toISOString().split('T')[0]
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
+  const minDate  = tomorrow.toISOString().split('T')[0]
 
-  // Check if popup has been shown in this session
+  // ── Smart trigger: only fire if user has shown wedding intent ──
   useEffect(() => {
-    const popupShown = sessionStorage.getItem('exitPopupShown')
-    if (popupShown) {
-      setHasShown(true)
-    }
-  }, [])
+    // Check if already shown this session
+    if (sessionStorage.getItem('exitPopupShown')) return
 
-  // Exit intent detection
-  useEffect(() => {
-    let mouseLeaveTimeout: NodeJS.Timeout
+    // Check for wedding intent flag (set by WeddingPageTracker on quote pages)
+    const hasWeddingIntent = sessionStorage.getItem('hasWeddingIntent') === 'true'
+    if (!hasWeddingIntent) return // Do NOT show to random visitors
+
+    let mouseLeaveTimer: NodeJS.Timeout
 
     const handleMouseLeave = (e: MouseEvent) => {
-      // Only trigger when mouse leaves the window from the top (cursor goes to address bar)
-      if (e.clientY <= 0 && !hasShown && !isOpen && !isSuccess) {
-        mouseLeaveTimeout = setTimeout(() => {
-          setIsOpen(true)
-          sessionStorage.setItem('exitPopupShown', 'true')
-          setHasShown(true)
-        }, 100)
-      }
+      if (e.clientY > 0) return      // only trigger from top of window
+      if (triggered)     return      // only once per session
+      if (isOpen)        return
+
+      mouseLeaveTimer = setTimeout(() => {
+        setIsOpen(true)
+        setTriggered(true)
+        sessionStorage.setItem('exitPopupShown', 'true')
+      }, 100)
     }
 
     document.addEventListener('mouseleave', handleMouseLeave)
-
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave)
-      clearTimeout(mouseLeaveTimeout)
+      clearTimeout(mouseLeaveTimer)
     }
-  }, [hasShown, isOpen, isSuccess])
+  }, [triggered, isOpen])
 
-  // Handle escape key to close
+  // ── Esc to close ──
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false)
-      }
-    }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false) }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [])
+
+  // ── Prevent body scroll when open ──
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setLoading(true)
     setError('')
 
     try {
-      // Save to Supabase leads table
-      const { error: dbError } = await supabase
-        .from('leads')
-        .insert([{
-          name: name.trim(),
-          email: email.trim(),
-          event_date: weddingDate || null,
-          event_type: 'wedding',
-          source: 'exit_intent_popup',
-          status: 'new',
-          notes: `Captured via exit intent popup${weddingDate ? ` - Wedding Date: ${weddingDate}` : ''}`
-        }])
+      const { error: dbError } = await supabase.from('leads').insert([{
+        name:       form.name.trim(),
+        email:      form.email.trim(),
+        event_date: form.date || null,
+        event_type: 'wedding',
+        source:     'exit_intent_popup',
+        status:     'new',
+        notes:      `Exit intent capture — source: ${sessionStorage.getItem('weddingIntentSource') || 'unknown'}${form.date ? ` | Wedding: ${form.date}` : ''}`,
+      }])
+      if (dbError) throw dbError
 
-      if (dbError) {
-        console.error('Database error:', dbError)
-        setError('Something went wrong. Please try again.')
-        setIsLoading(false)
-        return
-      }
-
-      // Send welcome email with checklist
-      const emailResult = await sendChecklistEmail(email.trim(), name.trim())
-      
-      if (!emailResult.success) {
-        console.error('Email error:', emailResult.error)
-      }
-
-      setIsSuccess(true)
-      
-      // Close popup after 3 seconds on success
-      setTimeout(() => {
-        setIsOpen(false)
-        setIsSuccess(false)
-        setEmail('')
-        setName('')
-        setWeddingDate('')
-      }, 3000)
-      
-    } catch (err) {
-      console.error('Error:', err)
+      await sendChecklistEmail(form.email.trim(), form.name.trim())
+      setStep('success')
+    } catch {
       setError('Something went wrong. Please try again.')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
+  }
+
+  const handleClose = () => {
+    setIsOpen(false)
+    // Don't reset step/form — if they close and somehow reopen we want to show success
   }
 
   return (
@@ -126,152 +119,183 @@ export default function ExitIntentPopup() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200]"
+            transition={{ duration: 0.3 }}
+            onClick={handleClose}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[300]"
           />
-          
-          {/* Popup */}
+
+          {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[201] w-[90%] max-w-md"
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            transition={{ duration: 0.35, ease: [0.19, 1, 0.22, 1] }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[301] w-[92%] max-w-[460px]"
           >
-            <div className="bg-background border border-foreground/10 rounded-2xl overflow-hidden shadow-2xl">
-              {/* Close button */}
+            <div
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ background: 'rgba(8,6,0,0.97)', border: `1px solid ${gold.border}` }}
+            >
+              {/* Gold top rule */}
+              <div className="h-px w-full" style={{ background: gold.metallic }} />
+
+              {/* Close */}
               <button
-                onClick={() => setIsOpen(false)}
-                className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-foreground/10 hover:bg-foreground/20 transition-colors text-foreground/60 hover:text-foreground"
+                onClick={handleClose}
+                className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-white/8"
+                style={{ border: `1px solid rgba(255,255,255,0.1)` }}
               >
-                <X size={16} />
+                <X size={13} className="text-white/50" />
               </button>
 
-              {!isSuccess ? (
-                <>
-                  {/* Header */}
-                  <div className="relative h-32 bg-gradient-to-r from-foreground/10 to-foreground/5 overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-foreground/20 backdrop-blur-sm rounded-full mb-2">
-                          <Sparkles className="w-3 h-3 text-foreground/80" />
-                          <span className="text-[8px] uppercase tracking-[0.2em] text-foreground/80 font-medium">
-                            Free Download
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-serif italic text-foreground">
-                          Wait! Don't Go Empty-Handed
-                        </h3>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6">
-                    <p className="text-sm text-foreground/70 text-center mb-4">
-                      Get our <strong>Ultimate Wedding Planning Checklist</strong> — absolutely free.
-                      <span className="block text-xs text-foreground/50 mt-1">Used by 2,000+ happy couples</span>
-                    </p>
-
-                    <div className="flex items-center justify-center gap-4 mb-5">
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle size={12} className="text-green-500" />
-                        <span className="text-[10px] text-foreground/50">12-Month Timeline</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle size={12} className="text-green-500" />
-                        <span className="text-[10px] text-foreground/50">Budget Calculator</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle size={12} className="text-green-500" />
-                        <span className="text-[10px] text-foreground/50">Vendor Checklist</span>
-                      </div>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Your name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-foreground/30 transition-colors placeholder:text-foreground/40"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Your email address"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-foreground/30 transition-colors placeholder:text-foreground/40"
-                      />
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-                        <input
-                          type="date"
-                          min={minDate}
-                          value={weddingDate}
-                          onChange={(e) => setWeddingDate(e.target.value)}
-                          className="w-full pl-9 pr-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-lg text-sm text-foreground focus:outline-none focus:border-foreground/30 transition-colors"
-                          placeholder="Wedding date (optional)"
-                        />
-                      </div>
-                      
-                      {error && (
-                        <p className="text-xs text-red-400">{error}</p>
-                      )}
-                      
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-2.5 bg-foreground text-background text-[11px] uppercase tracking-wider font-bold rounded-full hover:bg-foreground/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <>
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                              className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full"
-                            />
-                            <span>Sending...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Download size={14} />
-                            <span>Get Free Checklist</span>
-                          </>
-                        )}
-                      </button>
-                    </form>
-
-                    <p className="text-[8px] text-foreground/30 text-center mt-4">
-                      No spam. Unsubscribe anytime. We respect your privacy.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                // Success state
-                <div className="p-8 text-center">
+              <AnimatePresence mode="wait">
+                {step === 'form' ? (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", delay: 0.1 }}
-                    className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10 mb-4"
+                    key="form"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   >
-                    <CheckCircle className="w-8 h-8 text-green-500" />
+                    {/* Hero strip */}
+                    <div
+                      className="relative px-6 pt-8 pb-6 text-center"
+                      style={{ background: `radial-gradient(ellipse at top, ${gold.glow} 0%, transparent 70%)` }}
+                    >
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4" style={{ background: gold.glow, border: `1px solid ${gold.border}` }}>
+                        <Sparkles size={10} style={{ color: gold.light }} />
+                        <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: gold.light }}>
+                          Free resource — no catch
+                        </span>
+                      </div>
+
+                      <h2 className="text-xl md:text-2xl font-light text-white leading-tight mb-2">
+                        One thing before you go.
+                      </h2>
+                      <p className="text-sm text-white/55 leading-relaxed">
+                        We've helped 500+ couples plan their weddings. This checklist is the exact tool we use internally — yours free.
+                      </p>
+                    </div>
+
+                    {/* Checklist highlights */}
+                    <div className="px-6 pb-5">
+                      <div className="grid grid-cols-2 gap-2 mb-5">
+                        {CHECKLIST_HIGHLIGHTS.map((item, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <Check size={11} className="mt-0.5 flex-shrink-0" style={{ color: gold.light }} />
+                            <span className="text-xs text-white/55 leading-snug">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Form */}
+                      {error && (
+                        <div className="mb-3 px-3 py-2 rounded-xl text-xs text-red-400 border border-red-500/20 bg-red-500/8">{error}</div>
+                      )}
+
+                      <form onSubmit={handleSubmit} className="space-y-3">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Your Name"
+                          value={form.name}
+                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-white/30 focus:outline-none transition-colors"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.09)` }}
+                        />
+                        <input
+                          type="email"
+                          required
+                          placeholder="Email Address"
+                          value={form.email}
+                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-white/30 focus:outline-none transition-colors"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.09)` }}
+                        />
+                        <div className="relative">
+                          <Calendar size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+                          <input
+                            type="date"
+                            min={minDate}
+                            value={form.date}
+                            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                            className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-none transition-colors ${form.date ? 'text-white' : 'text-white/30'}`}
+                            style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.09)` }}
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-[10px] uppercase tracking-widest font-bold text-black disabled:opacity-50"
+                          style={{ background: gold.metallic, boxShadow: `0 6px 24px ${gold.shadow}` }}
+                        >
+                          {loading ? (
+                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }} className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full" />
+                          ) : (
+                            <><Download size={13} /> Send Me the Checklist</>
+                          )}
+                        </button>
+                      </form>
+
+                      <p className="text-[8px] text-white/25 text-center mt-3">
+                        No spam. Unsubscribe anytime. Your details are kept private.
+                      </p>
+                    </div>
+
+                    {/* Dismiss link */}
+                    <div className="text-center pb-5">
+                      <button
+                        onClick={handleClose}
+                        className="text-[9px] text-white/25 hover:text-white/45 transition-colors uppercase tracking-wider"
+                      >
+                        No thanks, I'll plan without it
+                      </button>
+                    </div>
                   </motion.div>
-                  <h3 className="text-xl font-serif italic text-foreground mb-2">
-                    Check Your Inbox!
-                  </h3>
-                  <p className="text-sm text-foreground/60">
-                    Your wedding planning checklist is on its way to <strong>{email}</strong>
-                  </p>
-                  <div className="mt-4 flex items-center justify-center gap-2 text-xs text-foreground/40">
-                    <Heart size={12} />
-                    <span>You're one step closer to your dream wedding</span>
-                  </div>
-                </div>
-              )}
+                ) : (
+                  // ── Success state ──
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
+                    className="px-6 py-10 text-center"
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
+                      className="w-14 h-14 rounded-full mx-auto mb-5 flex items-center justify-center"
+                      style={{ background: gold.metallic }}
+                    >
+                      <Check size={20} style={{ color: '#1a1400' }} />
+                    </motion.div>
+
+                    <h3 className="text-xl font-light text-white mb-2">Check your inbox!</h3>
+                    <p className="text-sm text-white/50 mb-2 leading-relaxed">
+                      Your checklist is on its way to{' '}
+                      <strong className="text-white/75">{form.email}</strong>.
+                    </p>
+                    <p className="text-xs text-white/35 mb-7">
+                      While you wait — see exactly how much your wedding décor would cost.
+                    </p>
+
+                    <div className="space-y-2.5">
+                      <Link
+                        href="/quote"
+                        onClick={handleClose}
+                        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-full text-[10px] uppercase tracking-widest font-bold text-black"
+                        style={{ background: gold.metallic, boxShadow: `0 4px 20px ${gold.shadow}` }}
+                      >
+                        Get Your Instant Quote <ArrowRight size={11} />
+                      </Link>
+                      <button
+                        onClick={handleClose}
+                        className="w-full py-3 rounded-full text-[9px] uppercase tracking-wider text-white/35 hover:text-white/55 transition-colors border"
+                        style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </>

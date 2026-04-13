@@ -197,7 +197,7 @@ export default function WeddingQuoteSection() {
 
                 {/* Note about other packages */}
                 <p className="text-[10px] text-foreground/30 pt-4 border-t border-foreground/10">
-                  ✨ Other event packages (Corporate, Social, Culinary) coming soon — 
+                   Other event packages (Corporate, Social, Culinary) coming soon — 
                   <Link href="/contact" className="text-foreground/50 hover:text-foreground transition-colors ml-1 underline underline-offset-2">
                     contact us for a custom quote
                   </Link>

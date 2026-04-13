@@ -38,7 +38,7 @@ export async function POST(request: Request) {
               <p>📅 Date: ${date}</p>
               <p>👥 Guest Count: ${pax} guests</p>
               <p>🪑 Layout: ${setup === 'theater' ? 'Theater Style' : 'Restaurant Style'}</p>
-              <p>✨ Package: ${tier}</p>
+              <p> Package: ${tier}</p>
               <p class="total">💰 Total: KES ${total.toLocaleString()}</p>
             </div>
             

@@ -497,7 +497,7 @@ export default function BirthdayQuoteClient() {
             <p className="text-[10px] text-foreground/40 mt-4 text-center">
               {venue === 'indoor' 
                 ? '🏠 Wall backdrops, lighting, and indoor transformations included' 
-                : '✨ Tents, lighting, and outdoor decor included'}
+                : ' Tents, lighting, and outdoor decor included'}
             </p>
           </div>
         </div>

@@ -1,347 +1,359 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Quote, Star } from 'lucide-react'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
+import { ArrowRight, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
-const testimonials = [
+// ─── Gold palette ─────────────────────────────────────────────────────────────
+const gold = {
+  light:    '#D4AF37',
+  metallic: 'linear-gradient(135deg, #D4AF37 0%, #FFF2A8 50%, #D4AF37 100%)',
+  shadow:   'rgba(212, 175, 55, 0.18)',
+  glow:     'rgba(212, 175, 55, 0.07)',
+  border:   'rgba(212, 175, 55, 0.22)',
+}
+
+const TESTIMONIALS = [
   {
     id: 1,
-    name: "Margaret Ashford",
-    role: "Bride",
-    event: "Wedding Reception",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200&h=200",
-    quote: "Stunningly beautiful and added an elegant charm to our evening. Feels enchanted and magical!",
-    highlight: "Enchanted",
-    rating: 5
+    name: 'Amara & Kofi Mensah',
+    role: 'Bride & Groom',
+    event: 'Garden Wedding · Nairobi',
+    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+    rating: 5,
+    quote: "Events District didn't just decorate our venue — they translated our entire love story into a physical space. Every single guest spent the evening asking who designed it.",
+    keyWord: 'Love story made physical',
+    category: 'Wedding',
   },
   {
     id: 2,
-    name: "James Chen",
-    role: "Corporate Director",
-    event: "Product Launch",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200",
-    quote: "Every detail was thoughtfully curated. Our guests couldn't stop complimenting the atmosphere.",
-    highlight: "Thoughtfully curated",
-    rating: 5
+    name: 'James Waweru',
+    role: 'Head of Marketing',
+    event: 'Annual Corporate Gala · Radisson Blu',
+    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+    rating: 5,
+    quote: "The most seamless gala we've ever hosted. The branding integration was so precise our CEO said it looked like a Cannes production. Our team is still talking about it six months on.",
+    keyWord: 'Cannes-level production',
+    category: 'Corporate',
   },
   {
     id: 3,
-    name: "Victoria Sterling",
-    role: "Private Client",
-    event: "Anniversary Gala",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200",
-    quote: "Professional, creative, and incredibly attentive. The decor perfectly captured our vision.",
-    highlight: "Perfectly captured",
-    rating: 5
+    name: 'Priya Patel',
+    role: 'Private Client',
+    event: 'Birthday Extravaganza · Mombasa',
+    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
+    rating: 5,
+    quote: "I gave them three words: gold, intimate, unforgettable. They came back with a concept that made me cry at the reveal. Worth every shilling, and then some.",
+    keyWord: 'Three words. One revelation.',
+    category: 'Celebration',
   },
   {
     id: 4,
-    name: "The Harringtons",
-    role: "Family",
-    event: "Milestone Birthday",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200&h=200",
-    quote: "From consultation to final reveal, everything was seamless. Truly special.",
-    highlight: "Seamless",
-    rating: 5
-  }
+    name: 'The Harrington Family',
+    role: 'Family',
+    event: '25th Anniversary · Karen Country Club',
+    avatar: 'https://randomuser.me/api/portraits/men/55.jpg',
+    rating: 5,
+    quote: "We wanted to recreate the feeling of our original wedding but with 25 years of added meaning. What they designed felt like walking into a memory that had become more beautiful with time.",
+    keyWord: 'A memory made more beautiful',
+    category: 'Celebration',
+  },
 ]
 
-const eventTypes = [
-  "Wedding Receptions",
-  "Corporate Events", 
-  "Private Celebrations",
-  "Galas & Fundraisers",
-  "Milestone Birthdays",
-  "Anniversary Parties",
-  "Engagement Parties",
-  "Baby Showers",
-  "Graduation Celebrations",
-  "Holiday Parties"
+const TRUST_METRICS = [
+  { value: '500+', label: 'Events delivered', sub: 'across Kenya & beyond' },
+  { value: '4.9★', label: 'Average rating', sub: 'from 150+ reviews' },
+  { value: '10+', label: 'Years expertise', sub: 'in luxury décor' },
+  { value: '100%', label: 'Satisfaction rate', sub: 'or we make it right' },
 ]
+
+function GoldRule({ className = '' }: { className?: string }) {
+  return <div className={`h-px flex-shrink-0 ${className}`} style={{ background: gold.metallic }} />
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <GoldRule className="w-8" />
+      <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>{children}</span>
+    </div>
+  )
+}
 
 export default function TestimonialsSection() {
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
-  const containerRef = useRef(null)
+  const ref = useRef<HTMLElement>(null)
+  const metricsRef = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-8%' })
+  const metricsInView = useInView(metricsRef, { once: true, margin: '-10%' })
 
-  // Auto-rotate testimonials
+  const [active, setActive] = useState(0)
+  const [dir, setDir] = useState(1)
+  const [paused, setPaused] = useState(false)
+
   useEffect(() => {
-    if (isPaused) return
-    const timer = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % testimonials.length)
-    }, 5000)
-    return () => clearInterval(timer)
-  }, [isPaused, activeIndex])
+    if (paused) return
+    const t = setInterval(() => {
+      setDir(1)
+      setActive(p => (p + 1) % TESTIMONIALS.length)
+    }, 6000)
+    return () => clearInterval(t)
+  }, [paused, active])
 
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev + 1) % testimonials.length)
+  const navigate = (d: number) => {
+    setDir(d)
+    setActive(p => (p + d + TESTIMONIALS.length) % TESTIMONIALS.length)
+    setPaused(true)
+    setTimeout(() => setPaused(false), 8000)
   }
 
-  const handleDotClick = (index: number) => {
-    setActiveIndex(index)
-  }
+  const t = TESTIMONIALS[active]
 
   return (
-    <section 
-      ref={containerRef} 
-      className="relative py-24 md:py-32 bg-background overflow-hidden"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+    <section
+      ref={ref}
+      className="relative w-full bg-background overflow-hidden border-t"
+      style={{ borderColor: gold.border }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
     >
-      {/* Background Grid */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,transparent_calc(100%-1px),rgba(255,255,255,0.03)_calc(100%-1px),rgba(255,255,255,0.03)_100%)] bg-[length:25%_100%]" />
-      </div>
+      {/* Ambient orb */}
+      <div
+        className="absolute -bottom-40 right-0 w-[500px] h-[500px] rounded-full pointer-events-none opacity-50"
+        style={{ background: `radial-gradient(circle, ${gold.glow} 0%, transparent 70%)` }}
+      />
 
-      <div className="container mx-auto px-4 md:px-8">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-16 md:py-24">
+
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex flex-col md:flex-row md:items-end md:justify-between mb-16 md:mb-24"
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7 }}
+          className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-12 md:mb-16"
         >
           <div>
-            <span className="text-[10px] md:text-xs tracking-[0.3em] uppercase text-foreground/40 block mb-4">
-              Testimonials
-            </span>
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-serif italic text-foreground leading-none">
-              Client<br />
-              <span className="text-foreground/30">Reflections</span>
+            <SectionLabel>Client stories</SectionLabel>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-light text-foreground leading-[1.1] mt-3">
+              What clients say{' '}
+              <span
+                className="italic bg-clip-text text-transparent"
+                style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
+              >
+                after.
+              </span>
             </h2>
           </div>
-          
-          <div className="mt-6 md:mt-0 flex items-center gap-4">
-            <span className="text-sm text-foreground/40 font-serif italic">
-              0{activeIndex + 1} / 0{testimonials.length}
+
+          {/* Navigation */}
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-foreground/35 font-mono">
+              {String(active + 1).padStart(2, '0')} / {String(TESTIMONIALS.length).padStart(2, '0')}
             </span>
             <button
-              onClick={handleNext}
-              className="w-12 h-12 rounded-full border border-foreground/20 hover:border-foreground/60 hover:bg-foreground hover:text-background transition-all duration-500 flex items-center justify-center group"
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 rounded-full border flex items-center justify-center transition-all hover:bg-foreground/5"
+              style={{ borderColor: gold.border }}
             >
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+              <ChevronLeft size={14} className="text-foreground/50" />
+            </button>
+            <button
+              onClick={() => navigate(1)}
+              className="w-9 h-9 rounded-full border flex items-center justify-center transition-all hover:bg-foreground/5"
+              style={{ borderColor: gold.border }}
+            >
+              <ChevronRight size={14} className="text-foreground/50" />
             </button>
           </div>
         </motion.div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
-          {/* Large Quote */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="lg:col-span-7 relative"
-          >
-            <Quote className="absolute -top-4 -left-2 w-16 h-16 text-foreground/5" />
-            
-            <div className="relative min-h-[200px] md:min-h-[250px]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeIndex}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -30 }}
-                  transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                >
-                  <p className="text-2xl md:text-4xl lg:text-5xl font-serif italic text-foreground leading-tight">
-                    "{testimonials[activeIndex].quote}"
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-              
-              <motion.div
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="h-px bg-foreground/20 mt-8 origin-left max-w-xs"
-              />
+        {/* Main testimonial layout */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="grid md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_400px] gap-8 md:gap-12 items-start"
+        >
+          {/* Left: large quote */}
+          <div>
+            {/* Opening quote mark */}
+            <div
+              className="font-serif leading-none mb-3 -ml-1 select-none"
+              style={{ fontSize: 'clamp(64px, 8vw, 96px)', color: gold.light, opacity: 0.2, lineHeight: 1 }}
+            >
+              "
             </div>
-          </motion.div>
 
-          {/* Client Info Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="lg:col-span-5"
-          >
-            <div className="bg-foreground/[0.02] border border-foreground/10 p-6 md:p-8 rounded-sm backdrop-blur-sm relative overflow-hidden">
-              {/* Animated background accent */}
+            <AnimatePresence mode="wait" custom={dir}>
               <motion.div
-                className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-foreground/5 to-transparent rounded-full blur-2xl"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.3, 0.6, 0.3]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-
-              {/* Avatar and Name */}
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeIndex}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="w-14 h-14 rounded-full overflow-hidden ring-1 ring-foreground/20"
+                key={active}
+                custom={dir}
+                initial={{ opacity: 0, y: dir * 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: dir * -16 }}
+                transition={{ duration: 0.45, ease: [0.19, 1, 0.22, 1] }}
+              >
+                {/* Keyword pull-quote */}
+                <div className="mb-4">
+                  <span
+                    className="text-[9px] uppercase tracking-[0.35em] font-medium"
+                    style={{ color: gold.light }}
                   >
-                    <img
-                      src={testimonials[activeIndex].image}
-                      alt={testimonials[activeIndex].name}
-                      className="w-full h-full object-cover grayscale"
-                    />
-                  </motion.div>
-                </AnimatePresence>
-                <div className="overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={`info-${activeIndex}`}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.4 }}
-                    >
-                      <h4 className="text-lg font-medium text-foreground">
-                        {testimonials[activeIndex].name}
-                      </h4>
-                      <p className="text-sm text-foreground/50">
-                        {testimonials[activeIndex].role}
-                      </p>
-                    </motion.div>
-                  </AnimatePresence>
+                    ✦ {t.keyWord}
+                  </span>
                 </div>
-              </div>
 
-              {/* Star Rating - ANIMATED with key */}
-              <div key={`stars-${activeIndex}`} className="flex gap-1 mb-4 relative z-10">
-                {[...Array(5)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0, rotate: -180 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                    transition={{ 
-                      delay: i * 0.08,
-                      duration: 0.4,
-                      type: "spring",
-                      stiffness: 200
-                    }}
+                <blockquote className="text-xl md:text-2xl lg:text-3xl font-light text-foreground leading-relaxed mb-8">
+                  {t.quote}
+                </blockquote>
+
+                {/* Author */}
+                <div className="flex items-center gap-4">
+                  <img
+                    src={t.avatar}
+                    alt={t.name}
+                    className="w-11 h-11 rounded-full object-cover flex-shrink-0"
+                    style={{ border: `2px solid ${gold.light}` }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{t.name}</p>
+                    <p className="text-[11px] text-foreground/45 mt-0.5">{t.event}</p>
+                  </div>
+                  <div className="flex items-center gap-0.5 ml-3">
+                    {[...Array(t.rating)].map((_, i) => (
+                      <Star key={i} size={11} fill={gold.light} color={gold.light} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category tag */}
+                <div className="mt-5">
+                  <span
+                    className="text-[9px] px-3 py-1 rounded-full border uppercase tracking-wider"
+                    style={{ borderColor: gold.border, color: gold.light }}
                   >
-                    <Star 
-                      className={`w-4 h-4 ${i < testimonials[activeIndex].rating ? 'fill-amber-400 text-amber-400' : 'text-foreground/20'}`}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+                    {t.category}
+                  </span>
+                </div>
+              </motion.div>
+            </AnimatePresence>
 
-              {/* Event Tag */}
-              <div className="relative z-10 overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`event-${activeIndex}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center gap-2 text-xs text-foreground/40 uppercase tracking-wider mb-6"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {testimonials[activeIndex].event}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Highlight Word */}
-              <div className="relative z-10 overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={`tag-${activeIndex}`}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3 }}
-                    className="inline-block px-4 py-2 bg-foreground/5 border border-foreground/10 rounded-full text-xs text-foreground/60"
-                  >
-                    {testimonials[activeIndex].highlight}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mt-6 h-0.5 bg-foreground/10 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-foreground/40"
-                initial={{ width: "0%" }}
-                animate={{ width: isPaused ? "0%" : "100%" }}
-                transition={{ duration: 5, ease: "linear" }}
-                key={activeIndex}
-              />
-            </div>
-
-            {/* Navigation Dots - SIMPLE, SAME SIZE */}
-            <div className="flex gap-3 mt-6 justify-center lg:justify-start">
-              {testimonials.map((_, index) => (
+            {/* Progress dots */}
+            <div className="flex gap-2 mt-8">
+              {TESTIMONIALS.map((_, i) => (
                 <button
-                  key={index}
-                  onClick={() => handleDotClick(index)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                    index === activeIndex 
-                      ? 'bg-foreground scale-110' 
-                      : 'bg-foreground/20 hover:bg-foreground/40 scale-100'
-                  }`}
-                />
+                  key={i}
+                  onClick={() => { setDir(i > active ? 1 : -1); setActive(i); setPaused(true) }}
+                >
+                  <motion.div
+                    animate={{
+                      width: i === active ? 20 : 5,
+                      backgroundColor: i === active ? gold.light : 'rgba(212,175,55,0.25)',
+                    }}
+                    className="h-1 rounded-full"
+                  />
+                </button>
               ))}
             </div>
-          </motion.div>
-        </div>
+          </div>
 
-        {/* News Ticker */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.6 }}
-          className="mt-20 md:mt-32 pt-8 border-t border-foreground/10 overflow-hidden"
-        >
-          <div className="relative">
-            {/* Fade edges */}
-            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
-            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
-            
-            {/* Ticker */}
-            <div className="flex overflow-hidden">
-              <motion.div
-                className="flex whitespace-nowrap"
-                animate={{ x: [0, -50 * eventTypes.length * 2] }}
-                transition={{
-                  x: {
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    duration: 40,
-                    ease: "linear",
-                  },
-                }}
-                style={{ willChange: "transform" }}
+          {/* Right: trust panel + CTA */}
+          <div className="space-y-4">
+            {/* Rating summary */}
+            <div
+              className="rounded-2xl p-6 border"
+              style={{ borderColor: gold.border, background: gold.glow }}
+            >
+              <div
+                className="text-5xl font-light mb-2 bg-clip-text text-transparent"
+                style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
               >
-                {[...eventTypes, ...eventTypes, ...eventTypes, ...eventTypes].map((event, i) => (
-                  <div key={i} className="flex items-center mx-6">
-                    <span className="text-xs text-foreground/30 uppercase tracking-[0.2em]">
-                      {event}
-                    </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-foreground/20 mx-6" />
-                  </div>
+                4.9
+              </div>
+              <div className="flex items-center gap-0.5 mb-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={13} fill={gold.light} color={gold.light} />
                 ))}
-              </motion.div>
+              </div>
+              <p className="text-xs text-foreground/45">Based on 150+ verified reviews</p>
+
+              <GoldRule className="my-4" />
+
+              {/* All testimonial names as scrollable list */}
+              <div className="space-y-3">
+                {TESTIMONIALS.map((test, i) => (
+                  <button
+                    key={test.id}
+                    onClick={() => { setDir(i > active ? 1 : -1); setActive(i) }}
+                    className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all duration-200 text-left ${
+                      i === active ? 'bg-foreground/5' : 'hover:bg-foreground/3'
+                    }`}
+                    style={{ border: i === active ? `1px solid ${gold.border}` : '1px solid transparent' }}
+                  >
+                    <img
+                      src={test.avatar}
+                      alt={test.name}
+                      className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                      style={{ border: i === active ? `1.5px solid ${gold.light}` : '1.5px solid transparent' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-xs font-medium truncate ${i === active ? 'text-foreground' : 'text-foreground/55'}`}>
+                        {test.name}
+                      </p>
+                      <p className="text-[9px] text-foreground/35 truncate">{test.event}</p>
+                    </div>
+                    {i === active && (
+                      <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: gold.light }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div
+              className="rounded-2xl p-5 border"
+              style={{ borderColor: gold.border, background: gold.glow }}
+            >
+              <p className="text-xs text-foreground/45 mb-3 leading-relaxed">
+                Ready to become our next success story?
+              </p>
+              <Link
+                href="/quote"
+                className="block w-full py-3 text-center text-[10px] uppercase tracking-widest font-bold rounded-full text-black"
+                style={{ background: gold.metallic, boxShadow: `0 4px 16px ${gold.shadow}` }}
+              >
+                Get Your Free Quote
+              </Link>
             </div>
           </div>
         </motion.div>
+
+        {/* Trust metrics strip */}
+        <div
+          ref={metricsRef}
+          className="mt-14 md:mt-20 pt-8 border-t grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4"
+          style={{ borderColor: gold.border }}
+        >
+          {TRUST_METRICS.map((m, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              animate={metricsInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+              className="text-center"
+            >
+              <div
+                className="text-2xl md:text-3xl font-light mb-1 bg-clip-text text-transparent"
+                style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
+              >
+                {m.value}
+              </div>
+              <p className="text-xs font-medium text-foreground">{m.label}</p>
+              <p className="text-[10px] text-foreground/40 mt-0.5">{m.sub}</p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   )

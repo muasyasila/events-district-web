@@ -493,7 +493,7 @@ export default function ServicesClient() {
                 </Link>
               </div>
               <p className="text-[10px] text-foreground/40 mt-6">
-                ✨ Packages from KES 66,300 for 100 guests
+                 Packages from KES 66,300 for 100 guests
               </p>
             </div>
             

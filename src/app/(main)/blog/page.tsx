@@ -1,13 +1,23 @@
+import React from 'react'
 import { getPublishedPosts, getAuthors, getBlogCategories } from '@/app/actions/blog'
 import Link from 'next/link'
-import { ArrowRight, TrendingUp, Eye } from 'lucide-react'
+import { ArrowRight, TrendingUp, Eye, Clock, Calculator } from 'lucide-react'
 
 export const metadata = {
   title: 'Journal | Events District',
-  description: 'Curated perspectives on luxury design, craftsmanship, and the art of celebration',
+  description: 'Expert insights on luxury event design, wedding planning, and the art of celebration — from a team with 500+ events of experience.',
 }
 
-interface ExtendedBlogPost {
+// ─── Gold palette ─────────────────────────────────────────────────────────────
+const gold = {
+  light:    '#D4AF37',
+  metallic: 'linear-gradient(135deg, #D4AF37 0%, #FFF2A8 50%, #D4AF37 100%)',
+  shadow:   'rgba(212, 175, 55, 0.18)',
+  glow:     'rgba(212, 175, 55, 0.07)',
+  border:   'rgba(212, 175, 55, 0.22)',
+}
+
+interface BlogPost {
   id: string
   title: string
   slug: string
@@ -20,6 +30,7 @@ interface ExtendedBlogPost {
   category_slug: string
   views: number
   gradient?: string
+  read_time?: string | null
 }
 
 interface Author {
@@ -40,160 +51,142 @@ export default async function BlogPage({
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
 }) {
-  const postsData = await getPublishedPosts()
+  const postsData   = await getPublishedPosts()
   const authorsData = await getAuthors()
-  const categoriesData = await getBlogCategories()
+  const catsData    = await getBlogCategories()
 
-  const posts: ExtendedBlogPost[] = postsData.map((post: any) => ({
-    id: post.id,
-    title: post.title,
-    slug: post.slug,
-    content: post.content,
-    excerpt: post.excerpt,
-    featured_image_url: post.featured_image_url,
-    author: post.author,
-    published_at: post.published_at,
-    category: post.category,
-    category_slug: post.category_slug || post.category?.toLowerCase().replace(/\s+/g, '-') || 'uncategorized',
-    views: post.views || 0,
-    gradient: post.gradient,
+  const posts: BlogPost[] = postsData.map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    content: p.content,
+    excerpt: p.excerpt,
+    featured_image_url: p.featured_image_url,
+    author: p.author,
+    published_at: p.published_at,
+    category: p.category,
+    category_slug: p.category_slug || p.category?.toLowerCase().replace(/\s+/g, '-') || 'uncategorized',
+    views: p.views || 0,
+    gradient: p.gradient,
+    read_time: p.read_time,
   }))
 
-  const authors = authorsData as Author[]
-  const categories = categoriesData as Category[]
+  const authors   = authorsData as Author[]
+  const categories = catsData as Category[]
 
   const activeCategory = typeof searchParams.category === 'string' ? searchParams.category : null
-
-  const filteredPosts = activeCategory
-    ? posts.filter(post => post.category_slug === activeCategory)
-    : posts
+  const filteredPosts  = activeCategory ? posts.filter(p => p.category_slug === activeCategory) : posts
 
   const authorMap: Record<string, Author> = {}
-  authors.forEach(author => {
-    authorMap[author.id] = author
-    authorMap[author.name] = author
-  })
+  authors.forEach(a => { authorMap[a.id] = a; authorMap[a.name] = a })
 
-  const getReadTime = (content: string) => {
-    const plainText = content.replace(/<[^>]*>/g, '')
-    const words = plainText.split(/\s+/).length
+  const getReadTime = (content: string, stored?: string | null) => {
+    if (stored) return stored
+    const words = content.replace(/<[^>]*>/g, '').split(/\s+/).length
     return `${Math.ceil(words / 200)} min`
   }
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long', day: 'numeric', year: 'numeric'
-    })
-  }
+  const fmt      = (d: string | null) => d ? new Date(d).toLocaleDateString('en-GB', { month: 'long', day: 'numeric', year: 'numeric' }) : ''
+  const fmtShort = (d: string | null) => d ? new Date(d).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : ''
 
-  const formatShortDate = (dateString: string | null) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric'
-    })
-  }
+  const featured       = filteredPosts[0]
+  const remaining      = filteredPosts.slice(1)
+  const trending       = [...posts].sort((a, b) => b.views - a.views).slice(0, 4)
 
-  const featuredPost = filteredPosts[0]
-  const remainingPosts = filteredPosts.slice(1)
-  const trendingPosts = [...posts].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 4)
+  const fallbackImg    = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=800'
 
   return (
     <main className="min-h-screen bg-background text-foreground">
 
-      {/* ─── Ambient background ─── */}
+      {/* ── Ambient background ── */}
       <div className="fixed inset-0 pointer-events-none -z-10">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-foreground/[0.02] rounded-full blur-[160px]" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-foreground/[0.02] rounded-full blur-[160px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_0%,transparent_calc(100%-1px),rgba(128,128,128,0.03)_calc(100%-1px))] bg-[length:25%_100%]" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[160px]" style={{ background: gold.glow }} />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full blur-[160px]" style={{ background: gold.glow }} />
       </div>
 
-      {/* ─── Hero ─── */}
-      <section className="pt-20 pb-12 px-6 md:px-12 lg:px-20 max-w-[1400px] mx-auto">
-        <div className="mb-14">
-          <span className="text-[10px] uppercase tracking-[0.8em] text-foreground/40 font-bold block mb-5">
-            The Journal
-          </span>
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif italic text-foreground leading-none tracking-tight">
-              Stories &amp; <br className="hidden md:block" />
-              <span className="text-foreground/30 font-light">Perspectives</span>
+      {/* ── Gold top rule ── */}
+      <div className="h-px w-full" style={{ background: gold.metallic }} />
+
+      {/* ── Hero ── */}
+      <section className="pt-20 pb-12 px-6 md:px-12 lg:px-20 max-w-6xl mx-auto">
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-8 h-px" style={{ background: gold.metallic }} />
+            <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>The Journal</span>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-light text-foreground leading-[1.0]">
+              Stories &amp;{' '}
+              <span
+                className="italic bg-clip-text text-transparent"
+                style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
+              >
+                Perspectives
+              </span>
             </h1>
             <p className="text-sm text-foreground/50 font-light max-w-xs leading-relaxed">
-              Curated insights on luxury design, craftsmanship, and the art of celebration.
+              Expert insights from a team with 500+ luxury events across Kenya and beyond.
             </p>
           </div>
-          <div className="h-px w-full bg-foreground/10 mt-10" />
+          <div className="h-px w-full mt-10" style={{ background: gold.border }} />
         </div>
 
-        {/* ─── Featured post ─── */}
-        {featuredPost && (
-          <Link href={`/blog/${featuredPost.slug}`} className="group block mb-20">
-            <div className="grid lg:grid-cols-2 gap-0 border border-foreground/10">
+        {/* ── Featured post ── */}
+        {featured && (
+          <Link href={`/blog/${featured.slug}`} className="group block mb-16">
+            <div
+              className="grid lg:grid-cols-2 rounded-2xl overflow-hidden border transition-all duration-500 group-hover:border-amber-500/30"
+              style={{ borderColor: gold.border }}
+            >
               {/* Image */}
-              <div className="relative overflow-hidden bg-neutral-900 aspect-[4/3] lg:aspect-auto lg:min-h-[520px]">
+              <div className="relative aspect-[4/3] lg:aspect-auto lg:min-h-[480px] overflow-hidden bg-neutral-900">
                 <img
-                  src={featuredPost.featured_image_url || 'https://images.unsplash.com/photo-1618221195710-dd0b2e9b23e9?w=1200&q=80'}
-                  alt={featuredPost.title}
-                  className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-[1.03]"
+                  src={featured.featured_image_url || fallbackImg}
+                  alt={featured.title}
+                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.03]"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-r ${featuredPost.gradient || 'from-amber-900/10 via-transparent to-transparent'} from-black/30 via-black/10 to-transparent`} />
-                <div className="absolute top-6 left-6">
-                  <span className="text-[9px] uppercase tracking-[0.4em] text-white/60 bg-black/30 backdrop-blur-sm px-3 py-1.5">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/15" />
+                <div className="absolute top-5 left-5">
+                  <span className="text-[8px] px-3 py-1.5 rounded-full font-bold uppercase tracking-wider" style={{ background: gold.metallic, color: 'black' }}>
                     Featured
                   </span>
                 </div>
               </div>
 
-              {/* Text */}
-              <div className="p-10 md:p-14 flex flex-col justify-between border-l border-foreground/10">
+              {/* Content */}
+              <div className="p-8 md:p-12 lg:p-14 flex flex-col justify-between border-t lg:border-t-0 lg:border-l" style={{ borderColor: gold.border, background: gold.glow }}>
                 <div>
-                  <div className="flex items-center gap-4 mb-6">
-                    <span className="text-[9px] uppercase tracking-[0.4em] text-foreground/50">
-                      {featuredPost.category}
-                    </span>
-                    <span className="w-1 h-1 bg-foreground/20 rounded-full" />
-                    <span className="text-[9px] uppercase tracking-[0.3em] text-foreground/40">
-                      {getReadTime(featuredPost.content)} read
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: gold.light }}>{featured.category}</span>
+                    <span className="w-1 h-1 rounded-full" style={{ background: gold.border }} />
+                    <span className="text-[9px] uppercase tracking-wider text-foreground/40 flex items-center gap-1">
+                      <Clock size={9} />{getReadTime(featured.content, featured.read_time)}
                     </span>
                   </div>
-
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif italic leading-tight mb-6 text-foreground group-hover:text-foreground/80 transition-colors [text-wrap:balance]">
-                    {featuredPost.title}
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-light text-foreground leading-snug mb-4 group-hover:text-foreground/80 transition-colors">
+                    {featured.title}
                   </h2>
-
-                  <p className="text-sm text-foreground/60 font-light leading-relaxed line-clamp-3 mb-10">
-                    {featuredPost.excerpt}
+                  <p className="text-sm text-foreground/55 font-light leading-relaxed line-clamp-4">
+                    {featured.excerpt}
                   </p>
                 </div>
 
-                <div className="space-y-8">
-                  {/* Author */}
-                  <div className="flex items-center gap-4">
-                    {authorMap[featuredPost.author]?.avatar_url && (
-                      <img
-                        src={authorMap[featuredPost.author].avatar_url}
-                        alt={featuredPost.author}
-                        className="w-10 h-10 rounded-full object-cover grayscale"
-                      />
-                    )}
-                    <div>
-                      <p className="text-sm font-serif italic text-foreground">{featuredPost.author}</p>
-                      {authorMap[featuredPost.author]?.role && (
-                        <p className="text-[9px] uppercase tracking-[0.3em] text-foreground/40 mt-0.5">
-                          {authorMap[featuredPost.author].role}
-                        </p>
+                <div className="mt-8 space-y-5">
+                  {authorMap[featured.author] && (
+                    <div className="flex items-center gap-3">
+                      {authorMap[featured.author].avatar_url && (
+                        <img src={authorMap[featured.author].avatar_url} alt={featured.author} className="w-9 h-9 rounded-full object-cover" style={{ border: `1.5px solid ${gold.light}` }} />
                       )}
+                      <div>
+                        <p className="text-sm text-foreground font-medium">{featured.author}</p>
+                        <p className="text-[9px] uppercase tracking-wider text-foreground/40">{authorMap[featured.author].role}</p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* CTA */}
-                  <div className="flex items-center justify-between pt-6 border-t border-foreground/10">
-                    <span className="text-[9px] uppercase tracking-[0.3em] text-foreground/40">
-                      {formatDate(featuredPost.published_at)}
-                    </span>
-                    <span className="text-[10px] uppercase tracking-[0.4em] text-foreground/60 group-hover:text-foreground transition-colors flex items-center gap-2 font-bold">
-                      Read Story <span className="text-base">→</span>
+                  )}
+                  <div className="flex items-center justify-between pt-5 border-t" style={{ borderColor: gold.border }}>
+                    <span className="text-[9px] uppercase tracking-wider text-foreground/35">{fmt(featured.published_at)}</span>
+                    <span className="text-[10px] uppercase tracking-wider font-medium flex items-center gap-1.5 group-hover:gap-3 transition-all" style={{ color: gold.light }}>
+                      Read article <ArrowRight size={10} />
                     </span>
                   </div>
                 </div>
@@ -203,145 +196,135 @@ export default async function BlogPage({
         )}
       </section>
 
-      {/* ─── Category tabs — ServicesAtelier style ─── */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-foreground/10">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-20">
-          <div className="flex gap-7 md:gap-10 overflow-x-auto scrollbar-hide py-4">
+      {/* ── Category tabs ── */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b" style={{ borderColor: gold.border }}>
+        <div className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20">
+          <div className="flex gap-6 md:gap-10 overflow-x-auto py-4" style={{ scrollbarWidth: 'none' }}>
             <Link
               href="/blog"
               className="relative shrink-0 group"
             >
-              <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${
-                !activeCategory ? 'text-foreground' : 'text-foreground/35 hover:text-foreground/60'
-              }`}>
+              <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors ${!activeCategory ? 'text-foreground' : 'text-foreground/40 hover:text-foreground/70'}`}>
                 All
               </span>
-              <span className={`absolute -bottom-4 left-0 h-[1px] bg-foreground transition-all duration-500 ${!activeCategory ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+              <span className={`absolute -bottom-4 left-0 h-px transition-all duration-500 ${!activeCategory ? 'w-full' : 'w-0 group-hover:w-full'}`} style={{ background: gold.metallic }} />
             </Link>
-            {categories.map((category) => (
-              <Link
-                key={category.name}
-                href={`/blog?category=${encodeURIComponent(category.slug)}`}
-                className="relative shrink-0 group"
-              >
-                <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${
-                  activeCategory === category.slug ? 'text-foreground' : 'text-foreground/35 hover:text-foreground/60'
-                }`}>
-                  {category.name}
+            {categories.map(cat => (
+              <Link key={cat.name} href={`/blog?category=${encodeURIComponent(cat.slug)}`} className="relative shrink-0 group">
+                <span className={`text-[10px] uppercase tracking-[0.2em] transition-colors ${activeCategory === cat.slug ? 'text-foreground' : 'text-foreground/40 hover:text-foreground/70'}`}>
+                  {cat.name}
                 </span>
-                <span className={`absolute -bottom-4 left-0 h-[1px] bg-foreground transition-all duration-500 ${
-                  activeCategory === category.slug ? 'w-full' : 'w-0 group-hover:w-full'
-                }`} />
+                <span className={`absolute -bottom-4 left-0 h-px transition-all duration-500 ${activeCategory === cat.slug ? 'w-full' : 'w-0 group-hover:w-full'}`} style={{ background: gold.metallic }} />
               </Link>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ─── Main grid ─── */}
-      <section className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-20 py-20">
-        <div className="grid lg:grid-cols-12 gap-16 lg:gap-20">
+      {/* ── Main grid ── */}
+      <section className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 py-16 md:py-20">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-16">
 
-          {/* Left — posts */}
+          {/* Left — articles */}
           <div className="lg:col-span-8">
-
-            {/* Section label */}
-            <div className="flex items-center justify-between mb-10 pb-4 border-b border-foreground/10">
-              <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-bold">
-                {activeCategory
-                  ? categories.find(c => c.slug === activeCategory)?.name
-                  : 'All Stories'}
+            <div className="flex items-center justify-between mb-8 pb-4 border-b" style={{ borderColor: gold.border }}>
+              <span className="text-[10px] uppercase tracking-[0.4em] text-foreground/40">
+                {activeCategory ? categories.find(c => c.slug === activeCategory)?.name : 'All Stories'}
               </span>
               <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/30">
                 {filteredPosts.length} {filteredPosts.length === 1 ? 'story' : 'stories'}
               </span>
             </div>
 
-            {remainingPosts.length === 0 && !featuredPost ? (
-              <div className="text-center py-24 border border-foreground/10">
-                <p className="font-serif italic text-2xl text-foreground/40 mb-6">No stories found.</p>
-                <Link
-                  href="/blog"
-                  className="text-[10px] uppercase tracking-[0.4em] text-foreground/50 hover:text-foreground transition-colors font-bold flex items-center gap-2 justify-center"
-                >
-                  View all stories <ArrowRight className="w-3 h-3" />
+            {remaining.length === 0 && !featured ? (
+              <div className="text-center py-20 rounded-2xl border" style={{ borderColor: gold.border }}>
+                <p className="text-foreground/40 italic text-lg mb-4">No stories found.</p>
+                <Link href="/blog" className="text-xs uppercase tracking-wider flex items-center gap-2 justify-center" style={{ color: gold.light }}>
+                  View all <ArrowRight size={10} />
                 </Link>
               </div>
             ) : (
               <div className="space-y-0">
-                {remainingPosts.map((post, idx) => {
+                {remaining.map((post, idx) => {
                   const author = authorMap[post.author]
                   return (
-                    <Link
-                      key={post.id}
-                      href={`/blog/${post.slug}`}
-                      className="group block border-b border-foreground/10 last:border-b-0"
-                    >
-                      <article className="grid md:grid-cols-[1fr_auto] gap-0 py-10">
-                        {/* Text */}
-                        <div className="flex flex-col justify-between pr-0 md:pr-10">
-                          <div>
-                            <div className="flex items-center gap-4 mb-4">
-                              <span className="text-[9px] uppercase tracking-[0.4em] text-foreground/40">
-                                {post.category}
-                              </span>
-                              <span className="w-1 h-1 bg-foreground/20 rounded-full" />
-                              <span className="text-[9px] uppercase tracking-[0.3em] text-foreground/30">
-                                {getReadTime(post.content)} read
-                              </span>
-                              {(post.views || 0) > 1000 && (
-                                <>
-                                  <span className="w-1 h-1 bg-foreground/20 rounded-full" />
-                                  <span className="text-[9px] uppercase tracking-[0.3em] text-foreground/40 flex items-center gap-1">
-                                    <TrendingUp className="w-2.5 h-2.5" />
-                                    Trending
-                                  </span>
-                                </>
-                              )}
+                    <>
+                      <Link href={`/blog/${post.slug}`} className="group block border-b py-8 last:border-b-0" style={{ borderColor: gold.border }}>
+                        <article className="grid md:grid-cols-[1fr_auto] gap-6 md:gap-10">
+                          <div className="flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center gap-3 mb-3">
+                                <span className="text-[9px] uppercase tracking-[0.3em]" style={{ color: gold.light }}>{post.category}</span>
+                                <span className="w-1 h-1 rounded-full" style={{ background: gold.border }} />
+                                <span className="text-[9px] uppercase tracking-wider text-foreground/35 flex items-center gap-1">
+                                  <Clock size={8} />{getReadTime(post.content, post.read_time)}
+                                </span>
+                                {post.views > 1000 && (
+                                  <>
+                                    <span className="w-1 h-1 rounded-full" style={{ background: gold.border }} />
+                                    <span className="text-[9px] uppercase tracking-wider text-foreground/35 flex items-center gap-1">
+                                      <TrendingUp size={8} />Trending
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              <h3 className="text-xl md:text-2xl font-light text-foreground leading-snug mb-3 group-hover:text-foreground/70 transition-colors">
+                                {post.title}
+                              </h3>
+                              <p className="text-sm text-foreground/50 font-light leading-relaxed line-clamp-2">
+                                {post.excerpt}
+                              </p>
                             </div>
-
-                            <h3 className="text-2xl md:text-3xl font-serif italic leading-tight mb-4 text-foreground group-hover:text-foreground/70 transition-colors [text-wrap:balance]">
-                              {post.title}
-                            </h3>
-
-                            <p className="text-sm text-foreground/55 font-light leading-relaxed line-clamp-2 mb-6">
-                              {post.excerpt}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {author?.avatar_url && (
-                                <img
-                                  src={author.avatar_url}
-                                  alt={post.author}
-                                  className="w-8 h-8 rounded-full object-cover grayscale"
-                                />
-                              )}
-                              <div>
-                                <p className="text-xs font-serif italic text-foreground">{post.author}</p>
-                                <p className="text-[9px] uppercase tracking-[0.25em] text-foreground/40 mt-0.5">
-                                  {formatShortDate(post.published_at)}
-                                </p>
+                            <div className="flex items-center justify-between mt-4">
+                              <div className="flex items-center gap-3">
+                                {author?.avatar_url && (
+                                  <img src={author.avatar_url} alt={post.author} className="w-7 h-7 rounded-full object-cover" style={{ border: `1.5px solid ${gold.light}` }} />
+                                )}
+                                <div>
+                                  <p className="text-xs text-foreground font-medium">{post.author}</p>
+                                  <p className="text-[9px] uppercase tracking-wider text-foreground/35">{fmtShort(post.published_at)}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-foreground/30 text-[9px] uppercase tracking-wider">
+                                <Eye size={9} />{post.views.toLocaleString()}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 text-foreground/30">
-                              <Eye className="w-3 h-3" />
-                              <span className="text-[9px] uppercase tracking-wider">{(post.views || 0).toLocaleString()}</span>
+                          </div>
+
+                          <div className="relative overflow-hidden rounded-xl w-full md:w-44 lg:w-52 aspect-[4/3] md:aspect-auto flex-shrink-0">
+                            <img
+                              src={post.featured_image_url || fallbackImg}
+                              alt={post.title}
+                              className="w-full h-full object-cover transition-all duration-700 group-hover:scale-[1.04]"
+                            />
+                          </div>
+                        </article>
+                      </Link>
+
+                      {/* Mid-list CTA — appears after 3rd article */}
+                      {idx === 2 && (
+                        <div
+                          className="my-2 px-6 py-5 rounded-2xl border"
+                          style={{ borderColor: gold.border, background: gold.glow }}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                              <p className="text-[9px] uppercase tracking-[0.3em] mb-1" style={{ color: gold.light }}>✦ Planning an event?</p>
+                              <p className="text-sm text-foreground/60 leading-snug">
+                                Get an instant quote for your wedding décor — live pricing, no vague estimates.
+                              </p>
                             </div>
+                            <Link
+                              href="/quote"
+                              className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold text-black"
+                              style={{ background: gold.metallic, boxShadow: `0 4px 16px ${gold.shadow}` }}
+                            >
+                              <Calculator size={11} /> Get Quote
+                            </Link>
                           </div>
                         </div>
-
-                        {/* Image */}
-                        <div className="relative overflow-hidden bg-neutral-900 w-full md:w-48 lg:w-56 aspect-[4/3] md:aspect-auto mt-6 md:mt-0 flex-shrink-0">
-                          <img
-                            src={post.featured_image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=80'}
-                            alt={post.title}
-                            className="w-full h-full object-cover grayscale-[30%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-[1.04]"
-                          />
-                        </div>
-                      </article>
-                    </Link>
+                      )}
+                    </>
                   )
                 })}
               </div>
@@ -349,237 +332,152 @@ export default async function BlogPage({
           </div>
 
           {/* Right — sidebar */}
-          <aside className="lg:col-span-4 space-y-14">
+          <aside className="lg:col-span-4 space-y-10">
+
+            {/* Quote CTA card */}
+            <div className="rounded-2xl p-6 border" style={{ borderColor: gold.border, background: gold.glow }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center mb-4" style={{ background: gold.metallic }}>
+                <Calculator size={14} style={{ color: '#1a1400' }} />
+              </div>
+              <p className="text-[9px] uppercase tracking-[0.3em] mb-1" style={{ color: gold.light }}>Instant Pricing</p>
+              <h4 className="text-base font-light text-foreground mb-2">Wedding Quote Engine</h4>
+              <p className="text-xs text-foreground/50 leading-relaxed mb-4">
+                Live pricing based on your guest count. No guesswork, no waiting.
+              </p>
+              <Link
+                href="/quote"
+                className="block w-full py-2.5 text-center text-[10px] uppercase tracking-widest font-bold rounded-full text-black"
+                style={{ background: gold.metallic }}
+              >
+                Get Instant Quote
+              </Link>
+            </div>
 
             {/* Trending */}
             <div>
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-foreground/10">
-                <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-bold">
-                  Trending
-                </span>
+              <div className="flex items-center gap-3 mb-5 pb-3 border-b" style={{ borderColor: gold.border }}>
+                <div className="w-6 h-px" style={{ background: gold.metallic }} />
+                <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>Trending</span>
               </div>
-              <div className="space-y-6">
-                {trendingPosts.map((post, idx) => (
-                  <Link
-                    key={post.id}
-                    href={`/blog/${post.slug}`}
-                    className="group flex gap-5 items-start"
-                  >
-                    <span className="text-2xl font-serif italic text-foreground/15 group-hover:text-foreground/30 transition-colors leading-none pt-1 flex-shrink-0 w-8">
-                      {String(idx + 1).padStart(2, '0')}
+              <div className="space-y-5">
+                {trending.map((post, i) => (
+                  <Link key={post.id} href={`/blog/${post.slug}`} className="group flex gap-4 items-start">
+                    <span className="text-xl font-light text-foreground/12 group-hover:text-foreground/25 transition-colors leading-none pt-0.5 flex-shrink-0 w-7">
+                      {String(i + 1).padStart(2, '0')}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] uppercase tracking-[0.3em] text-foreground/35 mb-2">
-                        {post.category}
-                      </p>
-                      <h4 className="text-sm font-serif italic text-foreground group-hover:text-foreground/60 transition-colors leading-snug line-clamp-2 mb-2">
+                      <p className="text-[9px] uppercase tracking-[0.25em] mb-1" style={{ color: gold.light }}>{post.category}</p>
+                      <h5 className="text-sm text-foreground group-hover:text-foreground/65 transition-colors leading-snug line-clamp-2">
                         {post.title}
-                      </h4>
-                      <div className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-foreground/30">
-                        <Eye className="w-2.5 h-2.5" />
-                        <span>{(post.views || 0).toLocaleString()} reads</span>
-                      </div>
+                      </h5>
                     </div>
                   </Link>
                 ))}
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="h-px bg-foreground/10" />
+            <div className="h-px" style={{ background: gold.border }} />
 
             {/* Newsletter */}
             <div>
-              <div className="mb-6 pb-4 border-b border-foreground/10">
-                <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-bold">
-                  The Digest
-                </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-6 h-px" style={{ background: gold.metallic }} />
+                <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>The Digest</span>
               </div>
-              <h3 className="text-2xl font-serif italic text-foreground mb-3 leading-tight">
-                Join The<br />Inner Circle
-              </h3>
-              <p className="text-sm text-foreground/50 font-light leading-relaxed mb-8">
-                Weekly insights on luxury design, delivered with intention. No noise, only inspiration.
+              <h4 className="text-lg font-light text-foreground mb-2">Join the Inner Circle</h4>
+              <p className="text-xs text-foreground/50 leading-relaxed mb-5">
+                Monthly planning tips and event inspiration. No spam, ever.
               </p>
-              <form className="space-y-0">
+              <form className="space-y-3">
                 <input
                   type="email"
-                  placeholder="Your email address"
-                  className="w-full bg-transparent border-b border-foreground/20 py-3 text-sm focus:outline-none focus:border-foreground transition-colors placeholder:text-foreground/30 text-foreground"
+                  placeholder="your@email.com"
+                  className="w-full bg-transparent border-b border-foreground/20 py-2.5 text-sm text-foreground placeholder:text-foreground/30 focus:outline-none focus:border-foreground transition-colors"
                 />
                 <button
                   type="submit"
-                  className="mt-6 w-full py-3 border border-foreground text-[10px] uppercase tracking-[0.4em] font-bold hover:bg-foreground hover:text-background transition-all duration-300"
+                  className="w-full py-2.5 rounded-full text-[10px] uppercase tracking-widest font-bold text-black"
+                  style={{ background: gold.metallic }}
                 >
                   Subscribe
                 </button>
               </form>
             </div>
 
-            {/* Divider */}
-            <div className="h-px bg-foreground/10" />
-
-            {/* Contributors */}
-            <div>
-              <div className="mb-6 pb-4 border-b border-foreground/10">
-                <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-bold">
-                  Contributors
-                </span>
-              </div>
-              <div className="space-y-5">
-                {authors.slice(0, 4).map((author) => (
-                  <div key={author.id} className="flex items-center gap-4 group">
-                    <img
-                      src={author.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80'}
-                      alt={author.name}
-                      className="w-10 h-10 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                    />
-                    <div>
-                      <p className="text-sm font-serif italic text-foreground group-hover:text-foreground/70 transition-colors">
-                        {author.name}
-                      </p>
-                      <p className="text-[9px] uppercase tracking-[0.25em] text-foreground/40 mt-0.5">
-                        {author.role || 'Contributor'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <div className="h-px" style={{ background: gold.border }} />
 
             {/* Topics */}
             <div>
-              <div className="mb-6 pb-4 border-b border-foreground/10">
-                <span className="text-[10px] uppercase tracking-[0.5em] text-foreground/50 font-bold">
-                  Topics
-                </span>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-6 h-px" style={{ background: gold.metallic }} />
+                <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>Topics</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
+                {categories.map(cat => (
                   <Link
                     key={cat.name}
                     href={`/blog?category=${encodeURIComponent(cat.slug)}`}
-                    className={`text-[9px] uppercase tracking-widest px-3 py-1.5 border transition-all duration-300 ${
-                      activeCategory === cat.slug
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-foreground/20 text-foreground/50 hover:border-foreground/50 hover:text-foreground'
-                    }`}
+                    className="text-[9px] uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all duration-200"
+                    style={{
+                      borderColor: activeCategory === cat.slug ? gold.light : gold.border,
+                      background: activeCategory === cat.slug ? gold.metallic : 'transparent',
+                      color: activeCategory === cat.slug ? 'black' : undefined,
+                    }}
                   >
                     {cat.name}
                   </Link>
                 ))}
               </div>
             </div>
-
           </aside>
         </div>
       </section>
 
-      {/* ─── Pull quote ─── */}
-      <section className="border-t border-b border-foreground/10 py-20 md:py-28">
-        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center">
-          <div className="h-px w-12 bg-foreground/20 mx-auto mb-10" />
-          <blockquote className="text-2xl md:text-4xl lg:text-5xl font-serif italic text-foreground leading-tight mb-8 [text-wrap:balance]">
-            "Design is not just what it looks like and feels like. Design is how it works."
-          </blockquote>
-          <cite className="text-[10px] uppercase tracking-[0.5em] text-foreground/40 not-italic">
-            — Steve Jobs
-          </cite>
-          <div className="h-px w-12 bg-foreground/20 mx-auto mt-10" />
-        </div>
-      </section>
-
-      {/* ─── Closing CTA ─── */}
-      <section className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-20 py-20">
-        <div className="relative overflow-hidden border border-foreground/10">
+      {/* ── Closing CTA ── */}
+      <section className="max-w-6xl mx-auto px-6 md:px-12 lg:px-20 pb-20">
+        <div className="relative overflow-hidden rounded-2xl border" style={{ borderColor: gold.border }}>
           <div className="absolute inset-0 -z-10">
             <img
-              src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&q=80"
+              src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1400&q=80"
               alt=""
-              className="w-full h-full object-cover grayscale-[60%] opacity-20"
+              className="w-full h-full object-cover opacity-10"
             />
-            <div className="absolute inset-0 bg-background/80" />
+            <div className="absolute inset-0 bg-background/85" />
           </div>
-          <div className="grid md:grid-cols-2 gap-0 items-center">
-            <div className="p-12 md:p-16 lg:p-20 border-b md:border-b-0 md:border-r border-foreground/10">
-              <span className="text-[10px] uppercase tracking-[0.6em] text-foreground/40 block mb-5">
-                Our Work
-              </span>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif italic text-foreground leading-tight mb-6">
-                The Art of<br />
-                <span className="text-foreground/40 font-light">Celebration</span>
+          <div className="grid md:grid-cols-2 gap-0">
+            <div className="p-10 md:p-14 border-b md:border-b-0 md:border-r" style={{ borderColor: gold.border }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-6 h-px" style={{ background: gold.metallic }} />
+                <span className="text-[9px] uppercase tracking-[0.35em]" style={{ color: gold.light }}>Our Work</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-light text-foreground leading-snug mb-4">
+                Behind every article<br />
+                <span className="italic" style={{ color: gold.light }}>is a real event.</span>
               </h2>
-              <p className="text-sm text-foreground/55 font-light leading-relaxed max-w-sm">
-                Behind every story in this journal is an event crafted with intention.
-                Explore our portfolio.
+              <p className="text-sm text-foreground/50 leading-relaxed">
+                Our portfolio shows the work that inspired these stories.
               </p>
             </div>
-            <div className="p-12 md:p-16 lg:p-20 flex flex-col gap-6 justify-center">
-              <Link
-                href="/portfolio"
-                className="group flex items-center justify-between py-5 border-b border-foreground/15 hover:border-foreground/40 transition-colors"
-              >
-                <span className="text-sm font-serif italic text-foreground">View the Portfolio</span>
-                <ArrowRight className="w-4 h-4 text-foreground/40 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/contact"
-                className="group flex items-center justify-between py-5 border-b border-foreground/15 hover:border-foreground/40 transition-colors"
-              >
-                <span className="text-sm font-serif italic text-foreground">Start a Project</span>
-                <ArrowRight className="w-4 h-4 text-foreground/40 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="#journal"
-                className="group flex items-center justify-between py-5"
-              >
-                <span className="text-sm font-serif italic text-foreground">Back to Top</span>
-                <span className="text-foreground/40 group-hover:text-foreground transition-colors text-sm">↑</span>
-              </Link>
+            <div className="p-10 md:p-14 flex flex-col gap-4 justify-center">
+              {[
+                { label: 'View the Portfolio', href: '/portfolio' },
+                { label: 'Start a Project', href: '/contact' },
+                { label: 'Get Instant Quote', href: '/quote' },
+              ].map(item => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="group flex items-center justify-between py-4 border-b transition-colors hover:border-amber-500/30"
+                  style={{ borderColor: gold.border }}
+                >
+                  <span className="text-sm text-foreground group-hover:text-foreground/70 transition-colors">{item.label}</span>
+                  <ArrowRight size={14} className="text-foreground/30 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              ))}
             </div>
           </div>
         </div>
       </section>
-
-      {/* ─── Footer ─── */}
-      <footer className="border-t border-foreground/10">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-20 py-16">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
-            <div className="md:col-span-2">
-              <h3 className="font-serif italic text-2xl text-foreground mb-4">Events District</h3>
-              <p className="text-sm text-foreground/40 font-light max-w-xs leading-relaxed">
-                Curating exceptional events and experiences with precision and creativity.
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.4em] text-foreground/40 mb-5 font-bold">Explore</p>
-              <ul className="space-y-3 text-sm text-foreground/50">
-                <li><Link href="/blog" className="hover:text-foreground transition-colors font-light">Journal</Link></li>
-                <li><Link href="/about" className="hover:text-foreground transition-colors font-light">About</Link></li>
-                <li><Link href="/contact" className="hover:text-foreground transition-colors font-light">Contact</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.4em] text-foreground/40 mb-5 font-bold">Connect</p>
-              <ul className="space-y-3 text-sm text-foreground/50">
-                <li><a href="#" className="hover:text-foreground transition-colors font-light">Instagram</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors font-light">LinkedIn</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors font-light">Twitter</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="pt-8 border-t border-foreground/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-foreground/30">
-              © 2025 Events District
-            </p>
-            <div className="h-px w-16 bg-foreground/10" />
-            <p className="text-[10px] uppercase tracking-[0.3em] text-foreground/30">
-              All rights reserved
-            </p>
-          </div>
-        </div>
-      </footer>
-
     </main>
   )
 }
