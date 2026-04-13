@@ -624,12 +624,11 @@ export function ServicesCodex() {
               const isActive = activeCatIdx === idx
               return (
                 <motion.button
-                  key={cat.id}
-                  onClick={() => { setActiveCatIdx(idx); setActiveService(null) }}
-                  whileHover={{ x: 2 }}
-                  className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 group relative ${isActive ? 'ring-1' : ''}`}
-                  style={{ ringColor: isActive ? gold.border : 'transparent' }}
-                >
+  key={cat.id}
+  onClick={() => { setActiveCatIdx(idx); setActiveService(null) }}
+  whileHover={{ x: 2 }}
+  className={`w-full text-left rounded-xl overflow-hidden transition-all duration-300 group relative ${isActive ? 'ring-1 ring-amber-500/30' : ''}`}
+>
                   {/* Image background on active */}
                   <div className={`relative flex items-center gap-3 px-4 py-3.5 transition-all duration-300 ${isActive ? '' : 'hover:bg-foreground/4'}`}>
                     {isActive && (

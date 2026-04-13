@@ -146,7 +146,7 @@ function PricingCalculator() {
   const [pricing, setPricing] = useState<PricingTiers | null>(null)
   const [loading, setLoading] = useState(false)
   const [prevPricing, setPrevPricing] = useState<PricingTiers | null>(null)
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const loadPricing = useCallback(async (guests: number) => {
     setLoading(true)

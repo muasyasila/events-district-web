@@ -4,6 +4,8 @@ import ExitIntentPopup from '@/components/ExitIntentPopup'
 import FloatingActions from '@/components/FloatingActions'
 
 
+
+
 export default function MainLayout({
   children,
 }: {
@@ -17,7 +19,8 @@ export default function MainLayout({
       </main>
       <LuxuryFooter />
       <ExitIntentPopup />
-  <FloatingActions />
+      <FloatingActions />
+ 
     </>
   )
 }

@@ -318,11 +318,11 @@ export default function Navigation() {
                               <p className={`text-xs font-medium transition-colors ${isDark ? 'text-white/80 group-hover:text-white' : 'text-black/80 group-hover:text-black'}`}>
                                 {service.name}
                               </p>
-                              {'available' in service && service.available && (
-                                <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: goldColors.light + '20', color: goldColors.light }}>
-                                  Instant
-                                </span>
-                              )}
+                              {'available' in service && (service as any).available && (
+  <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: goldColors.light + '20', color: goldColors.light }}>
+    Instant
+  </span>
+)}
                             </div>
                             <p className={`text-[10px] mt-0.5 leading-snug ${isDark ? 'text-white/35' : 'text-black/40'}`}>
                               {service.description}

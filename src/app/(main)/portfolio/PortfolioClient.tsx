@@ -140,7 +140,7 @@ function ProjectExperience({ project, onClose }: { project: PortfolioItem; onClo
   const [idx, setIdx]           = useState(0)
   const [playing, setPlaying]   = useState(true)
   const [controls, setControls] = useState(true)
-  const timerRef                = useRef<NodeJS.Timeout>()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const resetTimer = () => {
     setControls(true)
@@ -321,7 +321,7 @@ function ProjectStory({ project, index, onOpen }: { project: PortfolioItem; inde
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-10 pb-4 px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="flex gap-2 justify-center">
                   {project.images.slice(0, 4).map((img, i) => (
-                    <div key={i} className={`relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 ${i === 0 ? 'ring-1' : 'opacity-70'}`} style={{ ringColor: gold.light }}>
+                    <div key={i} className={`relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 ${i === 0 ? 'ring-1 ring-amber-400/50' : 'opacity-70'}`}>
                       <Image src={img} alt="" fill loader={unsplashLoader} className="object-cover" />
                     </div>
                   ))}

@@ -54,9 +54,11 @@ const testimonials = [
 export default function Hero() {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [particles, setParticles] = useState<Array<{ left: string; top: string; delay: number; duration: number }>>([])
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const autoPlayRef = useRef<NodeJS.Timeout>()
+  const autoPlayRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const nextSlide = useCallback(() => {
     setSelectedIndex((prev) => (prev + 1) % slideData.length)
@@ -64,6 +66,18 @@ export default function Hero() {
 
   const prevSlide = useCallback(() => {
     setSelectedIndex((prev) => (prev - 1 + slideData.length) % slideData.length)
+  }, [])
+
+  // Generate particles only on client side to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+    const newParticles = Array(50).fill(null).map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      delay: Math.random() * 5,
+      duration: 3 + Math.random() * 4,
+    }))
+    setParticles(newParticles)
   }, [])
 
   useEffect(() => {
@@ -116,17 +130,18 @@ export default function Hero() {
           style={{ background: `radial-gradient(circle, ${goldColors.shadow} 0%, transparent 70%)` }}
         />
 
-        {[...Array(50)].map((_, i) => (
+        {/* Particles - only render on client side to prevent hydration mismatch */}
+        {mounted && particles.map((particle, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 rounded-full"
             style={{
               background: goldColors.metallic,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: particle.left,
+              top: particle.top,
             }}
             animate={{ y: [0, -30, 0], opacity: [0, 1, 0] }}
-            transition={{ duration: 3 + Math.random() * 4, repeat: Infinity, delay: Math.random() * 5 }}
+            transition={{ duration: particle.duration, repeat: Infinity, delay: particle.delay }}
           />
         ))}
       </div>

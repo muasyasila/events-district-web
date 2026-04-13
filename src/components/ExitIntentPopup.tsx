@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Download, Calendar, Check, ArrowRight, Sparkles } from 'lucide-react'
 import Link from 'next/link'
@@ -29,7 +30,9 @@ export default function ExitIntentPopup() {
   const [error,     setError]     = useState('')
   const [form,      setForm]      = useState({ name: '', email: '', date: '' })
   const [triggered, setTriggered] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
 
+  const router = useRouter()
   const supabase = createClient()
 
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1)
@@ -44,44 +47,58 @@ export default function ExitIntentPopup() {
     const hasWeddingIntent = sessionStorage.getItem('hasWeddingIntent') === 'true'
     if (!hasWeddingIntent) return
 
-    // Function to show popup (called from multiple triggers)
-    const showExitPopup = () => {
-      if (triggered || isOpen) return
-      
-      setIsOpen(true)
-      setTriggered(true)
-      sessionStorage.setItem('exitPopupShown', 'true')
-    }
-
     let mouseLeaveTimer: NodeJS.Timeout
 
     // TRIGGER 1: Mouse leaving from top of viewport
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY > 0) return      // Only trigger from top
-      mouseLeaveTimer = setTimeout(showExitPopup, 100)
+      if (e.clientY > 0) return
+      mouseLeaveTimer = setTimeout(() => {
+        if (!triggered && !isOpen) {
+          setIsOpen(true)
+          setTriggered(true)
+          sessionStorage.setItem('exitPopupShown', 'true')
+        }
+      }, 100)
     }
 
-    // TRIGGER 2: Page visibility change (e.g., switching tabs)
+    // TRIGGER 2: Page visibility change
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        showExitPopup()
+      if (document.hidden && !triggered && !isOpen) {
+        setIsOpen(true)
+        setTriggered(true)
+        sessionStorage.setItem('exitPopupShown', 'true')
       }
-    }
-
-    // TRIGGER 3: Before page unload (back button, link click, etc.)
-    const handleBeforeUnload = () => {
-      showExitPopup()
     }
 
     document.addEventListener('mouseleave', handleMouseLeave)
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
       clearTimeout(mouseLeaveTimer)
+    }
+  }, [triggered, isOpen])
+
+  // ── Intercept back button + navigation attempts ──
+  useEffect(() => {
+    const handlePopState = () => {
+      // Back button was pressed
+      if (!triggered && !isOpen && sessionStorage.getItem('hasWeddingIntent') === 'true') {
+        // Prevent navigation
+        window.history.pushState(null, '', window.location.pathname)
+        
+        // Show popup
+        setIsOpen(true)
+        setTriggered(true)
+        sessionStorage.setItem('exitPopupShown', 'true')
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
     }
   }, [triggered, isOpen])
 
@@ -117,6 +134,12 @@ export default function ExitIntentPopup() {
 
       await sendChecklistEmail(form.email.trim(), form.name.trim())
       setStep('success')
+      
+      // Auto-redirect after 2s
+      setTimeout(() => {
+        setIsOpen(false)
+        router.push('/free-guide')
+      }, 2000)
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -126,6 +149,12 @@ export default function ExitIntentPopup() {
 
   const handleClose = () => {
     setIsOpen(false)
+    
+    // If there was a pending navigation, resume it
+    if (pendingNavigation) {
+      router.push(pendingNavigation)
+      setPendingNavigation(null)
+    }
   }
 
   return (
@@ -291,18 +320,17 @@ export default function ExitIntentPopup() {
                       <strong className="text-white/75">{form.email}</strong>.
                     </p>
                     <p className="text-xs text-white/35 mb-7">
-                      While you wait — see exactly how much your wedding décor would cost.
+                      Redirecting to quote in a moment...
                     </p>
 
                     <div className="space-y-2.5">
-                      <Link
-                        href="/quote"
-                        onClick={handleClose}
+                      <button
+                        onClick={() => router.push('/free-guide')}
                         className="flex items-center justify-center gap-2 w-full py-3.5 rounded-full text-[10px] uppercase tracking-widest font-bold text-black"
                         style={{ background: gold.metallic, boxShadow: `0 4px 20px ${gold.shadow}` }}
                       >
-                        Get Your Instant Quote <ArrowRight size={11} />
-                      </Link>
+                        Go to Free Guide <ArrowRight size={11} />
+                      </button>
                       <button
                         onClick={handleClose}
                         className="w-full py-3 rounded-full text-[9px] uppercase tracking-wider text-white/35 hover:text-white/55 transition-colors border"
