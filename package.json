@@ -9,11 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-email/components": "^1.0.10",
     "@supabase/ssr": "^0.9.0",
+    "@supabase/storage-js": "^2.103.0",
     "@supabase/supabase-js": "^2.100.0",
     "@tiptap/extension-image": "^3.20.5",
     "@tiptap/extension-link": "^3.20.5",
@@ -37,6 +39,7 @@
     "resend": "^6.9.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
+    "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -44,6 +47,7 @@
     "@types/node": "^20.19.37",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.1.7",

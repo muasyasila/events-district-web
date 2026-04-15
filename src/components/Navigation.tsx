@@ -31,10 +31,15 @@ export default function Navigation() {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener("scroll", handleScroll)
 
+    // FIX: use position:fixed + width:100% for reliable scroll lock on iOS/Android
     if (isOpen) {
       document.body.style.overflow = "hidden"
+      document.body.style.position = "fixed"
+      document.body.style.width = "100%"
     } else {
-      document.body.style.overflow = "unset"
+      document.body.style.overflow = ""
+      document.body.style.position = ""
+      document.body.style.width = ""
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -46,7 +51,9 @@ export default function Navigation() {
 
     return () => {
       window.removeEventListener("scroll", handleScroll)
-      document.body.style.overflow = "unset"
+      document.body.style.overflow = ""
+      document.body.style.position = ""
+      document.body.style.width = ""
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen])
@@ -58,6 +65,12 @@ export default function Navigation() {
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   }, [])
+
+  // Close mobile overlay on route change
+  useEffect(() => {
+    setIsOpen(false)
+    setOpenDropdown(null)
+  }, [pathname])
 
   if (!mounted) return null
 
@@ -132,334 +145,334 @@ export default function Navigation() {
   ]
 
   return (
-    <nav className={`fixed top-0 w-full z-[100] transition-all duration-700 ${
-      scrolled
-        ? isDark
-          ? "bg-black/80 backdrop-blur-xl border-b border-white/5 shadow-lg"
-          : "bg-white/80 backdrop-blur-xl border-b border-black/5 shadow-lg"
-        : "bg-transparent"
-    }`}
-    style={{ boxShadow: scrolled ? `0 4px 30px -8px ${goldColors.shadow}` : 'none' }}
-    >
-      <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16 lg:h-20">
+    <>
+      {/* Nav bar — z-[100] */}
+      <nav className={`fixed top-0 w-full z-[100] transition-all duration-700 ${
+        scrolled
+          ? isDark
+            ? "bg-black/80 backdrop-blur-xl border-b border-white/5 shadow-lg"
+            : "bg-white/80 backdrop-blur-xl border-b border-black/5 shadow-lg"
+          : "bg-transparent"
+      }`}
+      style={{ boxShadow: scrolled ? `0 4px 30px -8px ${goldColors.shadow}` : 'none' }}
+      >
+        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center h-16 lg:h-20">
 
-        {/* ── Logo ── */}
-        <Link href="/" className="relative z-[110] group">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="flex items-baseline gap-0.5 relative"
-          >
-            <span className={`text-lg md:text-xl lg:text-2xl font-light tracking-[0.15em] uppercase ${isDark ? 'text-white' : 'text-black'}`}>
-              Events
-            </span>
-            <span
-              className="text-lg md:text-xl lg:text-2xl font-bold tracking-[0.15em] uppercase bg-clip-text text-transparent"
-              style={{ backgroundImage: goldColors.metallic, WebkitBackgroundClip: 'text' }}
-            >
-              District
-            </span>
+          {/* ── Logo ── */}
+          <Link href="/" className="relative z-[110] group">
             <motion.div
-              className="absolute -bottom-1 left-0 w-full h-px origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
-              style={{ background: goldColors.metallic }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="flex items-baseline gap-0.5 relative"
+            >
+              <span className={`text-lg md:text-xl lg:text-2xl font-light tracking-[0.15em] uppercase ${isDark ? 'text-white' : 'text-black'}`}>
+                Events
+              </span>
+              <span
+                className="text-lg md:text-xl lg:text-2xl font-bold tracking-[0.15em] uppercase bg-clip-text text-transparent"
+                style={{ backgroundImage: goldColors.metallic, WebkitBackgroundClip: 'text' }}
+              >
+                District
+              </span>
+              <motion.div
+                className="absolute -bottom-1 left-0 w-full h-px origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"
+                style={{ background: goldColors.metallic }}
+              />
+            </motion.div>
+          </Link>
+
+          {/* ── Desktop Nav (lg+) ── */}
+          <div className="hidden lg:flex items-center gap-8" ref={dropdownRef}>
+
+            {/* Services */}
+            <DesktopDropdownTrigger
+              label="Services"
+              isOpen={openDropdown === 'services'}
+              onToggle={() => setOpenDropdown(openDropdown === 'services' ? null : 'services')}
+              onHover={() => setOpenDropdown('services')}
+              goldColors={goldColors}
             />
-          </motion.div>
-        </Link>
 
-        {/* ── Desktop Nav ── */}
-        <div className="hidden lg:flex items-center gap-8" ref={dropdownRef}>
+            {/* Resources */}
+            <DesktopDropdownTrigger
+              label="Resources"
+              isOpen={openDropdown === 'resources'}
+              onToggle={() => setOpenDropdown(openDropdown === 'resources' ? null : 'resources')}
+              onHover={() => setOpenDropdown('resources')}
+              goldColors={goldColors}
+            />
 
-          {/* Services */}
-          <DesktopDropdownTrigger
-            label="Services"
-            isOpen={openDropdown === 'services'}
-            onToggle={() => setOpenDropdown(openDropdown === 'services' ? null : 'services')}
-            onHover={() => setOpenDropdown('services')}
-            goldColors={goldColors}
-          />
+            {/* Company */}
+            <DesktopDropdownTrigger
+              label="Company"
+              isOpen={openDropdown === 'company'}
+              onToggle={() => setOpenDropdown(openDropdown === 'company' ? null : 'company')}
+              onHover={() => setOpenDropdown('company')}
+              goldColors={goldColors}
+            />
 
-          {/* Resources */}
-          <DesktopDropdownTrigger
-            label="Resources"
-            isOpen={openDropdown === 'resources'}
-            onToggle={() => setOpenDropdown(openDropdown === 'resources' ? null : 'resources')}
-            onHover={() => setOpenDropdown('resources')}
-            goldColors={goldColors}
-          />
+            {/* Divider */}
+            <div className={`w-px h-4 ${isDark ? 'bg-white/10' : 'bg-black/10'}`} />
 
-          {/* Company */}
-          <DesktopDropdownTrigger
-            label="Company"
-            isOpen={openDropdown === 'company'}
-            onToggle={() => setOpenDropdown(openDropdown === 'company' ? null : 'company')}
-            onHover={() => setOpenDropdown('company')}
-            goldColors={goldColors}
-          />
+            {/* Quick links */}
+            {[
+              { href: '/portfolio', label: 'Portfolio', icon: <Images size={11} /> },
+              { href: '/quote', label: 'Quote', icon: <Calculator size={11} /> },
+              { href: '/blog', label: 'Journal', icon: <BookOpen size={11} /> },
+            ].map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] font-medium transition-all duration-300 ${
+                  isActiveLink(link.href) ? 'opacity-100' : 'opacity-50 hover:opacity-100'
+                }`}
+                style={{ color: isActiveLink(link.href) ? goldColors.light : undefined }}
+              >
+                {link.icon}
+                <span>{link.label}</span>
+              </Link>
+            ))}
 
-          {/* Divider */}
-          <div className={`w-px h-4 ${isDark ? 'bg-white/10' : 'bg-black/10'}`} />
-
-          {/* Quick links */}
-          {[
-            { href: '/portfolio', label: 'Portfolio', icon: <Images size={11} /> },
-            { href: '/quote', label: 'Quote', icon: <Calculator size={11} /> },
-            { href: '/blog', label: 'Journal', icon: <BookOpen size={11} /> },
-          ].map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] font-medium transition-all duration-300 ${
-                isActiveLink(link.href) ? 'opacity-100' : 'opacity-50 hover:opacity-100'
-              }`}
-              style={{ color: isActiveLink(link.href) ? goldColors.light : undefined }}
+            {/* Theme toggle */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className={`p-2 rounded-full transition-all duration-300 ${isDark ? 'text-white hover:bg-white/5' : 'text-black hover:bg-black/5'}`}
+              aria-label="Toggle theme"
             >
-              {link.icon}
-              <span>{link.label}</span>
-            </Link>
-          ))}
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            </motion.button>
 
-          {/* Theme toggle */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className={`p-2 rounded-full transition-all duration-300 ${isDark ? 'text-white hover:bg-white/5' : 'text-black hover:bg-black/5'}`}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-          </motion.button>
+            {/* CTA */}
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/contact"
+                className="px-5 py-2 text-[10px] uppercase tracking-[0.2em] font-bold rounded-full transition-all duration-300 text-black"
+                style={{ background: goldColors.metallic, boxShadow: `0 2px 12px ${goldColors.shadow}` }}
+              >
+                Book Consultation
+              </Link>
+            </motion.div>
+          </div>
 
-          {/* CTA */}
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Link
-              href="/contact"
-              className="px-5 py-2 text-[10px] uppercase tracking-[0.2em] font-bold rounded-full transition-all duration-300 text-black"
-              style={{ background: goldColors.metallic, boxShadow: `0 2px 12px ${goldColors.shadow}` }}
+          {/* ── Mobile / Tablet right controls (< lg) ── */}
+          <div className="flex lg:hidden items-center gap-3">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className={`p-2 rounded-full transition-all duration-300 ${isDark ? 'text-white' : 'text-black'}`}
+              aria-label="Toggle theme"
             >
-              Book Consultation
-            </Link>
-          </motion.div>
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            </motion.button>
+
+            {/* FIX: z-[210] so button sits above the overlay (z-200) */}
+            <button
+              className="relative z-[210] w-10 h-10 flex flex-col justify-center items-center gap-1.5"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isOpen}
+            >
+              <motion.span
+                animate={isOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`block w-5 h-[1.5px] origin-center ${isOpen || isDark ? 'bg-white' : 'bg-black'}`}
+              />
+              <motion.span
+                animate={isOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
+                transition={{ duration: 0.2 }}
+                className={`block w-5 h-[1.5px] ${isOpen || isDark ? 'bg-white' : 'bg-black'}`}
+              />
+              <motion.span
+                animate={isOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`block w-5 h-[1.5px] origin-center ${isOpen || isDark ? 'bg-white' : 'bg-black'}`}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* ── Mobile right controls ── */}
-        <div className="flex lg:hidden items-center gap-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className={`p-2 rounded-full transition-all duration-300 ${isDark ? 'text-white' : 'text-black'}`}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-          </motion.button>
-
-          {/* Hamburger */}
-          <button
-            className="relative z-[110] w-8 h-8 flex flex-col justify-center items-center gap-1.5"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Menu"
-          >
-            <motion.span
-              animate={isOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`block w-5 h-[1.5px] origin-center ${isDark ? 'bg-white' : 'bg-black'}`}
-            />
-            <motion.span
-              animate={isOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
-              transition={{ duration: 0.2 }}
-              className={`block w-5 h-[1.5px] ${isDark ? 'bg-white' : 'bg-black'}`}
-            />
-            <motion.span
-              animate={isOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className={`block w-5 h-[1.5px] origin-center ${isDark ? 'bg-white' : 'bg-black'}`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Desktop Dropdowns ── */}
-      <AnimatePresence>
-        {openDropdown === 'services' && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`absolute top-full left-0 w-full border-b ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/95 border-black/5'} backdrop-blur-xl shadow-2xl`}
-            style={{ boxShadow: `0 20px 60px -12px ${goldColors.shadow}` }}
-            onMouseLeave={() => setOpenDropdown(null)}
-          >
-            {/* Gold top accent line */}
-            <div className="h-px w-full" style={{ background: goldColors.metallic }} />
-
-            <div className="container mx-auto px-6 py-8">
-              <div className="grid grid-cols-6 gap-6">
-                {/* 5 service columns */}
-                {serviceCategories.map((cat, ci) => (
-                  <div key={cat.key}>
-                    <p className="text-[9px] uppercase tracking-[0.3em] mb-4 pb-2 border-b" style={{ color: goldColors.light, borderColor: goldColors.light + '30' }}>
-                      {cat.label}
-                    </p>
-                    <div className="space-y-1">
-                      {cat.services.slice(0, 3).map((service) => (
-                        <Link
-                          key={service.name}
-                          href={service.href}
-                          onClick={() => setOpenDropdown(null)}
-                          className={`flex items-start gap-2.5 p-2 rounded-lg transition-all duration-200 group ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/4'}`}
-                        >
-                          <span className={`mt-0.5 shrink-0 transition-colors ${isDark ? 'text-white/30 group-hover:text-white/70' : 'text-black/30 group-hover:text-black/70'}`}>
-                            {service.icon}
-                          </span>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <p className={`text-xs font-medium transition-colors ${isDark ? 'text-white/80 group-hover:text-white' : 'text-black/80 group-hover:text-black'}`}>
-                                {service.name}
+        {/* ── Desktop Dropdowns ── */}
+        <AnimatePresence>
+          {openDropdown === 'services' && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className={`absolute top-full left-0 w-full border-b ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/95 border-black/5'} backdrop-blur-xl shadow-2xl`}
+              style={{ boxShadow: `0 20px 60px -12px ${goldColors.shadow}` }}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
+              <div className="h-px w-full" style={{ background: goldColors.metallic }} />
+              <div className="container mx-auto px-6 py-8">
+                <div className="grid grid-cols-6 gap-6">
+                  {serviceCategories.map((cat) => (
+                    <div key={cat.key}>
+                      <p className="text-[9px] uppercase tracking-[0.3em] mb-4 pb-2 border-b" style={{ color: goldColors.light, borderColor: goldColors.light + '30' }}>
+                        {cat.label}
+                      </p>
+                      <div className="space-y-1">
+                        {cat.services.slice(0, 3).map((service) => (
+                          <Link
+                            key={service.name}
+                            href={service.href}
+                            onClick={() => setOpenDropdown(null)}
+                            className={`flex items-start gap-2.5 p-2 rounded-lg transition-all duration-200 group ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/4'}`}
+                          >
+                            <span className={`mt-0.5 shrink-0 transition-colors ${isDark ? 'text-white/30 group-hover:text-white/70' : 'text-black/30 group-hover:text-black/70'}`}>
+                              {service.icon}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className={`text-xs font-medium transition-colors ${isDark ? 'text-white/80 group-hover:text-white' : 'text-black/80 group-hover:text-black'}`}>
+                                  {service.name}
+                                </p>
+                                {'available' in service && (service as any).available && (
+                                  <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: goldColors.light + '20', color: goldColors.light }}>
+                                    Instant
+                                  </span>
+                                )}
+                              </div>
+                              <p className={`text-[10px] mt-0.5 leading-snug ${isDark ? 'text-white/35' : 'text-black/40'}`}>
+                                {service.description}
                               </p>
-                              {'available' in service && (service as any).available && (
-  <span className="text-[8px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: goldColors.light + '20', color: goldColors.light }}>
-    Instant
-  </span>
-)}
                             </div>
-                            <p className={`text-[10px] mt-0.5 leading-snug ${isDark ? 'text-white/35' : 'text-black/40'}`}>
-                              {service.description}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
+                          </Link>
+                        ))}
+                      </div>
+                      <Link
+                        href="/services"
+                        onClick={() => setOpenDropdown(null)}
+                        className="inline-flex items-center gap-1 mt-3 text-[10px] group transition-all"
+                        style={{ color: goldColors.light }}
+                      >
+                        <span>+3 more</span>
+                        <ArrowRight size={9} className="group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
+                    </div>
+                  ))}
+                  <div className="pl-4 border-l" style={{ borderColor: goldColors.light + '20' }}>
+                    <p className="text-[9px] uppercase tracking-[0.3em] mb-4" style={{ color: goldColors.light }}>Featured</p>
+                    <div className="rounded-xl p-4 mb-4" style={{ background: goldColors.light + '10', border: `1px solid ${goldColors.light}25` }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Calculator size={14} style={{ color: goldColors.light }} />
+                        <span className="text-[9px] uppercase tracking-wider font-medium" style={{ color: goldColors.light }}>Instant Quote</span>
+                      </div>
+                      <p className={`text-sm font-medium mb-1 ${isDark ? 'text-white' : 'text-black'}`}>Wedding Decor</p>
+                      <p className={`text-[10px] leading-relaxed mb-3 ${isDark ? 'text-white/50' : 'text-black/50'}`}>
+                        Get a tailored quote in minutes — packages starting from KES 30,000
+                      </p>
+                      <Link
+                        href="/quote"
+                        onClick={() => setOpenDropdown(null)}
+                        className="block text-center py-2 text-[10px] uppercase tracking-widest font-bold rounded-full text-black"
+                        style={{ background: goldColors.metallic }}
+                      >
+                        Get Quote
+                      </Link>
                     </div>
                     <Link
-                      href="/services"
+                      href="/portfolio"
                       onClick={() => setOpenDropdown(null)}
-                      className="inline-flex items-center gap-1 mt-3 text-[10px] group transition-all"
-                      style={{ color: goldColors.light }}
+                      className={`flex items-center gap-2 text-xs transition-colors group ${isDark ? 'text-white/50 hover:text-white' : 'text-black/50 hover:text-black'}`}
                     >
-                      <span>+3 more</span>
-                      <ArrowRight size={9} className="group-hover:translate-x-0.5 transition-transform" />
+                      <Images size={12} />
+                      <span>View Portfolio</span>
+                      <ArrowRight size={10} className="ml-auto group-hover:translate-x-0.5 transition-transform" />
                     </Link>
                   </div>
-                ))}
-
-                {/* 6th col: Featured CTA */}
-                <div className="pl-4 border-l" style={{ borderColor: goldColors.light + '20' }}>
-                  <p className="text-[9px] uppercase tracking-[0.3em] mb-4" style={{ color: goldColors.light }}>Featured</p>
-                  <div
-                    className="rounded-xl p-4 mb-4"
-                    style={{ background: goldColors.light + '10', border: `1px solid ${goldColors.light}25` }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Calculator size={14} style={{ color: goldColors.light }} />
-                      <span className="text-[9px] uppercase tracking-wider font-medium" style={{ color: goldColors.light }}>Instant Quote</span>
-                    </div>
-                    <p className={`text-sm font-medium mb-1 ${isDark ? 'text-white' : 'text-black'}`}>Wedding Decor</p>
-                    <p className={`text-[10px] leading-relaxed mb-3 ${isDark ? 'text-white/50' : 'text-black/50'}`}>
-                      Get a tailored quote in minutes — packages starting from KES 30,000
-                    </p>
-                    <Link
-                      href="/quote"
-                      onClick={() => setOpenDropdown(null)}
-                      className="block text-center py-2 text-[10px] uppercase tracking-widest font-bold rounded-full text-black"
-                      style={{ background: goldColors.metallic }}
-                    >
-                      Get Quote
-                    </Link>
-                  </div>
-                  <Link
-                    href="/portfolio"
-                    onClick={() => setOpenDropdown(null)}
-                    className={`flex items-center gap-2 text-xs transition-colors group ${isDark ? 'text-white/50 hover:text-white' : 'text-black/50 hover:text-black'}`}
-                  >
-                    <Images size={12} />
-                    <span>View Portfolio</span>
-                    <ArrowRight size={10} className="ml-auto group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
 
-        {openDropdown === 'resources' && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`absolute top-full left-0 w-full border-b ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/95 border-black/5'} backdrop-blur-xl`}
-            style={{ boxShadow: `0 20px 60px -12px ${goldColors.shadow}` }}
-            onMouseLeave={() => setOpenDropdown(null)}
-          >
-            <div className="h-px w-full" style={{ background: goldColors.metallic }} />
-            <div className="container mx-auto px-6 py-6">
-              <div className="flex gap-4 max-w-lg">
-                {resources.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setOpenDropdown(null)}
-                    className={`flex-1 flex items-start gap-3 p-3 rounded-xl transition-all duration-200 group ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/4'}`}
-                  >
-                    <span className={`mt-0.5 shrink-0 transition-colors ${isDark ? 'text-white/30 group-hover:text-white/70' : 'text-black/30 group-hover:text-black/70'}`}>
-                      {item.icon}
-                    </span>
-                    <div>
-                      <p className={`text-xs font-medium ${isDark ? 'text-white/80' : 'text-black/80'}`}>{item.name}</p>
-                      <p className={`text-[10px] mt-0.5 ${isDark ? 'text-white/40' : 'text-black/40'}`}>{item.description}</p>
-                    </div>
-                  </Link>
-                ))}
+          {openDropdown === 'resources' && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className={`absolute top-full left-0 w-full border-b ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/95 border-black/5'} backdrop-blur-xl`}
+              style={{ boxShadow: `0 20px 60px -12px ${goldColors.shadow}` }}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
+              <div className="h-px w-full" style={{ background: goldColors.metallic }} />
+              <div className="container mx-auto px-6 py-6">
+                <div className="flex gap-4 max-w-lg">
+                  {resources.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setOpenDropdown(null)}
+                      className={`flex-1 flex items-start gap-3 p-3 rounded-xl transition-all duration-200 group ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/4'}`}
+                    >
+                      <span className={`mt-0.5 shrink-0 transition-colors ${isDark ? 'text-white/30 group-hover:text-white/70' : 'text-black/30 group-hover:text-black/70'}`}>
+                        {item.icon}
+                      </span>
+                      <div>
+                        <p className={`text-xs font-medium ${isDark ? 'text-white/80' : 'text-black/80'}`}>{item.name}</p>
+                        <p className={`text-[10px] mt-0.5 ${isDark ? 'text-white/40' : 'text-black/40'}`}>{item.description}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
 
-        {openDropdown === 'company' && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`absolute top-full left-0 w-full border-b ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/95 border-black/5'} backdrop-blur-xl`}
-            style={{ boxShadow: `0 20px 60px -12px ${goldColors.shadow}` }}
-            onMouseLeave={() => setOpenDropdown(null)}
-          >
-            <div className="h-px w-full" style={{ background: goldColors.metallic }} />
-            <div className="container mx-auto px-6 py-6">
-              <div className="flex gap-4 max-w-lg">
-                {company.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setOpenDropdown(null)}
-                    className={`flex-1 flex items-start gap-3 p-3 rounded-xl transition-all duration-200 group ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/4'}`}
-                  >
-                    <span className={`mt-0.5 shrink-0 transition-colors ${isDark ? 'text-white/30 group-hover:text-white/70' : 'text-black/30 group-hover:text-black/70'}`}>
-                      {item.icon}
-                    </span>
-                    <div>
-                      <p className={`text-xs font-medium ${isDark ? 'text-white/80' : 'text-black/80'}`}>{item.name}</p>
-                      <p className={`text-[10px] mt-0.5 ${isDark ? 'text-white/40' : 'text-black/40'}`}>{item.description}</p>
-                    </div>
-                  </Link>
-                ))}
+          {openDropdown === 'company' && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className={`absolute top-full left-0 w-full border-b ${isDark ? 'bg-black/95 border-white/5' : 'bg-white/95 border-black/5'} backdrop-blur-xl`}
+              style={{ boxShadow: `0 20px 60px -12px ${goldColors.shadow}` }}
+              onMouseLeave={() => setOpenDropdown(null)}
+            >
+              <div className="h-px w-full" style={{ background: goldColors.metallic }} />
+              <div className="container mx-auto px-6 py-6">
+                <div className="flex gap-4 max-w-lg">
+                  {company.map((item) => (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setOpenDropdown(null)}
+                      className={`flex-1 flex items-start gap-3 p-3 rounded-xl transition-all duration-200 group ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/4'}`}
+                    >
+                      <span className={`mt-0.5 shrink-0 transition-colors ${isDark ? 'text-white/30 group-hover:text-white/70' : 'text-black/30 group-hover:text-black/70'}`}>
+                        {item.icon}
+                      </span>
+                      <div>
+                        <p className={`text-xs font-medium ${isDark ? 'text-white/80' : 'text-black/80'}`}>{item.name}</p>
+                        <p className={`text-[10px] mt-0.5 ${isDark ? 'text-white/40' : 'text-black/40'}`}>{item.description}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
 
-      {/* ── Mobile Full-screen Overlay ── */}
+      {/* ── Mobile / Tablet Full-screen Overlay ──
+          FIX: z-[200] so it sits above the nav (z-100) but below the hamburger (z-210).
+          Slides in from the right so it feels like a native drawer.
+          Uses fixed inset-0 correctly as a sibling of <nav>, not nested inside it.
+      ── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className={`fixed inset-0 z-[105] flex flex-col ${isDark ? 'bg-black' : 'bg-white'}`}
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ duration: 0.35, ease: [0.19, 1, 0.22, 1] }}
+            className={`fixed inset-0 z-[200] flex flex-col lg:hidden ${isDark ? 'bg-black' : 'bg-white'}`}
           >
             {/* Gold top line */}
             <div className="h-px w-full flex-shrink-0" style={{ background: goldColors.metallic }} />
@@ -471,7 +484,7 @@ export default function Navigation() {
             />
 
             {/* Header row */}
-            <div className="flex justify-between items-center px-6 py-5 flex-shrink-0">
+            <div className={`flex justify-between items-center px-6 h-16 flex-shrink-0 border-b ${isDark ? 'border-white/5' : 'border-black/5'}`}>
               <Link href="/" onClick={() => setIsOpen(false)} className="flex items-baseline gap-0.5">
                 <span className={`text-xl font-light tracking-[0.15em] uppercase ${isDark ? 'text-white' : 'text-black'}`}>Events</span>
                 <span
@@ -479,25 +492,27 @@ export default function Navigation() {
                   style={{ backgroundImage: goldColors.metallic, WebkitBackgroundClip: 'text' }}
                 >District</span>
               </Link>
+              {/* Close button inside the overlay */}
               <button
                 onClick={() => setIsOpen(false)}
-                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}
+                className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isDark ? 'hover:bg-white/5 text-white' : 'hover:bg-black/5 text-black'}`}
+                aria-label="Close menu"
               >
-                <svg className={`w-4 h-4 ${isDark ? 'text-white' : 'text-black'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-6 pb-8">
+            <div className="flex-1 overflow-y-auto px-6 pb-8 pt-2">
 
               {/* Featured CTA card */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="mb-8 rounded-2xl p-5"
+                className="mb-8 rounded-2xl p-5 mt-4"
                 style={{ background: goldColors.light + '12', border: `1px solid ${goldColors.light}30` }}
               >
                 <div className="flex items-center gap-2 mb-1">
@@ -648,7 +663,7 @@ export default function Navigation() {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </>
   )
 }
 

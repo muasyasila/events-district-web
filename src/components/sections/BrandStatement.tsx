@@ -79,51 +79,7 @@ const PROCESS_STEPS = [
   },
 ]
 
-const TESTIMONIALS = [
-  {
-    quote: "Events District didn't just decorate our venue — they translated our entire love story into a physical space. Every single guest asked who designed it.",
-    name: 'Amara & Kofi Mensah',
-    event: 'Garden Wedding · Nairobi',
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    rating: 5,
-  },
-  {
-    quote: "The most seamless corporate gala we've ever hosted. The branding integration was so precise that our CEO said it looked like a Cannes event. Absolutely premium.",
-    name: 'James Waweru',
-    event: 'Annual Gala · Radisson Blu',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-    rating: 5,
-  },
-  {
-    quote: "I gave them three words: gold, intimate, unforgettable. They came back with a concept that made me cry. Worth every shilling.",
-    name: 'Priya Patel',
-    event: 'Birthday Extravaganza · Mombasa',
-    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-    rating: 5,
-  },
-]
-
 // ─── Utility ──────────────────────────────────────────────────────────────────
-
-function useCountUp(target: number, duration = 1800, start = false) {
-  const [count, setCount] = useState(0)
-  const isDecimal = target % 1 !== 0
-  useEffect(() => {
-    if (!start) return
-    let startTime: number | null = null
-    const step = (ts: number) => {
-      if (!startTime) startTime = ts
-      const progress = Math.min((ts - startTime) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setCount(parseFloat((eased * target).toFixed(isDecimal ? 1 : 0)))
-      if (progress < 1) requestAnimationFrame(step)
-    }
-    requestAnimationFrame(step)
-  }, [start, target, duration, isDecimal])
-  return isDecimal ? count.toFixed(1) : Math.floor(count)
-}
-
-// ─── Shared atoms ─────────────────────────────────────────────────────────────
 
 function GoldRule({ className = '' }: { className?: string }) {
   return <div className={`h-px ${className}`} style={{ background: gold.metallic }} />
@@ -335,7 +291,7 @@ function EventShowcase() {
   )
 }
 
-// ─── BLOCK 3 · Process strip ──────────────────────────────────────────────────
+// ─── BLOCK 3 · Process strip (FIXED LINES - no crisscross) ──────────────────────────────────
 
 function ProcessStrip() {
   const ref = useRef<HTMLDivElement>(null)
@@ -362,18 +318,15 @@ function ProcessStrip() {
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4 relative">
-          {/* Connecting line desktop */}
-          <div
-            className="absolute top-[22px] left-[12.5%] right-[12.5%] h-px hidden md:block"
-            style={{ background: gold.border }}
-          />
-
+          {/* No connecting line - removed to prevent crisscross */}
+          
           {PROCESS_STEPS.map((step, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 22 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: i * 0.12, ease: [0.19, 1, 0.22, 1] }}
+              className="relative"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div
@@ -416,260 +369,6 @@ function ProcessStrip() {
   )
 }
 
-// ─── BLOCK 4 · Testimonial carousel ──────────────────────────────────────────
-
-function TestimonialCarousel() {
-  const [active, setActive] = useState(0)
-  const [dir, setDir] = useState(1)
-  const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-12%' })
-
-  const navigate = (d: number) => {
-    setDir(d)
-    setActive(prev => (prev + d + TESTIMONIALS.length) % TESTIMONIALS.length)
-  }
-
-  const t = TESTIMONIALS[active]
-
-  return (
-    <div ref={ref} className="container mx-auto px-4 md:px-6 py-20 md:py-28">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.7 }}
-      >
-        <SectionLabel>Client stories</SectionLabel>
-      </motion.div>
-
-      <div className="grid md:grid-cols-[1fr_400px] lg:grid-cols-[1fr_420px] gap-10 md:gap-16 items-center">
-        {/* Quote */}
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.1 }}
-        >
-          <div
-            className="font-serif leading-none mb-2 -ml-1 md:-ml-2 select-none"
-            style={{ fontSize: 'clamp(60px, 10vw, 110px)', color: gold.light, opacity: 0.25, lineHeight: 1 }}
-          >
-            "
-          </div>
-
-          <AnimatePresence mode="wait" custom={dir}>
-            <motion.div
-              key={active}
-              custom={dir}
-              initial={{ opacity: 0, y: dir * 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: dir * -18 }}
-              transition={{ duration: 0.4, ease: [0.19, 1, 0.22, 1] }}
-            >
-              <blockquote className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-foreground mb-7">
-                {t.quote}
-              </blockquote>
-              <div className="flex items-center gap-4">
-                <img
-                  src={t.avatar}
-                  alt={t.name}
-                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                  style={{ border: `2px solid ${gold.light}` }}
-                />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{t.name}</p>
-                  <p className="text-[11px] text-foreground/45">{t.event}</p>
-                </div>
-                <div className="flex items-center gap-0.5 ml-2">
-                  {[...Array(t.rating)].map((_, i) => (
-                    <Star key={i} size={11} fill={gold.light} color={gold.light} />
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Nav controls */}
-          <div className="flex items-center gap-3 mt-8">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-9 h-9 rounded-full border flex items-center justify-center transition-all hover:bg-foreground/5"
-              style={{ borderColor: gold.border }}
-            >
-              <ChevronLeft size={14} className="text-foreground/50" />
-            </button>
-            <button
-              onClick={() => navigate(1)}
-              className="w-9 h-9 rounded-full border flex items-center justify-center transition-all hover:bg-foreground/5"
-              style={{ borderColor: gold.border }}
-            >
-              <ChevronRight size={14} className="text-foreground/50" />
-            </button>
-            <div className="flex gap-1.5 ml-1">
-              {TESTIMONIALS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setDir(i > active ? 1 : -1); setActive(i) }}
-                >
-                  <motion.div
-                    animate={{
-                      width: i === active ? 20 : 5,
-                      backgroundColor: i === active ? gold.light : 'rgba(212,175,55,0.25)',
-                    }}
-                    className="h-1 rounded-full"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Trust panel */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={inView ? { opacity: 1, x: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.22 }}
-          className="rounded-2xl p-6 md:p-8 border space-y-6"
-          style={{ borderColor: gold.border, background: gold.glow }}
-        >
-          <div>
-            <div
-              className="text-5xl font-light mb-1.5 bg-clip-text text-transparent"
-              style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
-            >
-              4.9
-            </div>
-            <div className="flex items-center gap-0.5 mb-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={13} fill={gold.light} color={gold.light} />
-              ))}
-            </div>
-            <p className="text-xs text-foreground/45">Based on 150+ verified reviews</p>
-          </div>
-
-          <GoldRule />
-
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] mb-4" style={{ color: gold.light }}>
-              Why they chose us
-            </p>
-            {[
-              'Same-day quote for weddings',
-              'Dedicated event manager',
-              'Full setup & breakdown included',
-              'Flexible payment plans',
-              'Portfolio of 500+ real events',
-            ].map((point, i) => (
-              <div key={i} className="flex items-start gap-2.5 mb-3 last:mb-0">
-                <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0" style={{ color: gold.light }} />
-                <span className="text-sm text-foreground/70">{point}</span>
-              </div>
-            ))}
-          </div>
-
-          <GoldRule />
-
-          <div>
-            <p className="text-xs text-foreground/45 mb-3">Ready to be our next success story?</p>
-            <Link
-              href="/quote"
-              className="block w-full py-3 text-center text-[10px] uppercase tracking-widest font-bold rounded-full text-black"
-              style={{ background: gold.metallic, boxShadow: `0 4px 16px ${gold.shadow}` }}
-            >
-              Get Your Free Quote
-            </Link>
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
-// ─── BLOCK 5 · Editorial CTA closer ──────────────────────────────────────────
-
-function CloserCTA() {
-  const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-8%' })
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const y1 = useTransform(scrollYProgress, [0, 1], [40, -40])
-  const y2 = useTransform(scrollYProgress, [0, 1], [-40, 40])
-
-  return (
-    <div
-      ref={ref}
-      className="relative overflow-hidden py-24 md:py-32 border-t"
-      style={{ borderColor: gold.border }}
-    >
-      {/* Parallax orbs */}
-      <motion.div
-        style={{ y: y1, background: 'radial-gradient(circle, rgba(212,175,55,0.11) 0%, transparent 70%)' }}
-        className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full pointer-events-none"
-      />
-      <motion.div
-        style={{ y: y2, background: 'radial-gradient(circle, rgba(212,175,55,0.07) 0%, transparent 70%)' }}
-        className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full pointer-events-none"
-      />
-
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.9, ease: [0.19, 1, 0.22, 1] }}
-          className="max-w-3xl"
-        >
-          <SectionLabel>Ready to begin?</SectionLabel>
-
-          <h2 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light leading-[1.05] text-foreground mb-8">
-            Your event deserves{' '}
-            <span
-              className="italic bg-clip-text text-transparent"
-              style={{ backgroundImage: gold.metallic, WebkitBackgroundClip: 'text' }}
-            >
-              more than décor.
-            </span>
-            <br />
-            It deserves a{' '}
-            <span className="italic text-foreground/45">feeling.</span>
-          </h2>
-
-          <p className="text-base md:text-lg text-foreground/55 leading-relaxed mb-10 max-w-xl">
-            Tell us about your event. We'll respond within 24 hours with a tailored concept
-            and transparent pricing — no vague quotes, no surprises.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 items-start">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Link
-                href="/quote"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-xs font-bold uppercase tracking-widest text-black"
-                style={{ background: gold.metallic, boxShadow: `0 6px 28px ${gold.shadow}` }}
-              >
-                Get Instant Wedding Quote
-                <ArrowRight size={13} />
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Link
-                href="/contact"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-xs font-medium uppercase tracking-widest text-foreground border transition-all duration-300 hover:border-amber-500/40"
-                style={{ borderColor: gold.border }}
-              >
-                Book Free Consultation
-              </Link>
-            </motion.div>
-          </div>
-
-          <div className="flex items-center gap-5 mt-8 flex-wrap">
-            {['✦ No commitment required', '✦ Reply within 24 hrs', '✦ 500+ events delivered'].map(line => (
-              <span key={line} className="text-[11px] text-foreground/30 uppercase tracking-wider">
-                {line}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export default function Story() {
@@ -677,8 +376,6 @@ export default function Story() {
     <section className="bg-background w-full overflow-hidden">
       <EventShowcase />
       <ProcessStrip />
-      <TestimonialCarousel />
-      <CloserCTA />
     </section>
   )
 }

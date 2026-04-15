@@ -7,19 +7,19 @@ import { Loader2, Upload, X } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'sonner'
 
-interface ImageUploaderProps {
+interface AdminImageUploaderProps {
   bucket: 'hero-images' | 'testimonials' | 'portfolio'
   folder?: string
   onUploadComplete: (url: string) => void
   existingImage?: string
 }
 
-export default function ImageUploader({
+export default function AdminImageUploader({
   bucket,
   folder,
   onUploadComplete,
   existingImage
-}: ImageUploaderProps) {
+}: AdminImageUploaderProps) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(existingImage || null)
 
