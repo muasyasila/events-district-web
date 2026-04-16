@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Star, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // ─── Gold palette (matches Hero + Nav) ───────────────────────────────────────
 const gold = {
@@ -22,7 +23,7 @@ const EVENT_TYPES = [
     category: 'Romance',
     title: 'Weddings & Ceremonies',
     description: 'Where two souls become one story. We design the backdrop to your most important chapter — from ceremony arches to reception tablescapes that leave guests speechless.',
-    img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=800&h=600',
+    img: '/images/event-types/weddings.webp',
     tags: ['Ceremony Arches', 'Aisle Styling', 'Reception Décor'],
     href: '/quote',
     cta: 'Get Wedding Quote',
@@ -33,7 +34,7 @@ const EVENT_TYPES = [
     category: 'Celebrations',
     title: 'Birthdays & Milestones',
     description: 'Turning points deserve monuments. We transform ordinary venues into immersive worlds that mark the moments worth remembering for a lifetime.',
-    img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&q=80&w=800&h=600',
+    img: '/images/event-types/celebrations.webp',
     tags: ['Milestone Birthdays', 'Themed Parties', 'Surprise Events'],
     href: '/contact',
     cta: 'Enquire Now',
@@ -44,7 +45,7 @@ const EVENT_TYPES = [
     category: 'Corporate',
     title: 'Galas & Brand Events',
     description: 'Your brand is a living entity. We give it physical form — staging environments that communicate authority, elegance, and intent to every guest in the room.',
-    img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=800&h=600',
+    img: '/images/event-types/corporate.jpeg',
     tags: ['Gala Dinners', 'Product Launches', 'Award Ceremonies'],
     href: '/contact',
     cta: 'Enquire Now',
@@ -191,7 +192,7 @@ function EventShowcase() {
           </div>
         </div>
 
-        {/* Right panel */}
+        {/* Right panel with Next.js Image optimization */}
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
@@ -202,14 +203,17 @@ function EventShowcase() {
             className="grid grid-cols-2 gap-6 lg:gap-10 items-center"
           >
             <div className="relative overflow-hidden rounded-lg aspect-[4/3] group">
-              <img
+              <Image
                 src={EVENT_TYPES[active].img}
                 alt={EVENT_TYPES[active].title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority={active === 0}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div
-                className="absolute top-4 left-4 text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider"
+                className="absolute top-4 left-4 text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider z-10"
                 style={{ background: gold.metallic, color: 'black' }}
               >
                 {EVENT_TYPES[active].category}
@@ -254,7 +258,7 @@ function EventShowcase() {
         </AnimatePresence>
       </div>
 
-      {/* Mobile card */}
+      {/* Mobile card with Next.js Image */}
       <div className="md:hidden">
         <AnimatePresence mode="wait">
           <motion.div
@@ -265,7 +269,13 @@ function EventShowcase() {
             transition={{ duration: 0.35 }}
           >
             <div className="relative overflow-hidden rounded-xl aspect-[16/10] mb-5">
-              <img src={EVENT_TYPES[active].img} alt={EVENT_TYPES[active].title} className="w-full h-full object-cover" />
+              <Image
+                src={EVENT_TYPES[active].img}
+                alt={EVENT_TYPES[active].title}
+                fill
+                className="object-cover"
+                sizes="100vw"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
             <h3 className="text-2xl font-light text-foreground mb-3">{EVENT_TYPES[active].title}</h3>
